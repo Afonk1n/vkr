@@ -123,7 +123,7 @@ const ProfilePage = () => {
                 </button>
               </div>
               <div className="profile-info-section">
-                <h1 className="profile-username">{currentUser?.username || user.username}</h1>
+                <h1 className="profile-username">{currentUser?.username || user?.username || 'Пользователь'}</h1>
                 {currentUser?.email && (
                   <p className="profile-email">{currentUser.email}</p>
                 )}

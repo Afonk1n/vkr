@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"music-review-site/backend/middleware"
 	"music-review-site/backend/models"
 	"music-review-site/backend/utils"
@@ -63,6 +64,13 @@ func (tc *TrackController) GetTrack(c *gin.Context) {
 		})
 		return
 	}
+
+	// Calculate average rating
+	if err := tc.CalculateAverageRating(track.ID); err != nil {
+		log.Printf("Warning: failed to calculate average rating for track %d: %v", track.ID, err)
+	}
+	// Reload track to get updated rating
+	tc.DB.First(&track, id)
 
 	c.JSON(http.StatusOK, track)
 }
@@ -235,6 +243,15 @@ func (tc *TrackController) GetPopularTracks(c *gin.Context) {
 		return
 	}
 
+	// Calculate average ratings for all tracks
+	for i := range tracks {
+		if err := tc.CalculateAverageRating(tracks[i].ID); err != nil {
+			log.Printf("Warning: failed to calculate average rating for track %d: %v", tracks[i].ID, err)
+		}
+		// Reload track to get updated rating with all relationships
+		tc.DB.Preload("Album").Preload("Album.Genre").Preload("Genres").Preload("Likes").First(&tracks[i], tracks[i].ID)
+	}
+
 	c.JSON(http.StatusOK, tracks)
 }
 
@@ -324,3 +341,24 @@ func (tc *TrackController) UnlikeTrack(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Track unliked", "liked": false})
 }
 
+// CalculateAverageRating calculates and updates average rating for a track
+func (tc *TrackController) CalculateAverageRating(trackID uint) error {
+	var reviews []models.Review
+	if err := tc.DB.Where("track_id = ? AND status = ?", trackID, models.ReviewStatusApproved).Find(&reviews).Error; err != nil {
+		return err
+	}
+
+	if len(reviews) == 0 {
+		return tc.DB.Model(&models.Track{}).Where("id = ?", trackID).Update("average_rating", 0).Error
+	}
+
+	var totalScore float64
+	for _, review := range reviews {
+		totalScore += review.FinalScore
+	}
+
+	averageRating := totalScore / float64(len(reviews))
+	// Round to nearest integer
+	roundedAverage := float64(int(averageRating + 0.5))
+	return tc.DB.Model(&models.Track{}).Where("id = ?", trackID).Update("average_rating", roundedAverage).Error
+}

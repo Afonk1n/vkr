@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"fmt"
+	"log"
 	"music-review-site/backend/middleware"
 	"music-review-site/backend/models"
 	"music-review-site/backend/utils"
@@ -38,18 +40,18 @@ type CreateReviewRequest struct {
 
 // UpdateReviewRequest represents review update request
 type UpdateReviewRequest struct {
-	Text                 string `json:"text"`
-	RatingRhymes         int    `json:"rating_rhymes" binding:"min=1,max=10"`
-	RatingStructure      int    `json:"rating_structure" binding:"min=1,max=10"`
-	RatingImplementation int    `json:"rating_implementation" binding:"min=1,max=10"`
-	RatingIndividuality  int    `json:"rating_individuality" binding:"min=1,max=10"`
-	AtmosphereRating     int    `json:"atmosphere_rating" binding:"min=1,max=10"` // 1-10, will be converted to multiplier
+	Text                 *string `json:"text"` // Pointer to detect if field was provided
+	RatingRhymes         int     `json:"rating_rhymes" binding:"min=1,max=10"`
+	RatingStructure      int     `json:"rating_structure" binding:"min=1,max=10"`
+	RatingImplementation int     `json:"rating_implementation" binding:"min=1,max=10"`
+	RatingIndividuality  int     `json:"rating_individuality" binding:"min=1,max=10"`
+	AtmosphereRating     int     `json:"atmosphere_rating" binding:"min=1,max=10"` // 1-10, will be converted to multiplier
 }
 
 // GetReviews retrieves list of reviews with filters
 func (rc *ReviewController) GetReviews(c *gin.Context) {
 	var reviews []models.Review
-	query := rc.DB.Preload("User").Preload("Album").Preload("Album.Genre").Preload("Track").Preload("Track.Album")
+	query := rc.DB.Preload("User").Preload("Album").Preload("Album.Genre").Preload("Track").Preload("Track.Album").Preload("Likes")
 
 	// Filter by album
 	if albumID := c.Query("album_id"); albumID != "" {
@@ -125,37 +127,46 @@ func (rc *ReviewController) GetReview(c *gin.Context) {
 func (rc *ReviewController) CreateReview(c *gin.Context) {
 	userID, exists := middleware.GetUserIDFromContext(c)
 	if !exists {
+		log.Printf("CreateReview: user not authenticated (no X-User-ID header)")
 		c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
 			Error:   "Unauthorized",
-			Message: "User not authenticated",
+			Message: "Необходимо войти в систему для создания рецензии",
 			Code:    http.StatusUnauthorized,
 		})
 		return
 	}
 
+	log.Printf("CreateReview: user %d is creating a review", userID)
+
 	var req CreateReviewRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Printf("Error binding JSON in CreateReview: %v", err)
 		c.JSON(http.StatusBadRequest, utils.ErrorResponse{
 			Error:   "Bad Request",
-			Message: err.Error(),
+			Message: fmt.Sprintf("Invalid request data: %v", err.Error()),
 			Code:    http.StatusBadRequest,
 		})
 		return
 	}
 
+	log.Printf("CreateReview request: AlbumID=%v, TrackID=%v, Ratings=%d/%d/%d/%d, Atmosphere=%d",
+		req.AlbumID, req.TrackID, req.RatingRhymes, req.RatingStructure, req.RatingImplementation, req.RatingIndividuality, req.AtmosphereRating)
+
 	// Validate that either album_id or track_id is provided
 	if req.AlbumID == nil && req.TrackID == nil {
+		log.Printf("CreateReview: neither album_id nor track_id provided")
 		c.JSON(http.StatusBadRequest, utils.ErrorResponse{
 			Error:   "Bad Request",
-			Message: "Either album_id or track_id must be provided",
+			Message: "Необходимо указать album_id или track_id",
 			Code:    http.StatusBadRequest,
 		})
 		return
 	}
 	if req.AlbumID != nil && req.TrackID != nil {
+		log.Printf("CreateReview: both album_id and track_id provided")
 		c.JSON(http.StatusBadRequest, utils.ErrorResponse{
 			Error:   "Bad Request",
-			Message: "Only one of album_id or track_id can be provided",
+			Message: "Можно указать только album_id или track_id, но не оба одновременно",
 			Code:    http.StatusBadRequest,
 		})
 		return
@@ -177,10 +188,15 @@ func (rc *ReviewController) CreateReview(c *gin.Context) {
 		AtmosphereMultiplier: atmosphereMultiplier,
 	}
 
+	log.Printf("Review before validation: UserID=%d, AlbumID=%v, TrackID=%v, Ratings=%d/%d/%d/%d, AtmosphereMultiplier=%f",
+		review.UserID, review.AlbumID, review.TrackID, review.RatingRhymes, review.RatingStructure,
+		review.RatingImplementation, review.RatingIndividuality, review.AtmosphereMultiplier)
+
 	if err := utils.ValidateReview(&review); err != nil {
+		log.Printf("Validation error in CreateReview: %v", err)
 		c.JSON(http.StatusBadRequest, utils.ErrorResponse{
 			Error:   "Validation Error",
-			Message: err.Error(),
+			Message: fmt.Sprintf("Ошибка валидации: %v", err.Error()),
 			Code:    http.StatusBadRequest,
 		})
 		return
@@ -190,9 +206,10 @@ func (rc *ReviewController) CreateReview(c *gin.Context) {
 	if req.AlbumID != nil {
 		var album models.Album
 		if err := rc.DB.First(&album, *req.AlbumID).Error; err != nil {
+			log.Printf("Album %d not found: %v", *req.AlbumID, err)
 			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
 				Error:   "Bad Request",
-				Message: "Album not found",
+				Message: fmt.Sprintf("Альбом с ID %d не найден", *req.AlbumID),
 				Code:    http.StatusBadRequest,
 			})
 			return
@@ -200,10 +217,11 @@ func (rc *ReviewController) CreateReview(c *gin.Context) {
 
 		// Check if user already has a review for this album
 		var existingReview models.Review
-		if err := rc.DB.Where("user_id = ? AND album_id = ?", userID, *req.AlbumID).First(&existingReview).Error; err == nil {
+		if err := rc.DB.Where("user_id = ? AND album_id = ? AND deleted_at IS NULL", userID, *req.AlbumID).First(&existingReview).Error; err == nil {
+			log.Printf("User %d already has a review for album %d", userID, *req.AlbumID)
 			c.JSON(http.StatusConflict, utils.ErrorResponse{
 				Error:   "Conflict",
-				Message: "You already have a review for this album. Please edit your existing review instead.",
+				Message: "У вас уже есть рецензия для этого альбома. Пожалуйста, отредактируйте существующую рецензию.",
 				Code:    http.StatusConflict,
 			})
 			return
@@ -211,9 +229,10 @@ func (rc *ReviewController) CreateReview(c *gin.Context) {
 	} else if req.TrackID != nil {
 		var track models.Track
 		if err := rc.DB.First(&track, *req.TrackID).Error; err != nil {
+			log.Printf("Track %d not found: %v", *req.TrackID, err)
 			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
 				Error:   "Bad Request",
-				Message: "Track not found",
+				Message: fmt.Sprintf("Трек с ID %d не найден", *req.TrackID),
 				Code:    http.StatusBadRequest,
 			})
 			return
@@ -221,10 +240,11 @@ func (rc *ReviewController) CreateReview(c *gin.Context) {
 
 		// Check if user already has a review for this track
 		var existingReview models.Review
-		if err := rc.DB.Where("user_id = ? AND track_id = ?", userID, *req.TrackID).First(&existingReview).Error; err == nil {
+		if err := rc.DB.Where("user_id = ? AND track_id = ? AND deleted_at IS NULL", userID, *req.TrackID).First(&existingReview).Error; err == nil {
+			log.Printf("User %d already has a review for track %d", userID, *req.TrackID)
 			c.JSON(http.StatusConflict, utils.ErrorResponse{
 				Error:   "Conflict",
-				Message: "You already have a review for this track. Please edit your existing review instead.",
+				Message: "У вас уже есть рецензия для этого трека. Пожалуйста, отредактируйте существующую рецензию.",
 				Code:    http.StatusConflict,
 			})
 			return
@@ -234,18 +254,24 @@ func (rc *ReviewController) CreateReview(c *gin.Context) {
 	// Calculate final score
 	review.CalculateFinalScore()
 
-	// Set status: if text is provided, status is pending (needs moderation)
-	// Otherwise, status is approved
-	if review.Text != "" {
-		review.Status = models.ReviewStatusPending
-	} else {
-		review.Status = models.ReviewStatusApproved
-	}
+	// Все новые рецензии проходят модерацию (для удобства тестирования)
+	review.Status = models.ReviewStatusPending
 
 	if err := rc.DB.Create(&review).Error; err != nil {
+		// Log detailed error for debugging
+		log.Printf("Error creating review: %v", err)
+		log.Printf("Review data: UserID=%d, AlbumID=%v, TrackID=%v, Text=%s",
+			review.UserID, review.AlbumID, review.TrackID, review.Text)
+
+		// Provide more detailed error message
+		errorMessage := "Failed to create review"
+		if err.Error() != "" {
+			errorMessage = fmt.Sprintf("Failed to create review: %v", err)
+		}
+
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
 			Error:   "Internal Server Error",
-			Message: "Failed to create review",
+			Message: errorMessage,
 			Code:    http.StatusInternalServerError,
 		})
 		return
@@ -255,6 +281,14 @@ func (rc *ReviewController) CreateReview(c *gin.Context) {
 	if review.Status == models.ReviewStatusApproved && review.AlbumID != nil {
 		albumController := &AlbumController{DB: rc.DB}
 		if err := albumController.CalculateAverageRating(*review.AlbumID); err != nil {
+			// Log error but don't fail the request
+		}
+	}
+
+	// Update track average rating if review is approved and is for a track
+	if review.Status == models.ReviewStatusApproved && review.TrackID != nil {
+		trackController := &TrackController{DB: rc.DB}
+		if err := trackController.CalculateAverageRating(*review.TrackID); err != nil {
 			// Log error but don't fail the request
 		}
 	}
@@ -316,32 +350,51 @@ func (rc *ReviewController) UpdateReview(c *gin.Context) {
 		return
 	}
 
-	// Update fields
-	if req.Text != "" {
-		review.Text = req.Text
+	// Сохраняем исходные значения для проверки изменений
+	originalText := review.Text
+	textChanged := false
+
+	// Обновляем текст только если поле было передано в запросе
+	if req.Text != nil {
+		newText := *req.Text
+		if newText != originalText {
+			textChanged = true
+			review.Text = newText
+		}
 	}
-	if req.RatingRhymes != 0 {
+
+	// Update ratings
+	if req.RatingRhymes != 0 && req.RatingRhymes != review.RatingRhymes {
 		review.RatingRhymes = req.RatingRhymes
 	}
-	if req.RatingStructure != 0 {
+	if req.RatingStructure != 0 && req.RatingStructure != review.RatingStructure {
 		review.RatingStructure = req.RatingStructure
 	}
-	if req.RatingImplementation != 0 {
+	if req.RatingImplementation != 0 && req.RatingImplementation != review.RatingImplementation {
 		review.RatingImplementation = req.RatingImplementation
 	}
-	if req.RatingIndividuality != 0 {
+	if req.RatingIndividuality != 0 && req.RatingIndividuality != review.RatingIndividuality {
 		review.RatingIndividuality = req.RatingIndividuality
 	}
 	if req.AtmosphereRating != 0 {
-		// Convert atmosphere rating to multiplier
-		review.AtmosphereMultiplier = convertAtmosphereToMultiplier(req.AtmosphereRating)
+		newMultiplier := convertAtmosphereToMultiplier(req.AtmosphereRating)
+		if newMultiplier != review.AtmosphereMultiplier {
+			review.AtmosphereMultiplier = newMultiplier
+		}
 	}
 
-	// If regular user (not admin) edits review, it should go back to moderation
-	// Admins can edit without changing status
+	// Логика изменения статуса для обычных пользователей:
+	// - Если изменился текст → на модерацию
+	// - Если изменились только оценки → статус не меняется (остаётся approved)
+	// - Админ может редактировать без изменения статуса
 	if !user.IsAdmin {
-		review.Status = models.ReviewStatusPending
+		if textChanged {
+			// Если текст изменился, отправляем на модерацию
+			review.Status = models.ReviewStatusPending
+		}
+		// Если изменились только оценки, статус остаётся как был (approved или pending)
 	}
+	// Админы могут редактировать без изменения статуса
 
 	// Validate updated review
 	if err := utils.ValidateReview(&review); err != nil {
@@ -626,7 +679,7 @@ func (rc *ReviewController) GetPopularReviews(c *gin.Context) {
 	last24Hours := time.Now().Add(-24 * time.Hour)
 
 	var reviews []models.Review
-	// Get all approved reviews from last 24 hours with likes count
+	// Get all approved reviews from last 24 hours with likes count, prioritizing reviews with albums
 	query := rc.DB.Model(&models.Review{}).
 		Preload("User").
 		Preload("Album").
@@ -636,6 +689,7 @@ func (rc *ReviewController) GetPopularReviews(c *gin.Context) {
 		Preload("Track.Genres").
 		Preload("Likes").
 		Where("status = ? AND created_at >= ?", models.ReviewStatusApproved, last24Hours).
+		Where("album_id IS NOT NULL"). // Только рецензии с альбомами
 		Order("created_at DESC").
 		Limit(limit * 2) // Get more to sort by likes
 

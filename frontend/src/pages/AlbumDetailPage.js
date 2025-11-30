@@ -69,6 +69,7 @@ const AlbumDetailPage = () => {
       fetchReviews();
       fetchAlbum(); // Refresh album to update average rating
     } catch (err) {
+      // Ошибка обрабатывается в ReviewForm
       throw err;
     }
   };
@@ -208,7 +209,7 @@ const AlbumDetailPage = () => {
             {isAuthenticated && !showReviewForm && (
               <button
                 onClick={() => setShowReviewForm(true)}
-                className="btn-primary"
+                className="btn-edit"
               >
                 Добавить рецензию
               </button>

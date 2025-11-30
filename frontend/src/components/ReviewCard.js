@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { reviewsAPI } from '../services/api';
 import { formatScore, convertMultiplierToAtmosphere } from '../utils/ratingCalculator';
+import { getImageUrl } from '../utils/imageUtils';
 import LikeButton from './LikeButton';
 import './ReviewCard.css';
 
-const ReviewCard = ({ review, onEdit, onDelete, onUpdate }) => {
+const ReviewCard = ({ review, onEdit, onDelete, onUpdate, moderationActions, hideLike }) => {
   const { user, isAdmin } = useAuth();
   const canEdit = user && (user.id === review.user_id || isAdmin);
+  const [avatarError, setAvatarError] = useState(false);
 
   const handleLike = async () => {
     try {
@@ -31,8 +34,8 @@ const ReviewCard = ({ review, onEdit, onDelete, onUpdate }) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('ru-RU', {
       year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
     });
   };
 
@@ -46,79 +49,149 @@ const ReviewCard = ({ review, onEdit, onDelete, onUpdate }) => {
     return <span className={`status-badge ${statusInfo.class}`}>{statusInfo.text}</span>;
   };
 
+  // Извлекаем первую строку как заголовок (если она короткая)
+  const getReviewTitle = (text) => {
+    if (!text) return null;
+    const lines = text.split('\n');
+    const firstLine = lines[0].trim();
+    // Если первая строка короткая (менее 50 символов) и есть вторая строка, считаем её заголовком
+    if (firstLine.length > 0 && firstLine.length < 50 && lines.length > 1) {
+      return firstLine;
+    }
+    return null;
+  };
+
+  const getReviewContent = (text) => {
+    if (!text) return '';
+    const title = getReviewTitle(text);
+    if (title) {
+      const lines = text.split('\n');
+      return lines.slice(1).join('\n').trim();
+    }
+    return text;
+  };
+
+  const reviewTitle = getReviewTitle(review.text);
+  const reviewContent = getReviewContent(review.text);
+
   return (
     <div className="review-card">
-      <div className="review-header">
-        <div className="review-author">
-          <strong>{review.user?.username || 'Неизвестный пользователь'}</strong>
-          <span className="review-date">{formatDate(review.created_at)}</span>
+      <div className="review-header-compact">
+        <div className="review-author-compact">
+          {(review.user?.avatar_path && getImageUrl(review.user.avatar_path) && !avatarError) ? (
+            <img 
+              src={getImageUrl(review.user.avatar_path)} 
+              alt={review.user?.username || 'Пользователь'}
+              className="review-author-avatar"
+              onError={() => setAvatarError(true)}
+            />
+          ) : (
+            <div className="review-author-avatar-placeholder">
+              {(review.user?.username || 'П')[0].toUpperCase()}
+            </div>
+          )}
+          <div className="review-author-text-compact">
+            <div className="review-author-name-row">
+              <strong>{review.user?.username || 'Неизвестный пользователь'}</strong>
+              {review.status !== 'approved' && (
+                <span className="review-status-inline">
+                  {getStatusBadge(review.status)}
+                </span>
+              )}
+            </div>
+            <span className="review-date-compact-header">{formatDate(review.created_at)}</span>
+          </div>
         </div>
-        {canEdit && (
-          <div className="review-actions">
-            {onEdit && (
-              <button onClick={() => onEdit(review)} className="btn-edit">
-                Редактировать
-              </button>
-            )}
-            {onDelete && (
-              <button onClick={() => onDelete(review.id)} className="btn-delete">
-                Удалить
-              </button>
+        
+        <div className="review-scores-compact">
+          <div className="review-final-score-compact">
+            {formatScore(review.final_score)}
+          </div>
+          <div className="review-ratings-compact">
+            <span className="rating-number">{review.rating_rhymes}</span>
+            <span className="rating-number">{review.rating_structure}</span>
+            <span className="rating-number">{review.rating_implementation}</span>
+            <span className="rating-number">{review.rating_individuality}</span>
+            <span className="rating-number">{convertMultiplierToAtmosphere(review.atmosphere_multiplier)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Информация об альбоме или треке */}
+      {(review.album || review.track) && (
+        <div className="review-item-info-compact">
+          {review.album ? (
+            <Link to={`/albums/${review.album.id}`} className="review-item-link">
+              <span className="review-item-title">{review.album.title}</span>
+              <span className="review-item-artist">• {review.album.artist}</span>
+            </Link>
+          ) : review.track ? (
+            <Link to={`/albums/${review.track.album?.id || review.track.album_id}`} className="review-item-link">
+              <span className="review-item-title">{review.track.title}</span>
+              {review.track.album && (
+                <>
+                  <span className="review-item-artist">• {review.track.album.title}</span>
+                  <span className="review-item-artist">• {review.track.album.artist}</span>
+                </>
+              )}
+            </Link>
+          ) : null}
+        </div>
+      )}
+
+      {review.text && (review.status === 'approved' || isAdmin || moderationActions) && (
+        <div className="review-content-compact">
+          {reviewTitle && (
+            <h3 className="review-title-compact">{reviewTitle}</h3>
+          )}
+          <div className="review-text-compact">{reviewContent}</div>
+        </div>
+      )}
+
+      {/* Footer с кнопками - показывается всегда, если не moderationActions */}
+      {!moderationActions && (
+        <div className="review-footer-compact">
+          <div className="review-footer-left">
+            {!hideLike && (review.status === 'approved' || isAdmin || review.text) && (
+              <LikeButton
+                item={review}
+                itemType="review"
+                onLike={handleLike}
+                onUnlike={handleUnlike}
+              />
             )}
           </div>
-        )}
-      </div>
-
-      <div className="review-ratings">
-        <div className="rating-item">
-          <span>Рифмы/Образы:</span>
-          <strong>{review.rating_rhymes}/10</strong>
-        </div>
-        <div className="rating-item">
-          <span>Структура/Ритмика:</span>
-          <strong>{review.rating_structure}/10</strong>
-        </div>
-        <div className="rating-item">
-          <span>Реализация стиля:</span>
-          <strong>{review.rating_implementation}/10</strong>
-        </div>
-        <div className="rating-item">
-          <span>Индивидуальность/Харизма:</span>
-          <strong>{review.rating_individuality}/10</strong>
-        </div>
-        <div className="rating-item">
-          <span>Атмосфера/Вайб:</span>
-          <strong>{convertMultiplierToAtmosphere(review.atmosphere_multiplier)}/10</strong>
-        </div>
-      </div>
-
-      <div className="review-score">
-        Итоговый балл: <strong>{formatScore(review.final_score)}</strong>
-      </div>
-
-      {review.text && review.status === 'approved' && (
-        <div className="review-text">{review.text}</div>
-      )}
-
-      {review.status !== 'approved' && (
-        <div className="review-status">
-          {getStatusBadge(review.status)}
-          {review.status === 'pending' && (
-            <span className="review-note">
-              Текстовая рецензия будет опубликована после модерации
-            </span>
-          )}
+          <div className="review-footer-right">
+            {canEdit && (
+              <div className="review-actions-compact">
+                {onEdit && (
+                  <button onClick={() => onEdit(review)} className="btn-edit-small" title="Редактировать">
+                    ✏️
+                  </button>
+                )}
+                {onDelete && (
+                  <button onClick={() => onDelete(review.id)} className="btn-delete-small" title="Удалить">
+                    🗑️
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      <div className="review-actions-bottom">
-        <LikeButton
-          item={review}
-          itemType="review"
-          onLike={handleLike}
-          onUnlike={handleUnlike}
-        />
-      </div>
+      {!review.text && review.status === 'pending' && !isAdmin && (
+        <div className="review-note-compact">
+          Текстовая рецензия будет опубликована после модерации
+        </div>
+      )}
+
+      {moderationActions && (
+        <div className="review-moderation-actions">
+          {moderationActions}
+        </div>
+      )}
+
     </div>
   );
 };

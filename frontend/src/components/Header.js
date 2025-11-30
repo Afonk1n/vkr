@@ -21,9 +21,9 @@ const Header = () => {
       <div className="container">
         <div className="header-content">
           <Link to="/" className="logo">
-            <h1>🎵 Music Review</h1>
+            <h1>🎵 Мьюзик Рейтинг</h1>
           </Link>
-          {location.pathname === '/' && <SearchBar />}
+          <SearchBar />
           <nav className="nav">
             <button
               className="theme-toggle"

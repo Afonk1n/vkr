@@ -76,23 +76,29 @@ const AdminPanel = () => {
         ) : (
           <div className="reviews-list">
             {pendingReviews.map((review) => (
-              <div key={review.id} className="review-with-actions">
-                <ReviewCard review={review} />
-                <div className="moderation-actions">
-                  <button
-                    onClick={() => handleApprove(review.id)}
-                    className="btn-approve"
-                  >
-                    Одобрить
-                  </button>
-                  <button
-                    onClick={() => handleReject(review.id)}
-                    className="btn-reject"
-                  >
-                    Отклонить
-                  </button>
-                </div>
-              </div>
+              <ReviewCard 
+                key={review.id} 
+                review={review}
+                hideLike={true}
+                moderationActions={
+                  <div className="moderation-actions">
+                    <button
+                      onClick={() => handleApprove(review.id)}
+                      className="btn-approve"
+                      title="Одобрить"
+                    >
+                      👍
+                    </button>
+                    <button
+                      onClick={() => handleReject(review.id)}
+                      className="btn-reject"
+                      title="Отклонить"
+                    >
+                      👎
+                    </button>
+                  </div>
+                }
+              />
             ))}
           </div>
         )}

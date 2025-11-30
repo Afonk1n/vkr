@@ -14,6 +14,7 @@ type Track struct {
 	Duration       *int           `json:"duration"` // Duration in seconds
 	TrackNumber    *int           `json:"track_number"`
 	CoverImagePath string         `json:"cover_image_path"`
+	AverageRating  float64        `json:"average_rating" gorm:"default:0"`
 	CreatedAt      time.Time      `json:"created_at"`
 	UpdatedAt      time.Time      `json:"updated_at"`
 	DeletedAt      gorm.DeletedAt `json:"-" gorm:"index"`

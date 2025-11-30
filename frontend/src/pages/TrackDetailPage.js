@@ -207,7 +207,7 @@ const TrackDetailPage = () => {
             {isAuthenticated && !showReviewForm && (
               <button
                 onClick={() => setShowReviewForm(true)}
-                className="btn-primary"
+                className="btn-edit"
               >
                 Добавить рецензию
               </button>

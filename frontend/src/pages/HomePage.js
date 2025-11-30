@@ -3,6 +3,7 @@ import { albumsAPI, tracksAPI, reviewsAPI } from '../services/api';
 import { useFilters } from '../context/FilterContext';
 import AlbumCard from '../components/AlbumCard';
 import TrackCard from '../components/TrackCard';
+import ReviewCardSmall from '../components/ReviewCardSmall';
 import Filters from '../components/Filters';
 import './HomePage.css';
 
@@ -69,9 +70,11 @@ const HomePage = () => {
   const fetchPopularReviews = async () => {
     try {
       const response = await reviewsAPI.getPopular({ limit: 6 });
-      setPopularReviews(response.data);
+      console.log('Popular reviews fetched:', response.data);
+      setPopularReviews(response.data || []);
     } catch (err) {
       console.error('Error fetching popular reviews:', err);
+      setPopularReviews([]);
     }
   };
 
@@ -123,18 +126,26 @@ const HomePage = () => {
       )}
 
       {/* Popular Reviews Section */}
-      {popularReviews.length > 0 && (
-        <section className="home-section">
-          <h2 className="section-title">Популярные рецензии за последние сутки</h2>
-          <div className="albums-grid">
-            {popularReviews
-              .filter(review => review.album) // Только рецензии с альбомами
-              .map((review) => (
-                <AlbumCard key={`review-${review.id}`} album={review.album} />
+      {(() => {
+        const validReviews = popularReviews
+          .filter(review => review && review.album_id && review.album)
+          .slice(0, 6); // Ограничиваем до 6 для сетки 3x2
+        
+        if (validReviews.length === 0) {
+          return null;
+        }
+
+        return (
+          <section className="home-section">
+            <h2 className="section-title">Популярные рецензии за последние сутки</h2>
+            <div className="reviews-grid-popular">
+              {validReviews.map((review) => (
+                <ReviewCardSmall key={`review-${review.id}`} review={review} onUpdate={fetchPopularReviews} />
               ))}
-          </div>
-        </section>
-      )}
+            </div>
+          </section>
+        );
+      })()}
     </div>
   );
 };

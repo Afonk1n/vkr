@@ -31,6 +31,21 @@ const ReviewForm = ({ albumId, trackId, onSubmit, initialData, onCancel }) => {
     setLoading(true);
 
     try {
+      // Check if user is authenticated
+      const userId = localStorage.getItem('userId');
+      if (!userId) {
+        setError('Необходимо войти в систему для создания рецензии');
+        setLoading(false);
+        return;
+      }
+
+      // Validate that either albumId or trackId is provided
+      if (!albumId && !trackId) {
+        setError('Необходимо указать альбом или трек для рецензии');
+        setLoading(false);
+        return;
+      }
+
       // Convert atmosphere rating to multiplier before sending
       const atmosphereMultiplier = convertAtmosphereToMultiplier(atmosphereRating);
       const reviewData = {
@@ -42,15 +57,32 @@ const ReviewForm = ({ albumId, trackId, onSubmit, initialData, onCancel }) => {
         text: hasText ? text : '',
       };
       
+      // Ensure IDs are numbers
       if (albumId) {
-        reviewData.album_id = albumId;
+        reviewData.album_id = typeof albumId === 'string' ? parseInt(albumId, 10) : albumId;
       } else if (trackId) {
-        reviewData.track_id = trackId;
+        reviewData.track_id = typeof trackId === 'string' ? parseInt(trackId, 10) : trackId;
       }
       
+      console.log('Submitting review data:', reviewData);
       await onSubmit(reviewData);
     } catch (err) {
-      setError(err.response?.data?.message || 'Ошибка при сохранении рецензии');
+      console.error('Error submitting review:', err);
+      console.error('Error response:', err.response);
+      
+      let errorMessage = 'Ошибка при сохранении рецензии';
+      
+      if (err.response?.data) {
+        if (err.response.data.message) {
+          errorMessage = err.response.data.message;
+        } else if (err.response.data.error) {
+          errorMessage = err.response.data.error;
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

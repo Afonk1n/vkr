@@ -58,8 +58,8 @@
 
 .album-genre-large {
   display: inline-block;
-  background-color: var(--primary-color);
-  color: white;
+  background-color: var(--hover-color);
+  color: var(--text-secondary);
   padding: 0.5rem 1rem;
   border-radius: 0.375rem;
   font-size: 0.875rem;
@@ -69,7 +69,7 @@
 .album-rating-large {
   font-size: 1.25rem;
   font-weight: 500;
-  color: var(--primary-color);
+  color: var(--text-color);
 }
 
 .album-actions-large {
@@ -128,7 +128,7 @@
 
 .track-item-album:hover {
   background-color: var(--hover-color);
-  border-color: var(--primary-color);
+  border-color: var(--border-color);
 }
 
 .track-item-number {
@@ -160,8 +160,8 @@
 
 .track-item-genre-badge {
   display: inline-block;
-  background-color: var(--primary-color);
-  color: white;
+  background-color: var(--hover-color);
+  color: var(--text-secondary);
   padding: 0.125rem 0.5rem;
   border-radius: var(--radius-sm);
   font-size: 0.75rem;
@@ -186,8 +186,8 @@
   justify-content: center;
   width: 2rem;
   height: 2rem;
-  background-color: var(--primary-color);
-  color: white;
+  background-color: var(--hover-color);
+  color: var(--text-color);
   border-radius: var(--radius-sm);
   text-decoration: none;
   font-size: 1.25rem;
@@ -195,7 +195,7 @@
 }
 
 .track-link-button:hover {
-  background-color: var(--primary-hover);
+  background-color: var(--card-background);
   transform: scale(1.1);
 }
 
@@ -272,8 +272,26 @@
     align-items: stretch;
   }
 
-  .reviews-header .btn-primary {
+  .reviews-header button {
     width: 100%;
   }
+}
+
+/* Стили для кнопки "Добавить рецензию" - используем стиль btn-edit */
+.reviews-header .btn-edit {
+  background-color: var(--hover-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 0.2s, border-color 0.2s;
+  cursor: pointer;
+}
+
+.reviews-header .btn-edit:hover {
+  background-color: var(--card-background);
+  border-color: var(--text-secondary);
 }
 

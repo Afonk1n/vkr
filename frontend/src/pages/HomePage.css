@@ -66,33 +66,44 @@
 
 .tracks-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--spacing-lg);
   margin-bottom: var(--spacing-xl);
 }
 
 @media (min-width: 1400px) {
   .tracks-list {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
-.home-section .reviews-list {
-  display: grid !important;
-  grid-template-columns: repeat(3, 1fr) !important;
-  flex-direction: row !important;
+@media (max-width: 1200px) {
+  .tracks-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .tracks-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.reviews-grid-popular {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
   width: 100%;
 }
 
-.home-section .reviews-list .review-card-small {
+.reviews-grid-popular .review-card-small {
   min-width: 0;
   max-width: 100%;
 }
 
 @media (max-width: 1200px) {
-  .home-section .reviews-list {
-    grid-template-columns: repeat(2, 1fr) !important;
+  .reviews-grid-popular {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -110,8 +121,8 @@
     font-size: 1.25rem;
   }
 
-  .home-section .reviews-list {
-    grid-template-columns: 1fr !important;
+  .reviews-grid-popular {
+    grid-template-columns: 1fr;
   }
 }
 

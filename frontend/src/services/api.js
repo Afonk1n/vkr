@@ -16,6 +16,9 @@ api.interceptors.request.use(
     const userId = localStorage.getItem('userId');
     if (userId) {
       config.headers['X-User-ID'] = userId;
+      console.log('API request with X-User-ID:', userId, 'to', config.url);
+    } else {
+      console.warn('API request without X-User-ID header to', config.url);
     }
     return config;
   },

@@ -86,15 +86,14 @@ const SearchBar = () => {
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => query.length >= 2 && setShowResults(true)}
           />
-          {isHomePage && (
-            <button
-              className="search-filter-btn"
-              onClick={() => setShowFilterModal(true)}
-              title="Фильтры"
-            >
-              🔍 Фильтры
-            </button>
-          )}
+          <button
+            className="search-filter-btn"
+            onClick={() => isHomePage && setShowFilterModal(true)}
+            title="Фильтры"
+            disabled={!isHomePage}
+          >
+            🔍 Фильтры
+          </button>
         </div>
       {showResults && (hasResults || loading) && (
         <div className="search-results" ref={resultsRef}>

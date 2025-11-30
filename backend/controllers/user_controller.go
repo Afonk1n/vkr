@@ -39,7 +39,7 @@ func (uc *UserController) GetUserReviews(c *gin.Context) {
 	id := c.Param("id")
 	var reviews []models.Review
 
-	query := uc.DB.Preload("Album").Preload("Album.Genre").Where("user_id = ?", id)
+	query := uc.DB.Preload("User").Preload("Album").Preload("Album.Genre").Preload("Track").Preload("Track.Album").Preload("Likes").Where("user_id = ?", id)
 
 	// Filter by status
 	if status := c.Query("status"); status != "" {
@@ -69,9 +69,9 @@ func (uc *UserController) GetUserReviews(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"reviews": reviews,
-		"total":   total,
-		"page":    page,
+		"reviews":   reviews,
+		"total":     total,
+		"page":      page,
 		"page_size": pageSize,
 	})
 }
@@ -111,87 +111,87 @@ func (uc *UserController) UpdateUser(c *gin.Context) {
 		return
 	}
 
-  var req struct {
-    Username    string            `json:"username"`
-    Email       string            `json:"email"`
-    AvatarPath  string            `json:"avatar_path"`
-    Bio         string            `json:"bio"`
-    SocialLinks map[string]string `json:"social_links"` // {"vk": "", "telegram": "", "instagram": ""}
-    Password    string            `json:"password"`     // For password change
-  }
+	var req struct {
+		Username    string            `json:"username"`
+		Email       string            `json:"email"`
+		AvatarPath  string            `json:"avatar_path"`
+		Bio         string            `json:"bio"`
+		SocialLinks map[string]string `json:"social_links"` // {"vk": "", "telegram": "", "instagram": ""}
+		Password    string            `json:"password"`     // For password change
+	}
 
-  if err := c.ShouldBindJSON(&req); err != nil {
-    c.JSON(http.StatusBadRequest, utils.ErrorResponse{
-      Error:   "Bad Request",
-      Message: err.Error(),
-      Code:    http.StatusBadRequest,
-    })
-    return
-  }
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+			Error:   "Bad Request",
+			Message: err.Error(),
+			Code:    http.StatusBadRequest,
+		})
+		return
+	}
 
-  // Update username if provided
-  if req.Username != "" {
-    if err := utils.ValidateUsername(req.Username); err != nil {
-      c.JSON(http.StatusBadRequest, utils.ErrorResponse{
-        Error:   "Validation Error",
-        Message: err.Error(),
-        Code:    http.StatusBadRequest,
-      })
-      return
-    }
-    user.Username = req.Username
-  }
+	// Update username if provided
+	if req.Username != "" {
+		if err := utils.ValidateUsername(req.Username); err != nil {
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+				Error:   "Validation Error",
+				Message: err.Error(),
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		user.Username = req.Username
+	}
 
-  // Update email if provided
-  if req.Email != "" {
-    if !utils.ValidateEmail(req.Email) {
-      c.JSON(http.StatusBadRequest, utils.ErrorResponse{
-        Error:   "Validation Error",
-        Message: "Invalid email format",
-        Code:    http.StatusBadRequest,
-      })
-      return
-    }
-    user.Email = req.Email
-  }
+	// Update email if provided
+	if req.Email != "" {
+		if !utils.ValidateEmail(req.Email) {
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+				Error:   "Validation Error",
+				Message: "Invalid email format",
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		user.Email = req.Email
+	}
 
-  // Update avatar path if provided
-  if req.AvatarPath != "" {
-    user.AvatarPath = req.AvatarPath
-  }
+	// Update avatar path if provided
+	if req.AvatarPath != "" {
+		user.AvatarPath = req.AvatarPath
+	}
 
-  // Update bio if provided
-  user.Bio = req.Bio
+	// Update bio if provided
+	user.Bio = req.Bio
 
-  // Update social links if provided
-  if req.SocialLinks != nil {
-    socialLinksJSON, err := json.Marshal(req.SocialLinks)
-    if err == nil {
-      user.SocialLinks = string(socialLinksJSON)
-    }
-  }
+	// Update social links if provided
+	if req.SocialLinks != nil {
+		socialLinksJSON, err := json.Marshal(req.SocialLinks)
+		if err == nil {
+			user.SocialLinks = string(socialLinksJSON)
+		}
+	}
 
-  // Update password if provided
-  if req.Password != "" {
-    if len(req.Password) < 6 {
-      c.JSON(http.StatusBadRequest, utils.ErrorResponse{
-        Error:   "Validation Error",
-        Message: "Password must be at least 6 characters",
-        Code:    http.StatusBadRequest,
-      })
-      return
-    }
-    hashedPassword, err := utils.HashPassword(req.Password)
-    if err != nil {
-      c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
-        Error:   "Internal Server Error",
-        Message: "Failed to hash password",
-        Code:    http.StatusInternalServerError,
-      })
-      return
-    }
-    user.Password = hashedPassword
-  }
+	// Update password if provided
+	if req.Password != "" {
+		if len(req.Password) < 6 {
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+				Error:   "Validation Error",
+				Message: "Password must be at least 6 characters",
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		hashedPassword, err := utils.HashPassword(req.Password)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
+				Error:   "Internal Server Error",
+				Message: "Failed to hash password",
+				Code:    http.StatusInternalServerError,
+			})
+			return
+		}
+		user.Password = hashedPassword
+	}
 
 	if err := uc.DB.Save(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
@@ -254,4 +254,3 @@ func (uc *UserController) DeleteUser(c *gin.Context) {
 		"message": "User deleted successfully",
 	})
 }
-

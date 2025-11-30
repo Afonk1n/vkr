@@ -85,6 +85,12 @@ const TrackCard = ({ track, onUpdate }) => {
                 <span className="stat-count">{likeCount}</span>
               </div>
             )}
+            {track.average_rating > 0 && (
+              <div className="track-card-stat-item">
+                <span className="stat-icon">⭐</span>
+                <span className="stat-count">{Math.round(track.average_rating)}</span>
+              </div>
+            )}
           </div>
           <button
             className={`track-card-like-button ${isLiked ? 'liked' : ''}`}

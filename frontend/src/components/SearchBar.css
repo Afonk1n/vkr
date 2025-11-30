@@ -13,19 +13,25 @@
 
 .search-filter-btn {
   padding: 0.75rem 1rem;
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
+  background-color: var(--hover-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
   border-radius: 0.5rem;
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, border-color 0.2s;
   white-space: nowrap;
 }
 
-.search-filter-btn:hover {
-  background-color: var(--primary-hover);
+.search-filter-btn:hover:not(:disabled) {
+  background-color: var(--card-background);
+  border-color: var(--text-secondary);
+}
+
+.search-filter-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .search-input {

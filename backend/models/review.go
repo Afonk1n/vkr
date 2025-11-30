@@ -19,8 +19,8 @@ const (
 type Review struct {
 	ID                   uint           `json:"id" gorm:"primaryKey"`
 	UserID               uint           `json:"user_id" gorm:"not null"`
-	AlbumID              *uint          `json:"album_id"` // Nullable - either album_id or track_id must be set
-	TrackID              *uint          `json:"track_id"` // Nullable - either album_id or track_id must be set
+	AlbumID              *uint          `json:"album_id" gorm:"default:null"` // Nullable - either album_id or track_id must be set
+	TrackID              *uint          `json:"track_id" gorm:"default:null"` // Nullable - either album_id or track_id must be set
 	Text                 string         `json:"text" gorm:"type:text"`
 	RatingRhymes         int            `json:"rating_rhymes" gorm:"not null;check:rating_rhymes >= 1 AND rating_rhymes <= 10"`
 	RatingStructure      int            `json:"rating_structure" gorm:"not null;check:rating_structure >= 1 AND rating_structure <= 10"`
@@ -36,10 +36,10 @@ type Review struct {
 	DeletedAt            gorm.DeletedAt `json:"-" gorm:"index"`
 
 	// Relationships
-	User      User        `json:"user,omitempty" gorm:"foreignKey:UserID"`
-	Album     *Album      `json:"album,omitempty" gorm:"foreignKey:AlbumID"`
-	Track     *Track      `json:"track,omitempty" gorm:"foreignKey:TrackID"`
-	Moderator *User       `json:"moderator,omitempty" gorm:"foreignKey:ModeratedBy"`
+	User      User         `json:"user,omitempty" gorm:"foreignKey:UserID"`
+	Album     *Album       `json:"album,omitempty" gorm:"foreignKey:AlbumID"`
+	Track     *Track       `json:"track,omitempty" gorm:"foreignKey:TrackID"`
+	Moderator *User        `json:"moderator,omitempty" gorm:"foreignKey:ModeratedBy"`
 	Likes     []ReviewLike `json:"likes,omitempty" gorm:"foreignKey:ReviewID"`
 }
 
@@ -56,4 +56,3 @@ func (r *Review) CalculateFinalScore() {
 	score := baseScore * 1.4 * r.AtmosphereMultiplier
 	r.FinalScore = float64(int(score + 0.5)) // Round to nearest integer
 }
-
