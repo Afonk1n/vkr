@@ -1,0 +1,76 @@
+.album-card {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--card-background);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  text-decoration: none;
+  color: var(--text-color);
+}
+
+.album-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  text-decoration: none;
+}
+
+.album-cover {
+  width: 100%;
+  aspect-ratio: 1;
+  background-color: var(--hover-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.album-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.album-cover-placeholder {
+  font-size: 4rem;
+  color: var(--text-secondary);
+}
+
+.album-info {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.album-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-color);
+}
+
+.album-artist {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.album-genre {
+  display: inline-block;
+  background-color: var(--hover-color);
+  color: var(--text-secondary);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  width: fit-content;
+}
+
+.album-rating {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--primary-color);
+  margin-top: 0.25rem;
+}
+

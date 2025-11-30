@@ -1,0 +1,54 @@
+.page-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  color: var(--text-color);
+}
+
+.albums-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.125rem;
+  color: var(--text-secondary);
+}
+
+.error-message {
+  background-color: #fee2e2;
+  color: var(--error-color);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.125rem;
+  color: var(--text-secondary);
+}
+
+.pagination-info {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 1rem;
+}
+
+@media (max-width: 768px) {
+  .albums-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+  }
+}
+
