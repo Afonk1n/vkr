@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { albumsAPI, reviewsAPI } from '../services/api';
+import { albumsAPI, reviewsAPI, tracksAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import ReviewForm from '../components/ReviewForm';
 import ReviewCard from '../components/ReviewCard';
+import LikeButton from '../components/LikeButton';
+import TrackCard from '../components/TrackCard';
+import { getImageUrl } from '../utils/imageUtils';
 import './AlbumDetailPage.css';
 
 const AlbumDetailPage = () => {
@@ -11,10 +14,12 @@ const AlbumDetailPage = () => {
   const { isAuthenticated } = useAuth();
   const [album, setAlbum] = useState(null);
   const [reviews, setReviews] = useState([]);
+  const [tracks, setTracks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [editingReview, setEditingReview] = useState(null);
+  const [coverImageError, setCoverImageError] = useState(false);
 
   const fetchAlbum = useCallback(async () => {
     try {
@@ -23,6 +28,15 @@ const AlbumDetailPage = () => {
     } catch (err) {
       setError('Ошибка загрузки альбома');
       console.error('Error fetching album:', err);
+    }
+  }, [id]);
+
+  const fetchTracks = useCallback(async () => {
+    try {
+      const response = await tracksAPI.getByAlbum(id);
+      setTracks(response.data);
+    } catch (err) {
+      console.error('Error fetching tracks:', err);
     }
   }, [id]);
 
@@ -40,7 +54,8 @@ const AlbumDetailPage = () => {
   useEffect(() => {
     fetchAlbum();
     fetchReviews();
-  }, [fetchAlbum, fetchReviews]);
+    fetchTracks();
+  }, [fetchAlbum, fetchReviews, fetchTracks]);
 
   const handleReviewSubmit = async (reviewData) => {
     try {
@@ -81,6 +96,24 @@ const AlbumDetailPage = () => {
     setShowReviewForm(false);
   };
 
+  const handleAlbumLike = async () => {
+    try {
+      await albumsAPI.like(album.id);
+      fetchAlbum();
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const handleAlbumUnlike = async () => {
+    try {
+      await albumsAPI.unlike(album.id);
+      fetchAlbum();
+    } catch (err) {
+      throw err;
+    }
+  };
+
   if (loading) {
     return (
       <div className="container">
@@ -102,8 +135,12 @@ const AlbumDetailPage = () => {
       <div className="album-detail">
         <div className="album-header">
           <div className="album-cover-large">
-            {album.cover_image_path ? (
-              <img src={album.cover_image_path} alt={album.title} />
+            {getImageUrl(album.cover_image_path) && !coverImageError ? (
+              <img 
+                src={getImageUrl(album.cover_image_path)} 
+                alt={album.title}
+                onError={() => setCoverImageError(true)}
+              />
             ) : (
               <div className="album-cover-placeholder-large">🎵</div>
             )}
@@ -119,11 +156,51 @@ const AlbumDetailPage = () => {
                 ⭐ Средний рейтинг: {Math.round(album.average_rating)}
               </div>
             )}
+            <div className="album-actions-large">
+              <LikeButton
+                item={album}
+                itemType="album"
+                onLike={handleAlbumLike}
+                onUnlike={handleAlbumUnlike}
+              />
+            </div>
             {album.description && (
               <p className="album-description">{album.description}</p>
             )}
           </div>
         </div>
+
+        {/* Tracks Section */}
+        {tracks.length > 0 && (
+          <div className="tracks-section">
+            <h2 className="section-title">Треки ({tracks.length})</h2>
+            <div className="tracks-list-album">
+              {tracks.map((track) => (
+                <div key={track.id} className="track-item-album">
+                  <div className="track-item-number">{track.track_number || '-'}</div>
+                  <div className="track-item-info">
+                    <div className="track-item-title">{track.title}</div>
+                    {track.genres && track.genres.length > 0 && (
+                      <div className="track-item-genres">
+                        {track.genres.map((genre) => (
+                          <span key={genre.id} className="track-item-genre-badge">
+                            {genre.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="track-item-duration">
+                    {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '-'}
+                  </div>
+                  <div className="track-item-link">
+                    <a href={`/tracks/${track.id}`} className="track-link-button">→</a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="reviews-section">
           <div className="reviews-header">
@@ -157,6 +234,7 @@ const AlbumDetailPage = () => {
                   review={review}
                   onEdit={handleEditReview}
                   onDelete={handleDeleteReview}
+                  onUpdate={fetchReviews}
                 />
               ))}
             </div>

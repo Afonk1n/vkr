@@ -16,6 +16,8 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 	reviewController := &controllers.ReviewController{DB: db}
 	genreController := &controllers.GenreController{DB: db}
 	userController := &controllers.UserController{DB: db}
+	trackController := &controllers.TrackController{DB: db}
+	searchController := &controllers.SearchController{DB: db}
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {
@@ -47,25 +49,51 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 		albums := api.Group("/albums")
 		{
 			albums.GET("", albumController.GetAlbums)
+			// More specific route must come before /:id
+			albums.GET("/:id/tracks", trackController.GetTracks)
 			albums.GET("/:id", albumController.GetAlbum)
 			albums.POST("", middleware.AuthMiddleware(db), albumController.CreateAlbum)
 			albums.PUT("/:id", middleware.AuthMiddleware(db), middleware.AdminMiddleware(), albumController.UpdateAlbum)
 			albums.DELETE("/:id", middleware.AuthMiddleware(db), middleware.AdminMiddleware(), albumController.DeleteAlbum)
+			// Like routes
+			albums.POST("/:id/like", middleware.AuthMiddleware(db), albumController.LikeAlbum)
+			albums.DELETE("/:id/like", middleware.AuthMiddleware(db), albumController.UnlikeAlbum)
 		}
 
 		// Review routes
 		reviews := api.Group("/reviews")
 		{
 			reviews.GET("", reviewController.GetReviews)
+			reviews.GET("/popular", reviewController.GetPopularReviews)
 			reviews.GET("/:id", reviewController.GetReview)
 			reviews.POST("", middleware.AuthMiddleware(db), reviewController.CreateReview)
 			reviews.PUT("/:id", middleware.AuthMiddleware(db), reviewController.UpdateReview)
 			reviews.DELETE("/:id", middleware.AuthMiddleware(db), reviewController.DeleteReview)
 			
+			// Like routes
+			reviews.POST("/:id/like", middleware.AuthMiddleware(db), reviewController.LikeReview)
+			reviews.DELETE("/:id/like", middleware.AuthMiddleware(db), reviewController.UnlikeReview)
+			
 			// Moderation routes (admin only)
 			reviews.POST("/:id/approve", middleware.AuthMiddleware(db), middleware.AdminMiddleware(), reviewController.ApproveReview)
 			reviews.POST("/:id/reject", middleware.AuthMiddleware(db), middleware.AdminMiddleware(), reviewController.RejectReview)
 		}
+
+		// Track routes
+		tracks := api.Group("/tracks")
+		{
+			tracks.GET("/popular", trackController.GetPopularTracks)
+			tracks.GET("/:id", trackController.GetTrack)
+			tracks.POST("", middleware.AuthMiddleware(db), middleware.AdminMiddleware(), trackController.CreateTrack)
+			tracks.PUT("/:id", middleware.AuthMiddleware(db), middleware.AdminMiddleware(), trackController.UpdateTrack)
+			tracks.DELETE("/:id", middleware.AuthMiddleware(db), middleware.AdminMiddleware(), trackController.DeleteTrack)
+			// Like routes
+			tracks.POST("/:id/like", middleware.AuthMiddleware(db), trackController.LikeTrack)
+			tracks.DELETE("/:id/like", middleware.AuthMiddleware(db), trackController.UnlikeTrack)
+		}
+
+		// Search routes
+		api.GET("/search", searchController.Search)
 
 		// User routes
 		users := api.Group("/users")

@@ -62,6 +62,13 @@ func ValidateAtmosphereMultiplier(multiplier float64) error {
 
 // ValidateReview validates review data
 func ValidateReview(review *models.Review) error {
+	// Either album_id or track_id must be set, but not both
+	if review.AlbumID == nil && review.TrackID == nil {
+		return fmt.Errorf("either album_id or track_id must be provided")
+	}
+	if review.AlbumID != nil && review.TrackID != nil {
+		return fmt.Errorf("only one of album_id or track_id can be provided")
+	}
 	if err := ValidateRating(review.RatingRhymes); err != nil {
 		return fmt.Errorf("rating_rhymes: %w", err)
 	}

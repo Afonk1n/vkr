@@ -1,21 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { albumsAPI } from '../services/api';
+import { albumsAPI, tracksAPI, reviewsAPI } from '../services/api';
+import { useFilters } from '../context/FilterContext';
 import AlbumCard from '../components/AlbumCard';
+import TrackCard from '../components/TrackCard';
 import Filters from '../components/Filters';
 import './HomePage.css';
 
 const HomePage = () => {
   const [albums, setAlbums] = useState([]);
+  const [popularTracks, setPopularTracks] = useState([]);
+  const [latestAlbums, setLatestAlbums] = useState([]);
+  const [popularReviews, setPopularReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filters, setFilters] = useState({
-    genre_id: null,
-    search: '',
-    sort_by: 'created_at',
-    sort_order: 'desc',
-    page: 1,
-    page_size: 20,
-  });
+  const { filters, updateFilters } = useFilters();
   const [pagination, setPagination] = useState({
     total: 0,
     page: 1,
@@ -46,12 +44,46 @@ const HomePage = () => {
     }
   }, [filters]);
 
+  const fetchPopularTracks = async () => {
+    try {
+      const response = await tracksAPI.getPopular({ limit: 8 });
+      setPopularTracks(response.data);
+    } catch (err) {
+      console.error('Error fetching popular tracks:', err);
+    }
+  };
+
+  const fetchLatestAlbums = async () => {
+    try {
+      const response = await albumsAPI.getAll({
+        sort_by: 'created_at',
+        sort_order: 'desc',
+        page_size: 5,
+      });
+      setLatestAlbums(response.data.albums);
+    } catch (err) {
+      console.error('Error fetching latest albums:', err);
+    }
+  };
+
+  const fetchPopularReviews = async () => {
+    try {
+      const response = await reviewsAPI.getPopular({ limit: 6 });
+      setPopularReviews(response.data);
+    } catch (err) {
+      console.error('Error fetching popular reviews:', err);
+    }
+  };
+
   useEffect(() => {
     fetchAlbums();
+    fetchPopularTracks();
+    fetchLatestAlbums();
+    fetchPopularReviews();
   }, [fetchAlbums]);
 
   const handleFilterChange = (newFilters) => {
-    setFilters({ ...newFilters, page: 1, page_size: 20 });
+    updateFilters({ ...newFilters, page: 1, page_size: 20 });
   };
 
   if (loading && albums.length === 0) {
@@ -65,23 +97,43 @@ const HomePage = () => {
   return (
     <div className="container">
       <h1 className="page-title">Музыкальные альбомы</h1>
-      <Filters onFilterChange={handleFilterChange} filters={filters} />
-      {error && <div className="error-message">{error}</div>}
-      {albums.length === 0 ? (
-        <div className="empty-state">Альбомы не найдены</div>
-      ) : (
-        <>
+      
+      {/* Latest Albums Section */}
+      {latestAlbums.length > 0 && (
+        <section className="home-section">
+          <h2 className="section-title">Последние релизы</h2>
           <div className="albums-grid">
-            {albums.map((album) => (
+            {latestAlbums.map((album) => (
               <AlbumCard key={album.id} album={album} />
             ))}
           </div>
-          {pagination.total > pagination.page_size && (
-            <div className="pagination-info">
-              Показано {albums.length} из {pagination.total} альбомов
-            </div>
-          )}
-        </>
+        </section>
+      )}
+
+      {/* Popular Tracks Section - moved here */}
+      {popularTracks.length > 0 && (
+        <section className="home-section">
+          <h2 className="section-title">Самые залайканные треки за последние сутки</h2>
+          <div className="tracks-list">
+            {popularTracks.map((track) => (
+              <TrackCard key={track.id} track={track} onUpdate={fetchPopularTracks} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Popular Reviews Section */}
+      {popularReviews.length > 0 && (
+        <section className="home-section">
+          <h2 className="section-title">Популярные рецензии за последние сутки</h2>
+          <div className="albums-grid">
+            {popularReviews
+              .filter(review => review.album) // Только рецензии с альбомами
+              .map((review) => (
+                <AlbumCard key={`review-${review.id}`} album={review.album} />
+              ))}
+          </div>
+        </section>
       )}
     </div>
   );

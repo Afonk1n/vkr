@@ -1,15 +1,22 @@
 .page-title {
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: 700;
-  margin-bottom: 2rem;
+  margin-bottom: var(--spacing-2xl);
   color: var(--text-color);
+  letter-spacing: -0.02em;
 }
 
 .albums-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+@media (min-width: 1400px) {
+  .albums-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
 }
 
 .loading {
@@ -20,7 +27,7 @@
 }
 
 .error-message {
-  background-color: #fee2e2;
+  background-color: var(--error-bg-solid);
   color: var(--error-color);
   padding: 1rem;
   border-radius: 0.5rem;
@@ -41,6 +48,54 @@
   padding: 1rem;
 }
 
+.home-section {
+  margin-bottom: var(--spacing-2xl);
+  padding: var(--spacing-xl) 0;
+}
+
+.section-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-lg);
+  color: var(--text-color);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  letter-spacing: -0.01em;
+}
+
+.tracks-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+@media (min-width: 1400px) {
+  .tracks-list {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+}
+
+.home-section .reviews-list {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  flex-direction: row !important;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.home-section .reviews-list .review-card-small {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 1200px) {
+  .home-section .reviews-list {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
 @media (max-width: 768px) {
   .albums-grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -49,6 +104,14 @@
 
   .page-title {
     font-size: 1.5rem;
+  }
+
+  .section-title {
+    font-size: 1.25rem;
+  }
+
+  .home-section .reviews-list {
+    grid-template-columns: 1fr !important;
   }
 }
 

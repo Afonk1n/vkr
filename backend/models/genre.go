@@ -17,6 +17,7 @@ type Genre struct {
 
 	// Relationships
 	Albums []Album `json:"albums,omitempty" gorm:"foreignKey:GenreID"`
+	Tracks []Track `json:"tracks,omitempty" gorm:"many2many:track_genres;"`
 }
 
 // TableName specifies the table name for Genre

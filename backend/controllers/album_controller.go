@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"music-review-site/backend/middleware"
 	"music-review-site/backend/models"
 	"music-review-site/backend/utils"
 	"net/http"
@@ -37,7 +38,7 @@ type UpdateAlbumRequest struct {
 // GetAlbums retrieves list of albums with filters
 func (ac *AlbumController) GetAlbums(c *gin.Context) {
 	var albums []models.Album
-	query := ac.DB.Model(&models.Album{}).Preload("Genre")
+	query := ac.DB.Model(&models.Album{}).Preload("Genre").Preload("Likes")
 
 	// Filter by genre
 	if genreID := c.Query("genre_id"); genreID != "" {
@@ -92,7 +93,7 @@ func (ac *AlbumController) GetAlbum(c *gin.Context) {
 	id := c.Param("id")
 	var album models.Album
 
-	if err := ac.DB.Preload("Genre").Preload("Tracks").First(&album, id).Error; err != nil {
+	if err := ac.DB.Preload("Genre").Preload("Tracks").Preload("Likes").First(&album, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, utils.ErrorResponse{
 			Error:   "Not Found",
 			Message: "Album not found",
@@ -261,5 +262,91 @@ func (ac *AlbumController) CalculateAverageRating(albumID uint) error {
 	// Round to nearest integer
 	roundedAverage := float64(int(averageRating + 0.5))
 	return ac.DB.Model(&models.Album{}).Where("id = ?", albumID).Update("average_rating", roundedAverage).Error
+}
+
+// LikeAlbum adds a like to an album
+func (ac *AlbumController) LikeAlbum(c *gin.Context) {
+	albumID := c.Param("id")
+	userID, exists := middleware.GetUserIDFromContext(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
+			Error:   "Unauthorized",
+			Message: "User not authenticated",
+			Code:    http.StatusUnauthorized,
+		})
+		return
+	}
+
+	// Check if album exists
+	var album models.Album
+	if err := ac.DB.First(&album, albumID).Error; err != nil {
+		c.JSON(http.StatusNotFound, utils.ErrorResponse{
+			Error:   "Not Found",
+			Message: "Album not found",
+			Code:    http.StatusNotFound,
+		})
+		return
+	}
+
+	// Check if like already exists
+	var existingLike models.AlbumLike
+	if err := ac.DB.Where("user_id = ? AND album_id = ?", userID, albumID).First(&existingLike).Error; err == nil {
+		c.JSON(http.StatusOK, gin.H{"message": "Already liked", "liked": true})
+		return
+	}
+
+	// Create like
+	like := models.AlbumLike{
+		UserID:  userID,
+		AlbumID: album.ID,
+	}
+
+	if err := ac.DB.Create(&like).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to like album",
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Album liked", "liked": true})
+}
+
+// UnlikeAlbum removes a like from an album
+func (ac *AlbumController) UnlikeAlbum(c *gin.Context) {
+	albumID := c.Param("id")
+	userID, exists := middleware.GetUserIDFromContext(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
+			Error:   "Unauthorized",
+			Message: "User not authenticated",
+			Code:    http.StatusUnauthorized,
+		})
+		return
+	}
+
+	// Check if album exists
+	var album models.Album
+	if err := ac.DB.First(&album, albumID).Error; err != nil {
+		c.JSON(http.StatusNotFound, utils.ErrorResponse{
+			Error:   "Not Found",
+			Message: "Album not found",
+			Code:    http.StatusNotFound,
+		})
+		return
+	}
+
+	// Delete like
+	if err := ac.DB.Where("user_id = ? AND album_id = ?", userID, albumID).Delete(&models.AlbumLike{}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to unlike album",
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Album unliked", "liked": false})
 }
 

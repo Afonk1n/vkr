@@ -12,6 +12,9 @@ type User struct {
 	Username  string         `json:"username" gorm:"uniqueIndex;not null"`
 	Email     string         `json:"email" gorm:"uniqueIndex;not null"`
 	Password  string         `json:"-" gorm:"not null"` // Password hash, not exposed in JSON
+	AvatarPath string        `json:"avatar_path" gorm:"type:text"`
+	Bio       string         `json:"bio" gorm:"type:text"`
+	SocialLinks string       `json:"social_links" gorm:"type:jsonb"` // JSON: {"vk": "", "telegram": "", "instagram": ""}
 	IsAdmin   bool           `json:"is_admin" gorm:"default:false"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`

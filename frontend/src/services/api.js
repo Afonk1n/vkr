@@ -52,6 +52,8 @@ export const albumsAPI = {
   create: (data) => api.post('/albums', data),
   update: (id, data) => api.put(`/albums/${id}`, data),
   delete: (id) => api.delete(`/albums/${id}`),
+  like: (id) => api.post(`/albums/${id}/like`),
+  unlike: (id) => api.delete(`/albums/${id}/like`),
 };
 
 // Reviews API
@@ -81,6 +83,28 @@ export const usersAPI = {
   update: (id, data) => api.put(`/users/${id}`, data),
   delete: (id) => api.delete(`/users/${id}`),
 };
+
+// Search API
+export const searchAPI = {
+  search: (query) => api.get('/search', { params: { q: query } }),
+};
+
+// Tracks API
+export const tracksAPI = {
+  getPopular: (params) => api.get('/tracks/popular', { params }),
+  getById: (id) => api.get(`/tracks/${id}`),
+  getByAlbum: (albumId) => api.get(`/albums/${albumId}/tracks`),
+  create: (data) => api.post('/tracks', data),
+  update: (id, data) => api.put(`/tracks/${id}`, data),
+  delete: (id) => api.delete(`/tracks/${id}`),
+  like: (id) => api.post(`/tracks/${id}/like`),
+  unlike: (id) => api.delete(`/tracks/${id}/like`),
+};
+
+// Reviews API - add like methods
+reviewsAPI.like = (id) => api.post(`/reviews/${id}/like`);
+reviewsAPI.unlike = (id) => api.delete(`/reviews/${id}/like`);
+reviewsAPI.getPopular = (params) => api.get('/reviews/popular', { params });
 
 export default api;
 

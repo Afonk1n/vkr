@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"music-review-site/backend/middleware"
 	"music-review-site/backend/models"
 	"music-review-site/backend/utils"
@@ -111,8 +112,12 @@ func (uc *UserController) UpdateUser(c *gin.Context) {
 	}
 
   var req struct {
-    Username string `json:"username"`
-    Email    string `json:"email"`
+    Username    string            `json:"username"`
+    Email       string            `json:"email"`
+    AvatarPath  string            `json:"avatar_path"`
+    Bio         string            `json:"bio"`
+    SocialLinks map[string]string `json:"social_links"` // {"vk": "", "telegram": "", "instagram": ""}
+    Password    string            `json:"password"`     // For password change
   }
 
   if err := c.ShouldBindJSON(&req); err != nil {
@@ -148,6 +153,44 @@ func (uc *UserController) UpdateUser(c *gin.Context) {
       return
     }
     user.Email = req.Email
+  }
+
+  // Update avatar path if provided
+  if req.AvatarPath != "" {
+    user.AvatarPath = req.AvatarPath
+  }
+
+  // Update bio if provided
+  user.Bio = req.Bio
+
+  // Update social links if provided
+  if req.SocialLinks != nil {
+    socialLinksJSON, err := json.Marshal(req.SocialLinks)
+    if err == nil {
+      user.SocialLinks = string(socialLinksJSON)
+    }
+  }
+
+  // Update password if provided
+  if req.Password != "" {
+    if len(req.Password) < 6 {
+      c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+        Error:   "Validation Error",
+        Message: "Password must be at least 6 characters",
+        Code:    http.StatusBadRequest,
+      })
+      return
+    }
+    hashedPassword, err := utils.HashPassword(req.Password)
+    if err != nil {
+      c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
+        Error:   "Internal Server Error",
+        Message: "Failed to hash password",
+        Code:    http.StatusInternalServerError,
+      })
+      return
+    }
+    user.Password = hashedPassword
   }
 
 	if err := uc.DB.Save(&user).Error; err != nil {

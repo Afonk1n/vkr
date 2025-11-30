@@ -21,9 +21,10 @@ type Album struct {
 	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`
 
 	// Relationships
-	Genre   Genre    `json:"genre,omitempty" gorm:"foreignKey:GenreID"`
-	Tracks  []Track  `json:"tracks,omitempty" gorm:"foreignKey:AlbumID"`
-	Reviews []Review `json:"reviews,omitempty" gorm:"foreignKey:AlbumID"`
+	Genre   Genre      `json:"genre,omitempty" gorm:"foreignKey:GenreID"`
+	Tracks  []Track    `json:"tracks,omitempty" gorm:"foreignKey:AlbumID"`
+	Reviews []Review   `json:"reviews,omitempty" gorm:"foreignKey:AlbumID"`
+	Likes   []AlbumLike `json:"likes,omitempty" gorm:"foreignKey:AlbumID"`
 }
 
 // TableName specifies the table name for Album

@@ -15,11 +15,12 @@ const (
 	ReviewStatusRejected ReviewStatus = "rejected"
 )
 
-// Review represents a review of an album
+// Review represents a review of an album or track
 type Review struct {
 	ID                   uint           `json:"id" gorm:"primaryKey"`
 	UserID               uint           `json:"user_id" gorm:"not null"`
-	AlbumID              uint           `json:"album_id" gorm:"not null"`
+	AlbumID              *uint          `json:"album_id"` // Nullable - either album_id or track_id must be set
+	TrackID              *uint          `json:"track_id"` // Nullable - either album_id or track_id must be set
 	Text                 string         `json:"text" gorm:"type:text"`
 	RatingRhymes         int            `json:"rating_rhymes" gorm:"not null;check:rating_rhymes >= 1 AND rating_rhymes <= 10"`
 	RatingStructure      int            `json:"rating_structure" gorm:"not null;check:rating_structure >= 1 AND rating_structure <= 10"`
@@ -36,7 +37,8 @@ type Review struct {
 
 	// Relationships
 	User      User        `json:"user,omitempty" gorm:"foreignKey:UserID"`
-	Album     Album       `json:"album,omitempty" gorm:"foreignKey:AlbumID"`
+	Album     *Album      `json:"album,omitempty" gorm:"foreignKey:AlbumID"`
+	Track     *Track      `json:"track,omitempty" gorm:"foreignKey:TrackID"`
 	Moderator *User       `json:"moderator,omitempty" gorm:"foreignKey:ModeratedBy"`
 	Likes     []ReviewLike `json:"likes,omitempty" gorm:"foreignKey:ReviewID"`
 }

@@ -1,11 +1,31 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
+import { reviewsAPI } from '../services/api';
 import { formatScore, convertMultiplierToAtmosphere } from '../utils/ratingCalculator';
+import LikeButton from './LikeButton';
 import './ReviewCard.css';
 
-const ReviewCard = ({ review, onEdit, onDelete }) => {
+const ReviewCard = ({ review, onEdit, onDelete, onUpdate }) => {
   const { user, isAdmin } = useAuth();
   const canEdit = user && (user.id === review.user_id || isAdmin);
+
+  const handleLike = async () => {
+    try {
+      await reviewsAPI.like(review.id);
+      if (onUpdate) onUpdate();
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const handleUnlike = async () => {
+    try {
+      await reviewsAPI.unlike(review.id);
+      if (onUpdate) onUpdate();
+    } catch (err) {
+      throw err;
+    }
+  };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -90,6 +110,15 @@ const ReviewCard = ({ review, onEdit, onDelete }) => {
           )}
         </div>
       )}
+
+      <div className="review-actions-bottom">
+        <LikeButton
+          item={review}
+          itemType="review"
+          onLike={handleLike}
+          onUnlike={handleUnlike}
+        />
+      </div>
     </div>
   );
 };

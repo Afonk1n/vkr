@@ -54,7 +54,7 @@
 }
 
 .btn-approve:hover {
-  background-color: #059669;
+  background-color: var(--success-bg);
 }
 
 .btn-reject {
@@ -67,7 +67,7 @@
 }
 
 .btn-reject:hover {
-  background-color: #dc2626;
+  background-color: var(--error-hover);
 }
 
 .loading {
@@ -78,7 +78,7 @@
 }
 
 .error-message {
-  background-color: #fee2e2;
+  background-color: var(--error-bg-solid);
   color: var(--error-color);
   padding: 1rem;
   border-radius: 0.5rem;

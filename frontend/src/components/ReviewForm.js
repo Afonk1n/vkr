@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { calculateFinalScore, formatScore, convertMultiplierToAtmosphere, convertAtmosphereToMultiplier } from '../utils/ratingCalculator';
 import './ReviewForm.css';
 
-const ReviewForm = ({ albumId, onSubmit, initialData, onCancel }) => {
+const ReviewForm = ({ albumId, trackId, onSubmit, initialData, onCancel }) => {
   const [ratingRhymes, setRatingRhymes] = useState(initialData?.rating_rhymes || 5);
   const [ratingStructure, setRatingStructure] = useState(initialData?.rating_structure || 5);
   const [ratingImplementation, setRatingImplementation] = useState(initialData?.rating_implementation || 5);
@@ -33,15 +33,22 @@ const ReviewForm = ({ albumId, onSubmit, initialData, onCancel }) => {
     try {
       // Convert atmosphere rating to multiplier before sending
       const atmosphereMultiplier = convertAtmosphereToMultiplier(atmosphereRating);
-      await onSubmit({
-        album_id: albumId,
+      const reviewData = {
         rating_rhymes: ratingRhymes,
         rating_structure: ratingStructure,
         rating_implementation: ratingImplementation,
         rating_individuality: ratingIndividuality,
         atmosphere_rating: atmosphereRating,
         text: hasText ? text : '',
-      });
+      };
+      
+      if (albumId) {
+        reviewData.album_id = albumId;
+      } else if (trackId) {
+        reviewData.track_id = trackId;
+      }
+      
+      await onSubmit(reviewData);
     } catch (err) {
       setError(err.response?.data?.message || 'Ошибка при сохранении рецензии');
     } finally {

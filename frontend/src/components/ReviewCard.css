@@ -1,9 +1,16 @@
 .review-card {
   background-color: var(--card-background);
-  border-radius: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
   padding: 1.5rem;
   margin-bottom: 1rem;
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.review-card:hover {
+  border-color: var(--border-color);
+  box-shadow: var(--shadow-md);
 }
 
 .review-header {
@@ -61,7 +68,7 @@
 }
 
 .btn-delete:hover {
-  background-color: #dc2626;
+  background-color: var(--error-hover);
 }
 
 .review-ratings {
@@ -71,7 +78,8 @@
   margin-bottom: 1rem;
   padding: 1rem;
   background-color: var(--hover-color);
-  border-radius: 0.375rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
 }
 
 .rating-item {
@@ -97,7 +105,8 @@
 .review-text {
   padding: 1rem;
   background-color: var(--hover-color);
-  border-radius: 0.375rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
   color: var(--text-color);
   line-height: 1.6;
   white-space: pre-wrap;
@@ -120,24 +129,31 @@
 }
 
 .status-pending {
-  background-color: #fef3c7;
-  color: #92400e;
+  background-color: var(--status-pending-bg);
+  color: var(--status-pending-text);
 }
 
 .status-approved {
-  background-color: #d1fae5;
-  color: #065f46;
+  background-color: var(--status-approved-bg);
+  color: var(--status-approved-text);
 }
 
 .status-rejected {
-  background-color: #fee2e2;
-  color: #991b1b;
+  background-color: var(--status-rejected-bg);
+  color: var(--status-rejected-text);
 }
 
 .review-note {
   color: var(--text-secondary);
   font-size: 0.875rem;
   font-style: italic;
+}
+
+.review-actions-bottom {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 1rem;
 }
 
 @media (max-width: 768px) {

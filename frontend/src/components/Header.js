@@ -1,11 +1,15 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
+import SearchBar from './SearchBar';
 import './Header.css';
 
 const Header = () => {
   const { user, logout, isAuthenticated } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
@@ -19,7 +23,15 @@ const Header = () => {
           <Link to="/" className="logo">
             <h1>🎵 Music Review</h1>
           </Link>
+          {location.pathname === '/' && <SearchBar />}
           <nav className="nav">
+            <button
+              className="theme-toggle"
+              onClick={toggleTheme}
+              title={theme === 'dark' ? 'Переключить на светлую тему' : 'Переключить на тёмную тему'}
+            >
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
             <Link to="/" className="nav-link">
               Альбомы
             </Link>
