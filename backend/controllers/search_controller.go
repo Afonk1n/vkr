@@ -13,10 +13,17 @@ type SearchController struct {
 	DB *gorm.DB
 }
 
+// ArtistSearchResult represents artist search result
+type ArtistSearchResult struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"` // Number of albums
+}
+
 // SearchResponse represents search results
 type SearchResponse struct {
-	Albums []models.Album      `json:"albums"`
-	Tracks []TrackSearchResult `json:"tracks"`
+	Artists []ArtistSearchResult `json:"artists"`
+	Albums  []models.Album       `json:"albums"`
+	Tracks  []TrackSearchResult  `json:"tracks"`
 }
 
 // TrackSearchResult represents track with album info for search
@@ -36,10 +43,40 @@ func (sc *SearchController) Search(c *gin.Context) {
 
 	if query == "" {
 		c.JSON(http.StatusOK, SearchResponse{
-			Albums: []models.Album{},
-			Tracks: []TrackSearchResult{},
+			Artists: []ArtistSearchResult{},
+			Albums:  []models.Album{},
+			Tracks:  []TrackSearchResult{},
 		})
 		return
+	}
+
+	// Search for unique artists
+	var artistResults []struct {
+		Artist string
+		Count  int64
+	}
+	artistQuery := sc.DB.Model(&models.Album{}).
+		Select("artist, COUNT(*) as count").
+		Where("artist ILIKE ?", "%"+query+"%").
+		Group("artist").
+		Order("count DESC").
+		Limit(limit)
+
+	if err := artistQuery.Scan(&artistResults).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to search artists",
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
+	artists := make([]ArtistSearchResult, len(artistResults))
+	for i, result := range artistResults {
+		artists[i] = ArtistSearchResult{
+			Name:  result.Artist,
+			Count: int(result.Count),
+		}
 	}
 
 	var albums []models.Album
@@ -96,7 +133,8 @@ func (sc *SearchController) Search(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, SearchResponse{
-		Albums: albums,
-		Tracks: trackResults,
+		Artists: artists,
+		Albums:  albums,
+		Tracks:  trackResults,
 	})
 }

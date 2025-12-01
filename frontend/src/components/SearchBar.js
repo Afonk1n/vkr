@@ -6,7 +6,7 @@ import './SearchBar.css';
 
 const SearchBar = () => {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState({ albums: [], tracks: [] });
+  const [results, setResults] = useState({ artists: [], albums: [], tracks: [] });
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(false);
   const searchRef = useRef(null);
@@ -33,7 +33,7 @@ const SearchBar = () => {
   useEffect(() => {
     const search = async () => {
       if (query.trim().length < 2) {
-        setResults({ albums: [], tracks: [] });
+        setResults({ artists: [], albums: [], tracks: [] });
         setShowResults(false);
         return;
       }
@@ -45,7 +45,7 @@ const SearchBar = () => {
         setShowResults(true);
       } catch (error) {
         console.error('Search error:', error);
-        setResults({ albums: [], tracks: [] });
+        setResults({ artists: [], albums: [], tracks: [] });
       } finally {
         setLoading(false);
       }
@@ -67,7 +67,13 @@ const SearchBar = () => {
     setQuery('');
   };
 
-  const hasResults = results.albums.length > 0 || results.tracks.length > 0;
+  const handleArtistClick = (artistName) => {
+    navigate(`/artists/${encodeURIComponent(artistName)}`);
+    setShowResults(false);
+    setQuery('');
+  };
+
+  const hasResults = results.artists.length > 0 || results.albums.length > 0 || results.tracks.length > 0;
   
   const handleFiltersClick = () => {
     navigate('/search');
@@ -80,7 +86,7 @@ const SearchBar = () => {
           <input
             type="text"
             className="search-input"
-            placeholder="Поиск альбомов и треков..."
+            placeholder="Поиск артистов, альбомов и треков..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => query.length >= 2 && setShowResults(true)}
@@ -99,6 +105,25 @@ const SearchBar = () => {
             <div className="search-loading">Поиск...</div>
           ) : (
             <>
+              {results.artists.length > 0 && (
+                <div className="search-section">
+                  <div className="search-section-title">Артисты</div>
+                  {results.artists.map((artist, index) => (
+                    <div
+                      key={index}
+                      className="search-result-item"
+                      onClick={() => handleArtistClick(artist.name)}
+                    >
+                      <div className="search-result-info">
+                        <div className="search-result-title">{artist.name}</div>
+                        <div className="search-result-subtitle">
+                          {artist.count} {artist.count === 1 ? 'альбом' : artist.count < 5 ? 'альбома' : 'альбомов'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
               {results.albums.length > 0 && (
                 <div className="search-section">
                   <div className="search-section-title">Альбомы</div>

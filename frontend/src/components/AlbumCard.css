@@ -108,6 +108,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  flex: 1;
+  min-height: 0;
 }
 
 .album-title {
@@ -142,6 +144,7 @@
   border-radius: 0.25rem;
   font-size: 0.75rem;
   width: fit-content;
+  margin-top: auto;
 }
 
 .album-rating {

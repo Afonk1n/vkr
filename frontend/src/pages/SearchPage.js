@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { albumsAPI, genresAPI, tracksAPI } from '../services/api';
 import TrackCard from '../components/TrackCard';
 import './SearchPage.css';
@@ -8,6 +8,7 @@ const SearchPage = () => {
   const [genres, setGenres] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
   
   // Filters state
   const [selectedGenres, setSelectedGenres] = useState([]);
@@ -20,6 +21,9 @@ const SearchPage = () => {
     page: 1,
     page_size: 20,
   });
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(20);
 
   // Fetch genres on mount
   useEffect(() => {
@@ -35,58 +39,191 @@ const SearchPage = () => {
   }, []);
 
   // Fetch tracks when filters change
-  const fetchTracks = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      // Get albums with filters first
-      const params = {
-        page: pagination.page,
-        page_size: pagination.page_size,
-        sort_by: sortBy,
-        sort_order: sortOrder,
-      };
+  useEffect(() => {
+    let isCancelled = false;
+    
+    const fetchTracks = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        // Check if we have any filters
+        const hasFilters = searchQuery.trim() || selectedGenres.length > 0;
+        
+        let albums = [];
+        
+        if (hasFilters) {
+          // If filters are applied, get filtered albums
+          const params = {
+            page: 1,
+            page_size: 100, // Get more albums to have more tracks
+            sort_by: sortBy,
+            sort_order: sortOrder,
+          };
 
-      if (searchQuery.trim()) {
-        params.search = searchQuery.trim();
-      }
+          if (searchQuery.trim()) {
+            params.search = searchQuery.trim();
+          }
 
-      if (selectedGenres.length > 0) {
-        params.genre_id = selectedGenres[0];
-      }
+          // Use first selected genre (API supports only one genre_id at a time)
+          if (selectedGenres.length > 0) {
+            params.genre_id = selectedGenres[0];
+          }
 
-      const albumsResponse = await albumsAPI.getAll(params);
-      const albums = albumsResponse.data.albums || [];
-      
-      // Get all tracks from these albums
-      const allTracks = [];
-      for (const album of albums) {
-        try {
-          const tracksResponse = await tracksAPI.getByAlbum(album.id);
-          const albumTracks = Array.isArray(tracksResponse.data) ? tracksResponse.data : [];
-          allTracks.push(...albumTracks.map(track => ({ ...track, album })));
-        } catch (err) {
-          console.error(`Error fetching tracks for album ${album.id}:`, err);
+          try {
+            const albumsResponse = await albumsAPI.getAll(params);
+            if (isCancelled) return;
+            albums = albumsResponse.data?.albums || albumsResponse.data || [];
+          } catch (apiErr) {
+            console.error('[SearchPage] Error fetching albums:', apiErr);
+            throw apiErr;
+          }
+        } else {
+          // If no filters, get all albums sorted by created_at DESC
+          const params = {
+            page: 1,
+            page_size: 100, // Get all albums
+            sort_by: 'created_at',
+            sort_order: 'desc',
+          };
+          try {
+            const albumsResponse = await albumsAPI.getAll(params);
+            if (isCancelled) return;
+            albums = albumsResponse.data?.albums || albumsResponse.data || [];
+          } catch (apiErr) {
+            console.error('[SearchPage] Error fetching albums:', apiErr);
+            throw apiErr;
+          }
+        }
+        
+        if (albums.length === 0) {
+          setTracks([]);
+          setPagination({
+            total: 0,
+            page: currentPage,
+            page_size: pageSize,
+          });
+          setLoading(false);
+          return;
+        }
+        
+        // Get all tracks from these albums
+        const trackPromises = albums.map(async (album) => {
+          try {
+            const tracksResponse = await tracksAPI.getByAlbum(album.id);
+            const albumTracks = Array.isArray(tracksResponse.data) ? tracksResponse.data : [];
+            return albumTracks.map(track => ({ ...track, album }));
+          } catch (err) {
+            console.error(`[SearchPage] Error fetching tracks for album ${album.id}:`, err);
+            return [];
+          }
+        });
+
+        const trackArrays = await Promise.all(trackPromises);
+        if (isCancelled) return;
+        
+        // Flatten all tracks
+        let allTracks = trackArrays.flat();
+        
+        if (allTracks.length === 0) {
+          setTracks([]);
+          setPagination({
+            total: 0,
+            page: currentPage,
+            page_size: pageSize,
+          });
+          setLoading(false);
+          return;
+        }
+        
+        // Sort tracks based on sortBy and sortOrder
+        allTracks.sort((a, b) => {
+          let valueA, valueB;
+          let isString = false;
+          
+          switch (sortBy) {
+            case 'created_at': {
+              const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+              const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+              valueA = isNaN(dateA.getTime()) ? 0 : dateA.getTime();
+              valueB = isNaN(dateB.getTime()) ? 0 : dateB.getTime();
+              break;
+            }
+            case 'release_date': {
+              const releaseDateA = a.album?.release_date || a.created_at;
+              const releaseDateB = b.album?.release_date || b.created_at;
+              const dateA = releaseDateA ? new Date(releaseDateA) : new Date(0);
+              const dateB = releaseDateB ? new Date(releaseDateB) : new Date(0);
+              valueA = isNaN(dateA.getTime()) ? 0 : dateA.getTime();
+              valueB = isNaN(dateB.getTime()) ? 0 : dateB.getTime();
+              break;
+            }
+            case 'title':
+              valueA = (a.title || '').toLowerCase();
+              valueB = (b.title || '').toLowerCase();
+              isString = true;
+              break;
+            case 'average_rating':
+              valueA = Number(a.average_rating) || 0;
+              valueB = Number(b.average_rating) || 0;
+              break;
+            default: {
+              const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+              const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+              valueA = isNaN(dateA.getTime()) ? 0 : dateA.getTime();
+              valueB = isNaN(dateB.getTime()) ? 0 : dateB.getTime();
+              break;
+            }
+          }
+          
+          if (isString) {
+            // String comparison
+            if (sortOrder === 'asc') {
+              return valueA.localeCompare(valueB);
+            } else {
+              return valueB.localeCompare(valueA);
+            }
+          } else {
+            // Number/Date comparison
+            if (sortOrder === 'asc') {
+              return valueA - valueB;
+            } else {
+              return valueB - valueA;
+            }
+          }
+        });
+        
+        // Apply pagination to tracks
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        const paginatedTracks = allTracks.slice(startIndex, endIndex);
+        
+        // Ensure all tracks have required fields
+        const validTracks = paginatedTracks.filter(track => track && track.id);
+        setTracks(validTracks);
+        setPagination({
+          total: allTracks.length,
+          page: currentPage,
+          page_size: pageSize,
+        });
+      } catch (err) {
+        if (isCancelled) return;
+        setError('Ошибка загрузки треков');
+        console.error('[SearchPage] Error fetching tracks:', err);
+        console.error('[SearchPage] Error details:', err.response?.data || err.message);
+        setTracks([]);
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
         }
       }
-      
-      setTracks(allTracks);
-      setPagination({
-        total: allTracks.length,
-        page: albumsResponse.data.page || 1,
-        page_size: albumsResponse.data.page_size || 20,
-      });
-    } catch (err) {
-      setError('Ошибка загрузки треков');
-      console.error('Error fetching tracks:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedGenres, searchQuery, sortBy, sortOrder, pagination.page, pagination.page_size]);
+    };
 
-  useEffect(() => {
     fetchTracks();
-  }, [fetchTracks]);
+    
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedGenres, searchQuery, sortBy, sortOrder, currentPage, pageSize]);
 
   const handleGenreToggle = (genreId) => {
     setSelectedGenres((prev) => {
@@ -96,19 +233,19 @@ const SearchPage = () => {
         return [...prev, genreId];
       }
     });
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setCurrentPage(1);
   };
 
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setCurrentPage(1);
   };
 
   const handleSortChange = (e) => {
     const [newSortBy, newSortOrder] = e.target.value.split('_');
     setSortBy(newSortBy);
     setSortOrder(newSortOrder);
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setCurrentPage(1);
   };
 
   const clearFilters = () => {
@@ -116,11 +253,11 @@ const SearchPage = () => {
     setSearchQuery('');
     setSortBy('created_at');
     setSortOrder('desc');
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setCurrentPage(1);
   };
 
   const handlePageChange = (newPage) => {
-    setPagination((prev) => ({ ...prev, page: newPage }));
+    setCurrentPage(newPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -182,54 +319,61 @@ const SearchPage = () => {
           </div>
 
           {/* Right side with results */}
-          <div className="search-results">
-            {error && <div className="error-message">{error}</div>}
+          <div className="search-results-wrapper">
+            {error && (
+              <div className="error-message">{error}</div>
+            )}
             
             {loading ? (
               <div className="loading">Загрузка...</div>
             ) : (
               <>
-                <div className="results-header">
-                  <p className="results-count">
-                    Найдено треков: {pagination.total}
-                  </p>
+                {/* Results header with count and pagination */}
+                <div className="results-top-bar">
+                  <div className="results-info">
+                    <span className="results-count-label">Найдено треков:</span>
+                    <span className="results-count-value">{pagination.total}</span>
+                  </div>
+                  
+                  {pagination.total > pageSize && (
+                    <div className="results-pagination">
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="pagination-button"
+                        aria-label="Предыдущая страница"
+                      >
+                        ←
+                      </button>
+                      <span className="pagination-text">
+                        {currentPage} из {Math.ceil(pagination.total / pageSize)}
+                      </span>
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage >= Math.ceil(pagination.total / pageSize)}
+                        className="pagination-button"
+                        aria-label="Следующая страница"
+                      >
+                        →
+                      </button>
+                    </div>
+                  )}
                 </div>
 
+                {/* Tracks grid */}
                 {tracks.length === 0 ? (
                   <div className="empty-state">
-                    Треки не найдены. Попробуйте изменить фильтры.
+                    <p>Треки не найдены</p>
+                    <p className="empty-state-hint">Попробуйте изменить фильтры поиска</p>
                   </div>
                 ) : (
-                  <>
+                  <div className="tracks-grid-container">
                     <div className="tracks-grid">
                       {tracks.map((track) => (
                         <TrackCard key={track.id} track={track} />
                       ))}
                     </div>
-
-                    {/* Pagination */}
-                    {pagination.total > pagination.page_size && (
-                      <div className="pagination">
-                        <button
-                          onClick={() => handlePageChange(pagination.page - 1)}
-                          disabled={pagination.page === 1}
-                          className="pagination-btn"
-                        >
-                          ← Назад
-                        </button>
-                        <span className="pagination-info">
-                          Страница {pagination.page} из {Math.ceil(pagination.total / pagination.page_size)}
-                        </span>
-                        <button
-                          onClick={() => handlePageChange(pagination.page + 1)}
-                          disabled={pagination.page >= Math.ceil(pagination.total / pagination.page_size)}
-                          className="pagination-btn"
-                        >
-                          Вперёд →
-                        </button>
-                      </div>
-                    )}
-                  </>
+                  </div>
                 )}
               </>
             )}

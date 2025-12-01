@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { reviewsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { getImageUrl } from '../utils/imageUtils';
+import { formatScore, convertMultiplierToAtmosphere } from '../utils/ratingCalculator';
 import './ReviewCardSmall.css';
 
 const ReviewCardSmall = ({ review, onUpdate }) => {
@@ -54,8 +55,17 @@ const ReviewCardSmall = ({ review, onUpdate }) => {
         <div className="review-card-small-user">
           {review.user?.username || 'Пользователь'}
         </div>
-        <div className="review-card-small-score">
-          {review.final_score?.toFixed(1) || '0.0'}
+        <div className="review-card-small-scores">
+          <div className="review-card-small-score">
+            {formatScore(review.final_score) || '0'}
+          </div>
+          <div className="review-card-small-ratings">
+            <span className="rating-number">{review.rating_rhymes || 0}</span>
+            <span className="rating-number">{review.rating_structure || 0}</span>
+            <span className="rating-number">{review.rating_implementation || 0}</span>
+            <span className="rating-number">{review.rating_individuality || 0}</span>
+            <span className="rating-number">{convertMultiplierToAtmosphere(review.atmosphere_multiplier) || 0}</span>
+          </div>
         </div>
       </div>
       {review.album && (

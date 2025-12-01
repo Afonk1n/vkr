@@ -319,9 +319,12 @@
 }
 
 .rating-number {
-  font-size: 1.125rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  color: var(--primary-color);
+  color: var(--text-secondary);
+  padding: 0.125rem 0.375rem;
+  background-color: var(--hover-color);
+  border-radius: 0.25rem;
   min-width: 1.5rem;
   text-align: center;
 }
