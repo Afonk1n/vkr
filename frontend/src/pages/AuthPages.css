@@ -47,7 +47,8 @@
 }
 
 .form-group input:focus {
-  border-color: var(--primary-color);
+  border-color: var(--border-color);
+  box-shadow: 0 0 0 2px var(--hover-color);
 }
 
 .form-group input:disabled {
@@ -56,18 +57,21 @@
 }
 
 .btn-submit {
-  background-color: var(--primary-color);
-  color: white;
+  background-color: var(--card-background);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
   padding: 0.75rem;
   border-radius: 0.375rem;
   font-size: 1rem;
   font-weight: 500;
   margin-top: 0.5rem;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, border-color 0.2s;
+  cursor: pointer;
 }
 
 .btn-submit:hover:not(:disabled) {
-  background-color: var(--secondary-color);
+  background-color: var(--hover-color);
+  border-color: var(--border-color);
 }
 
 .btn-submit:disabled {
@@ -91,7 +95,12 @@
 }
 
 .auth-link a {
-  color: var(--primary-color);
+  color: var(--text-color);
   font-weight: 500;
+  text-decoration: underline;
+}
+
+.auth-link a:hover {
+  opacity: 0.8;
 }
 

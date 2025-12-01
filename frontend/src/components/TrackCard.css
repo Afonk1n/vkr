@@ -121,10 +121,19 @@
   margin: 0;
 }
 
+.track-album-label {
+  font-weight: 600;
+}
+
+.track-album-title {
+  font-weight: 600;
+}
+
 .track-artist-link {
   color: var(--text-secondary);
   text-decoration: none;
   transition: color 0.2s;
+  font-weight: 300;
 }
 
 .track-artist-link:hover {

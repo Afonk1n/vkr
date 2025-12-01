@@ -104,7 +104,9 @@ const TrackCard = ({ track, onUpdate }) => {
       <div className="track-card-info">
         <h3 className="track-card-title">{track.title}</h3>
         <p className="track-card-subtitle">
-          {track.album?.title} •{' '}
+          <span className="track-album-label">Альбом:</span>{' '}
+          <span className="track-album-title">{track.album?.title || 'Без альбома'}</span>
+          {' • '}
           {track.album?.artist ? (
             <Link 
               to={`/artists/${encodeURIComponent(track.album.artist)}`} 
@@ -114,7 +116,7 @@ const TrackCard = ({ track, onUpdate }) => {
               {track.album.artist}
             </Link>
           ) : (
-            'Неизвестный артист'
+            <span className="track-artist-link">Неизвестный артист</span>
           )}
         </p>
         {track.genres && track.genres.length > 0 && (

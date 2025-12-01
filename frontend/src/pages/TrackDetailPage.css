@@ -84,8 +84,16 @@
   text-decoration: underline;
 }
 
-.track-artist {
+.track-artist-link {
+  color: var(--text-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color var(--transition-base);
+}
+
+.track-artist-link:hover {
   color: var(--text-secondary);
+  text-decoration: underline;
 }
 
 .track-duration,

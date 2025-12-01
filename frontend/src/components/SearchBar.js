@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { searchAPI } from '../services/api';
-import { useFilters } from '../context/FilterContext';
-import FilterModal from './FilterModal';
 import { getImageUrl } from '../utils/imageUtils';
 import './SearchBar.css';
 
@@ -11,12 +9,10 @@ const SearchBar = () => {
   const [results, setResults] = useState({ albums: [], tracks: [] });
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showFilterModal, setShowFilterModal] = useState(false);
   const searchRef = useRef(null);
   const resultsRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const { filters, updateFilters } = useFilters();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -72,7 +68,10 @@ const SearchBar = () => {
   };
 
   const hasResults = results.albums.length > 0 || results.tracks.length > 0;
-  const isHomePage = location.pathname === '/';
+  
+  const handleFiltersClick = () => {
+    navigate('/search');
+  };
 
   return (
     <>
@@ -88,9 +87,8 @@ const SearchBar = () => {
           />
           <button
             className="search-filter-btn"
-            onClick={() => isHomePage && setShowFilterModal(true)}
+            onClick={handleFiltersClick}
             title="Фильтры"
-            disabled={!isHomePage}
           >
             🔍 Фильтры
           </button>
@@ -159,14 +157,6 @@ const SearchBar = () => {
         </div>
       )}
       </div>
-      {isHomePage && (
-        <FilterModal
-          isOpen={showFilterModal}
-          onClose={() => setShowFilterModal(false)}
-          onApplyFilters={updateFilters}
-          currentFilters={filters}
-        />
-      )}
     </>
   );
 };

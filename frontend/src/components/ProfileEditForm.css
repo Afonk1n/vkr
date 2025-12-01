@@ -33,7 +33,8 @@
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: var(--primary-color);
+  border-color: var(--border-color);
+  box-shadow: 0 0 0 2px var(--hover-color);
 }
 
 .social-links {
@@ -72,6 +73,6 @@
 
 .btn-secondary:hover {
   background-color: var(--hover-color);
-  border-color: var(--primary-color);
+  border-color: var(--border-color);
 }
 

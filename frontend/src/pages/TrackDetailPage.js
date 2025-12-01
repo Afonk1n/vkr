@@ -137,12 +137,20 @@ const TrackDetailPage = () => {
             <h1 className="track-title-large">{track.title}</h1>
             {track.album && (
               <div className="track-album-info">
-                <span className="track-album-label">Альбом:</span>
+                <span className="track-album-label">Альбом:</span>{' '}
                 <Link to={`/albums/${track.album.id}`} className="track-album-link">
                   {track.album.title}
                 </Link>
                 {track.album.artist && (
-                  <span className="track-artist"> • {track.album.artist}</span>
+                  <>
+                    {' • '}
+                    <Link 
+                      to={`/artists/${encodeURIComponent(track.album.artist)}`} 
+                      className="track-artist-link"
+                    >
+                      {track.album.artist}
+                    </Link>
+                  </>
                 )}
               </div>
             )}

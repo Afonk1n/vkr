@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { albumsAPI, genresAPI } from '../services/api';
-import AlbumCard from '../components/AlbumCard';
+import { albumsAPI, genresAPI, tracksAPI } from '../services/api';
+import TrackCard from '../components/TrackCard';
 import './SearchPage.css';
 
 const SearchPage = () => {
-  const [albums, setAlbums] = useState([]);
+  const [tracks, setTracks] = useState([]);
   const [genres, setGenres] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -34,11 +34,12 @@ const SearchPage = () => {
     fetchGenres();
   }, []);
 
-  // Fetch albums when filters change
-  const fetchAlbums = useCallback(async () => {
+  // Fetch tracks when filters change
+  const fetchTracks = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
+      // Get albums with filters first
       const params = {
         page: pagination.page,
         page_size: pagination.page_size,
@@ -46,45 +47,53 @@ const SearchPage = () => {
         sort_order: sortOrder,
       };
 
-      // Add search query if exists
       if (searchQuery.trim()) {
         params.search = searchQuery.trim();
       }
 
-      // Add genre filter if any selected
       if (selectedGenres.length > 0) {
-        // For now, use first selected genre (backend supports single genre_id)
-        // In future, can extend backend to support multiple genres
         params.genre_id = selectedGenres[0];
       }
 
-      const response = await albumsAPI.getAll(params);
-      setAlbums(response.data.albums || []);
+      const albumsResponse = await albumsAPI.getAll(params);
+      const albums = albumsResponse.data.albums || [];
+      
+      // Get all tracks from these albums
+      const allTracks = [];
+      for (const album of albums) {
+        try {
+          const tracksResponse = await tracksAPI.getByAlbum(album.id);
+          const albumTracks = Array.isArray(tracksResponse.data) ? tracksResponse.data : [];
+          allTracks.push(...albumTracks.map(track => ({ ...track, album })));
+        } catch (err) {
+          console.error(`Error fetching tracks for album ${album.id}:`, err);
+        }
+      }
+      
+      setTracks(allTracks);
       setPagination({
-        total: response.data.total || 0,
-        page: response.data.page || 1,
-        page_size: response.data.page_size || 20,
+        total: allTracks.length,
+        page: albumsResponse.data.page || 1,
+        page_size: albumsResponse.data.page_size || 20,
       });
     } catch (err) {
-      setError('Ошибка загрузки альбомов');
-      console.error('Error fetching albums:', err);
+      setError('Ошибка загрузки треков');
+      console.error('Error fetching tracks:', err);
     } finally {
       setLoading(false);
     }
   }, [selectedGenres, searchQuery, sortBy, sortOrder, pagination.page, pagination.page_size]);
 
   useEffect(() => {
-    fetchAlbums();
-  }, [fetchAlbums]);
+    fetchTracks();
+  }, [fetchTracks]);
 
   const handleGenreToggle = (genreId) => {
     setSelectedGenres((prev) => {
       if (prev.includes(genreId)) {
         return prev.filter((id) => id !== genreId);
       } else {
-        // For now, only allow one genre (backend limitation)
-        // Can be extended to support multiple genres
-        return [genreId];
+        return [...prev, genreId];
       }
     });
     setPagination((prev) => ({ ...prev, page: 1 }));
@@ -95,7 +104,8 @@ const SearchPage = () => {
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
-  const handleSortChange = (newSortBy, newSortOrder) => {
+  const handleSortChange = (e) => {
+    const [newSortBy, newSortOrder] = e.target.value.split('_');
     setSortBy(newSortBy);
     setSortOrder(newSortOrder);
     setPagination((prev) => ({ ...prev, page: 1 }));
@@ -135,96 +145,35 @@ const SearchPage = () => {
 
             <div className="filters-section">
               <h3 className="filters-section-title">Жанры</h3>
-              <div className="genres-checkboxes">
+              <div className="genres-buttons">
                 {genres.map((genre) => (
-                  <label key={genre.id} className="genre-checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={selectedGenres.includes(genre.id)}
-                      onChange={() => handleGenreToggle(genre.id)}
-                    />
-                    <span>{genre.name}</span>
-                  </label>
+                  <button
+                    key={genre.id}
+                    className={`genre-button ${selectedGenres.includes(genre.id) ? 'active' : ''}`}
+                    onClick={() => handleGenreToggle(genre.id)}
+                  >
+                    {genre.name}
+                  </button>
                 ))}
               </div>
             </div>
 
             <div className="filters-section">
               <h3 className="filters-section-title">Сортировка</h3>
-              <div className="sort-options">
-                <label className="sort-option">
-                  <input
-                    type="radio"
-                    name="sort"
-                    checked={sortBy === 'release_date' && sortOrder === 'desc'}
-                    onChange={() => handleSortChange('release_date', 'desc')}
-                  />
-                  <span>По дате выхода (новые)</span>
-                </label>
-                <label className="sort-option">
-                  <input
-                    type="radio"
-                    name="sort"
-                    checked={sortBy === 'release_date' && sortOrder === 'asc'}
-                    onChange={() => handleSortChange('release_date', 'asc')}
-                  />
-                  <span>По дате выхода (старые)</span>
-                </label>
-                <label className="sort-option">
-                  <input
-                    type="radio"
-                    name="sort"
-                    checked={sortBy === 'title' && sortOrder === 'asc'}
-                    onChange={() => handleSortChange('title', 'asc')}
-                  />
-                  <span>По алфавиту (А-Я)</span>
-                </label>
-                <label className="sort-option">
-                  <input
-                    type="radio"
-                    name="sort"
-                    checked={sortBy === 'title' && sortOrder === 'desc'}
-                    onChange={() => handleSortChange('title', 'desc')}
-                  />
-                  <span>По алфавиту (Я-А)</span>
-                </label>
-                <label className="sort-option">
-                  <input
-                    type="radio"
-                    name="sort"
-                    checked={sortBy === 'average_rating' && sortOrder === 'desc'}
-                    onChange={() => handleSortChange('average_rating', 'desc')}
-                  />
-                  <span>По рейтингу (высокий)</span>
-                </label>
-                <label className="sort-option">
-                  <input
-                    type="radio"
-                    name="sort"
-                    checked={sortBy === 'average_rating' && sortOrder === 'asc'}
-                    onChange={() => handleSortChange('average_rating', 'asc')}
-                  />
-                  <span>По рейтингу (низкий)</span>
-                </label>
-                <label className="sort-option">
-                  <input
-                    type="radio"
-                    name="sort"
-                    checked={sortBy === 'created_at' && sortOrder === 'desc'}
-                    onChange={() => handleSortChange('created_at', 'desc')}
-                  />
-                  <span>По дате добавления (новые)</span>
-                </label>
-                <label className="sort-option">
-                  <input
-                    type="radio"
-                    name="sort"
-                    checked={sortBy === 'created_at' && sortOrder === 'asc'}
-                    onChange={() => handleSortChange('created_at', 'asc')}
-                  />
-                  <span>По дате добавления (старые)</span>
-                </label>
-              </div>
+              <select
+                className="sort-select"
+                value={`${sortBy}_${sortOrder}`}
+                onChange={handleSortChange}
+              >
+                <option value="created_at_desc">По дате добавления (новые)</option>
+                <option value="created_at_asc">По дате добавления (старые)</option>
+                <option value="release_date_desc">По дате выхода (новые)</option>
+                <option value="release_date_asc">По дате выхода (старые)</option>
+                <option value="title_asc">По алфавиту (А-Я)</option>
+                <option value="title_desc">По алфавиту (Я-А)</option>
+                <option value="average_rating_desc">По рейтингу (высокий)</option>
+                <option value="average_rating_asc">По рейтингу (низкий)</option>
+              </select>
             </div>
 
             <button onClick={clearFilters} className="btn-clear-filters">
@@ -242,19 +191,19 @@ const SearchPage = () => {
               <>
                 <div className="results-header">
                   <p className="results-count">
-                    Найдено альбомов: {pagination.total}
+                    Найдено треков: {pagination.total}
                   </p>
                 </div>
 
-                {albums.length === 0 ? (
+                {tracks.length === 0 ? (
                   <div className="empty-state">
-                    Альбомы не найдены. Попробуйте изменить фильтры.
+                    Треки не найдены. Попробуйте изменить фильтры.
                   </div>
                 ) : (
                   <>
-                    <div className="albums-grid">
-                      {albums.map((album) => (
-                        <AlbumCard key={album.id} album={album} />
+                    <div className="tracks-grid">
+                      {tracks.map((track) => (
+                        <TrackCard key={track.id} track={track} />
                       ))}
                     </div>
 

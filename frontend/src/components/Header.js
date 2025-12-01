@@ -21,7 +21,8 @@ const Header = () => {
       <div className="container">
         <div className="header-content">
           <Link to="/" className="logo">
-            <h1>🎵 Мьюзик Рейтинг</h1>
+            <img src="/logo.png" alt="Мьюзик Рейтинг" className="logo-image" />
+            <h1>Мьюзик Рейтинг</h1>
           </Link>
           <SearchBar />
           <nav className="nav">
@@ -34,9 +35,6 @@ const Header = () => {
             </button>
             <Link to="/" className="nav-link">
               Актуальное
-            </Link>
-            <Link to="/search" className="nav-link">
-              Каталог
             </Link>
             {isAuthenticated && (
               <>
