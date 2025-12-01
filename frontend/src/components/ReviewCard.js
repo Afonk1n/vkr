@@ -100,6 +100,34 @@ const ReviewCard = ({ review, onEdit, onDelete, onUpdate, moderationActions, hid
               )}
             </div>
             <span className="review-date-compact-header">{formatDate(review.created_at)}</span>
+            
+            {/* Информация об альбоме или треке - перемещена сюда */}
+            {(review.album || review.track) && (
+              <div className="review-item-info-blocks">
+                {review.album ? (
+                  <>
+                    <span className="review-info-badge">
+                      Артист: <Link to={`/albums/${review.album.id}`} className="review-info-link">{review.album.artist}</Link>
+                    </span>
+                    <span className="review-info-badge">
+                      Альбом: <Link to={`/albums/${review.album.id}`} className="review-info-link">{review.album.title}</Link>
+                    </span>
+                  </>
+                ) : review.track ? (
+                  <>
+                    <span className="review-info-badge">
+                      Артист: <Link to={`/albums/${review.track.album?.id || review.track.album_id}`} className="review-info-link">{review.track.album?.artist || 'Неизвестный артист'}</Link>
+                    </span>
+                    <span className="review-info-badge">
+                      Альбом: <Link to={`/albums/${review.track.album?.id || review.track.album_id}`} className="review-info-link">{review.track.album?.title || 'Неизвестный альбом'}</Link>
+                    </span>
+                    <span className="review-info-badge">
+                      Трек: <Link to={`/tracks/${review.track.id}`} className="review-info-link">{review.track.title}</Link>
+                    </span>
+                  </>
+                ) : null}
+              </div>
+            )}
           </div>
         </div>
         
@@ -116,28 +144,6 @@ const ReviewCard = ({ review, onEdit, onDelete, onUpdate, moderationActions, hid
           </div>
         </div>
       </div>
-
-      {/* Информация об альбоме или треке */}
-      {(review.album || review.track) && (
-        <div className="review-item-info-compact">
-          {review.album ? (
-            <Link to={`/albums/${review.album.id}`} className="review-item-link">
-              <span className="review-item-title">{review.album.title}</span>
-              <span className="review-item-artist">• {review.album.artist}</span>
-            </Link>
-          ) : review.track ? (
-            <Link to={`/albums/${review.track.album?.id || review.track.album_id}`} className="review-item-link">
-              <span className="review-item-title">{review.track.title}</span>
-              {review.track.album && (
-                <>
-                  <span className="review-item-artist">• {review.track.album.title}</span>
-                  <span className="review-item-artist">• {review.track.album.artist}</span>
-                </>
-              )}
-            </Link>
-          ) : null}
-        </div>
-      )}
 
       {review.text && (review.status === 'approved' || isAdmin || moderationActions) && (
         <div className="review-content-compact">

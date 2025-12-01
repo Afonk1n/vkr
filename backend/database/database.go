@@ -414,54 +414,54 @@ func seedData() error {
 
 	albums := []models.Album{
 		{
-			Title:          "Abbey Road",
-			Artist:         "The Beatles",
+			Title:          "Жить в твоей голове",
+			Artist:         "Земфира",
 			GenreID:        rockGenre.ID,
 			CoverImagePath: "/preview/1.jpg",
-			Description:    "Легендарный альбом The Beatles, один из величайших в истории рок-музыки",
+			Description:    "Седьмой студийный альбом Земфиры, выпущенный в 2021 году",
 			AverageRating:  0,
 		},
 		{
-			Title:          "Thriller",
-			Artist:         "Michael Jackson",
+			Title:          "Vinyl #1",
+			Artist:         "Zivert",
 			GenreID:        popGenre.ID,
 			CoverImagePath: "/preview/4.jpg",
-			Description:    "Самый продаваемый альбом всех времен",
+			Description:    "Дебютный студийный альбом Zivert, один из самых успешных поп-альбомов 2019 года",
 			AverageRating:  0,
 		},
 		{
-			Title:          "The Chronic",
-			Artist:         "Dr. Dre",
+			Title:          "Горгород",
+			Artist:         "Oxxxymiron",
 			GenreID:        hiphopGenre.ID,
 			CoverImagePath: "/preview/7.jpg",
-			Description:    "Классический альбом хип-хопа 90-х",
+			Description:    "Концептуальный альбом Oxxxymiron, выпущенный в 2015 году",
 			AverageRating:  0,
 		},
 		{
-			Title:          "Random Access Memories",
-			Artist:         "Daft Punk",
+			Title:          "До свидания",
+			Artist:         "IC3PEAK",
 			GenreID:        electronicGenre.ID,
 			CoverImagePath: "/preview/8.jpg",
-			Description:    "Электронный альбом с элементами диско и фанка",
+			Description:    "Электронный альбом дуэта IC3PEAK с элементами индастриала и трип-хопа",
 			AverageRating:  0,
 		},
 		{
-			Title:          "Kind of Blue",
-			Artist:         "Miles Davis",
-			GenreID:        jazzGenre.ID,
+			Title:          "Раскраски для взрослых",
+			Artist:         "Монеточка",
+			GenreID:        popGenre.ID,
 			CoverImagePath: "/preview/9.jpg",
-			Description:    "Величайший джазовый альбом всех времен",
+			Description:    "Второй студийный альбом Монеточки, выпущенный в 2018 году",
 			AverageRating:  0,
 		},
 	}
 
 	// Seed albums - create or update with cover images
 	albumMap := map[string]string{
-		"Abbey Road":             "/preview/1.jpg",
-		"Thriller":               "/preview/4.jpg",
-		"The Chronic":            "/preview/7.jpg",
-		"Random Access Memories": "/preview/8.jpg",
-		"Kind of Blue":           "/preview/9.jpg",
+		"Жить в твоей голове":     "/preview/1.jpg",
+		"Vinyl #1":                "/preview/4.jpg",
+		"Горгород":                "/preview/7.jpg",
+		"До свидания":             "/preview/8.jpg",
+		"Раскраски для взрослых":   "/preview/9.jpg",
 	}
 
 	createdAlbums := 0
@@ -606,75 +606,61 @@ func seedTracks() error {
 		GenreNames     []string // Multiple genres per track
 		CoverImagePath string   // Optional cover image path
 	}{
-		// Abbey Road tracks
-		{"Abbey Road", "Come Together", 259, 1, []string{"Рок", "Поп"}, "/preview/1.jpg"},
-		{"Abbey Road", "Something", 182, 2, []string{"Рок", "Поп"}, "/preview/2.jpg"},
-		{"Abbey Road", "Maxwell's Silver Hammer", 207, 3, []string{"Рок"}, ""},
-		{"Abbey Road", "Oh! Darling", 207, 4, []string{"Рок", "Поп"}, ""},
-		{"Abbey Road", "Octopus's Garden", 171, 5, []string{"Рок"}, ""},
-		{"Abbey Road", "I Want You (She's So Heavy)", 468, 6, []string{"Рок"}, ""},
-		{"Abbey Road", "Here Comes the Sun", 185, 7, []string{"Рок", "Поп"}, "/preview/3.jpg"},
-		{"Abbey Road", "Because", 164, 8, []string{"Рок"}, ""},
-		{"Abbey Road", "You Never Give Me Your Money", 243, 9, []string{"Рок", "Поп"}, ""},
-		{"Abbey Road", "Sun King", 147, 10, []string{"Рок"}, ""},
-		{"Abbey Road", "Mean Mr. Mustard", 66, 11, []string{"Рок"}, ""},
-		{"Abbey Road", "Polythene Pam", 72, 12, []string{"Рок"}, ""},
-		{"Abbey Road", "She Came In Through the Bathroom Window", 118, 13, []string{"Рок", "Поп"}, ""},
-		{"Abbey Road", "Golden Slumbers", 91, 14, []string{"Рок", "Поп"}, ""},
-		{"Abbey Road", "Carry That Weight", 96, 15, []string{"Рок"}, ""},
-		{"Abbey Road", "The End", 122, 16, []string{"Рок"}, ""},
-		{"Abbey Road", "Her Majesty", 23, 17, []string{"Рок", "Поп"}, ""},
+		// Земфира - Жить в твоей голове
+		{"Жить в твоей голове", "Крым", 245, 1, []string{"Рок"}, "/preview/1.jpg"},
+		{"Жить в твоей голове", "Ок", 198, 2, []string{"Рок", "Поп"}, "/preview/2.jpg"},
+		{"Жить в твоей голове", "Жить в твоей голове", 223, 3, []string{"Рок"}, ""},
+		{"Жить в твоей голове", "Мы разбиваемся", 267, 4, []string{"Рок"}, ""},
+		{"Жить в твоей голове", "Таблетки", 201, 5, []string{"Рок"}, ""},
+		{"Жить в твоей голове", "Без шансов", 189, 6, []string{"Рок"}, ""},
+		{"Жить в твоей голове", "Абъюза", 215, 7, []string{"Рок", "Поп"}, "/preview/3.jpg"},
+		{"Жить в твоей голове", "Ракеты", 192, 8, []string{"Рок"}, ""},
+		{"Жить в твоей голове", "Снег идёт", 204, 9, []string{"Рок", "Поп"}, ""},
 
-		// Thriller tracks
-		{"Thriller", "Wanna Be Startin' Somethin'", 363, 1, []string{"Поп", "Электронная"}, ""},
-		{"Thriller", "Baby Be Mine", 260, 2, []string{"Поп"}, ""},
-		{"Thriller", "The Girl Is Mine", 222, 3, []string{"Поп"}, ""},
-		{"Thriller", "Thriller", 357, 4, []string{"Поп", "Электронная"}, "/preview/4.jpg"},
-		{"Thriller", "Beat It", 258, 5, []string{"Поп", "Рок"}, "/preview/5.jpg"},
-		{"Thriller", "Billie Jean", 294, 6, []string{"Поп", "Электронная"}, "/preview/6.jpg"},
-		{"Thriller", "Human Nature", 207, 7, []string{"Поп"}, ""},
-		{"Thriller", "P.Y.T. (Pretty Young Thing)", 238, 8, []string{"Поп", "Электронная"}, ""},
-		{"Thriller", "The Lady in My Life", 300, 9, []string{"Поп"}, ""},
+		// Zivert - Vinyl #1
+		{"Vinyl #1", "Life", 201, 1, []string{"Поп", "Электронная"}, ""},
+		{"Vinyl #1", "Credo", 200, 2, []string{"Поп"}, ""},
+		{"Vinyl #1", "ЯТЛ", 195, 3, []string{"Поп"}, ""},
+		{"Vinyl #1", "Ещё хочу", 198, 4, []string{"Поп", "Электронная"}, "/preview/4.jpg"},
+		{"Vinyl #1", "Анечка", 203, 5, []string{"Поп", "Рок"}, "/preview/5.jpg"},
+		{"Vinyl #1", "Fly", 197, 6, []string{"Поп", "Электронная"}, "/preview/6.jpg"},
+		{"Vinyl #1", "Чак", 189, 7, []string{"Поп"}, ""},
+		{"Vinyl #1", "Beverly Hills", 192, 8, []string{"Поп", "Электронная"}, ""},
+		{"Vinyl #1", "Океанами стали", 205, 9, []string{"Поп"}, ""},
 
-		// The Chronic tracks
-		{"The Chronic", "The Chronic (Intro)", 68, 1, []string{"Хип-хоп"}, ""},
-		{"The Chronic", "Fuck Wit Dre Day (And Everybody's Celebratin')", 269, 2, []string{"Хип-хоп"}, ""},
-		{"The Chronic", "Let Me Ride", 280, 3, []string{"Хип-хоп", "Электронная"}, ""},
-		{"The Chronic", "The Day the Niggaz Took Over", 241, 4, []string{"Хип-хоп"}, ""},
-		{"The Chronic", "Nuthin' But a 'G' Thang", 214, 5, []string{"Хип-хоп"}, "/preview/7.jpg"},
-		{"The Chronic", "Deeez Nuuuts", 300, 6, []string{"Хип-хоп"}, ""},
-		{"The Chronic", "Lil' Ghetto Boy", 300, 7, []string{"Хип-хоп"}, ""},
-		{"The Chronic", "A Nigga Witta Gun", 207, 8, []string{"Хип-хоп"}, ""},
-		{"The Chronic", "Rat-Tat-Tat-Tat", 220, 9, []string{"Хип-хоп"}, ""},
-		{"The Chronic", "The $20 Sack Pyramid", 60, 10, []string{"Хип-хоп"}, ""},
-		{"The Chronic", "Lyrical Gangbang", 252, 11, []string{"Хип-хоп"}, ""},
-		{"The Chronic", "High Powered", 180, 12, []string{"Хип-хоп"}, ""},
-		{"The Chronic", "The Doctor's Office", 60, 13, []string{"Хип-хоп"}, ""},
-		{"The Chronic", "Stranded on Death Row", 300, 14, []string{"Хип-хоп"}, ""},
-		{"The Chronic", "The Roach (The Chronic Outro)", 120, 15, []string{"Хип-хоп"}, ""},
-		{"The Chronic", "Bitches Ain't Shit", 288, 16, []string{"Хип-хоп"}, ""},
+		// Oxxxymiron - Горгород
+		{"Горгород", "Где нас нет", 240, 1, []string{"Хип-хоп"}, ""},
+		{"Горгород", "Город под подошвой", 267, 2, []string{"Хип-хоп"}, ""},
+		{"Горгород", "Не с начала", 251, 3, []string{"Хип-хоп", "Электронная"}, ""},
+		{"Горгород", "Переплетено", 234, 4, []string{"Хип-хоп"}, ""},
+		{"Горгород", "Дежавю", 228, 5, []string{"Хип-хоп"}, "/preview/7.jpg"},
+		{"Горгород", "Лондон против всех", 245, 6, []string{"Хип-хоп"}, ""},
+		{"Горгород", "Полигон", 239, 7, []string{"Хип-хоп"}, ""},
+		{"Горгород", "Колыбельная", 223, 8, []string{"Хип-хоп"}, ""},
+		{"Горгород", "Где нас нет (ремикс)", 256, 9, []string{"Хип-хоп"}, ""},
 
-		// Random Access Memories tracks
-		{"Random Access Memories", "Give Life Back to Music", 274, 1, []string{"Электронная", "Поп"}, ""},
-		{"Random Access Memories", "The Game of Love", 321, 2, []string{"Электронная", "Поп"}, ""},
-		{"Random Access Memories", "Giorgio by Moroder", 544, 3, []string{"Электронная"}, ""},
-		{"Random Access Memories", "Within", 237, 4, []string{"Электронная", "Поп"}, ""},
-		{"Random Access Memories", "Instant Crush", 337, 5, []string{"Электронная", "Рок"}, ""},
-		{"Random Access Memories", "Lose Yourself to Dance", 353, 6, []string{"Электронная", "Поп"}, ""},
-		{"Random Access Memories", "Touch", 498, 7, []string{"Электронная", "Поп"}, ""},
-		{"Random Access Memories", "Get Lucky", 248, 8, []string{"Электронная", "Поп"}, "/preview/8.jpg"},
-		{"Random Access Memories", "Beyond", 290, 9, []string{"Электронная"}, ""},
-		{"Random Access Memories", "Motherboard", 340, 10, []string{"Электронная"}, ""},
-		{"Random Access Memories", "Fragments of Time", 279, 11, []string{"Электронная", "Поп"}, ""},
-		{"Random Access Memories", "Doin' It Right", 251, 12, []string{"Электронная", "Поп"}, ""},
-		{"Random Access Memories", "Contact", 403, 13, []string{"Электронная"}, ""},
+		// IC3PEAK - До свидания
+		{"До свидания", "Смерти больше нет", 198, 1, []string{"Электронная", "Поп"}, ""},
+		{"До свидания", "Сказка", 215, 2, []string{"Электронная", "Поп"}, ""},
+		{"До свидания", "Марш", 189, 3, []string{"Электронная"}, ""},
+		{"До свидания", "Грустная сука", 203, 4, []string{"Электронная", "Поп"}, ""},
+		{"До свидания", "Слёзы", 192, 5, []string{"Электронная", "Рок"}, ""},
+		{"До свидания", "Кости", 207, 6, []string{"Электронная", "Поп"}, ""},
+		{"До свидания", "До свидания", 221, 7, []string{"Электронная", "Поп"}, ""},
+		{"До свидания", "Плакать", 195, 8, []string{"Электронная", "Поп"}, "/preview/8.jpg"},
+		{"До свидания", "Трипута", 201, 9, []string{"Электронная"}, ""},
+		{"До свидания", "Это не любовь", 189, 10, []string{"Электронная"}, ""},
 
-		// Kind of Blue tracks
-		{"Kind of Blue", "So What", 564, 1, []string{"Джаз"}, ""},
-		{"Kind of Blue", "Freddie Freeloader", 589, 2, []string{"Джаз"}, ""},
-		{"Kind of Blue", "Blue in Green", 338, 3, []string{"Джаз"}, ""},
-		{"Kind of Blue", "All Blues", 693, 4, []string{"Джаз"}, ""},
-		{"Kind of Blue", "Flamenco Sketches", 566, 5, []string{"Джаз"}, ""},
+		// Монеточка - Раскраски для взрослых
+		{"Раскраски для взрослых", "Каждый раз", 198, 1, []string{"Поп"}, ""},
+		{"Раскраски для взрослых", "Нимфоманка", 203, 2, []string{"Поп"}, ""},
+		{"Раскраски для взрослых", "90", 195, 3, []string{"Поп"}, ""},
+		{"Раскраски для взрослых", "Последняя дискотека", 201, 4, []string{"Поп", "Электронная"}, ""},
+		{"Раскраски для взрослых", "Раскраски для взрослых", 207, 5, []string{"Поп"}, ""},
+		{"Раскраски для взрослых", "Уйди, но останься", 192, 6, []string{"Поп"}, ""},
+		{"Раскраски для взрослых", "Песенка", 189, 7, []string{"Поп"}, ""},
+		{"Раскраски для взрослых", "Крошка", 205, 8, []string{"Поп"}, ""},
+		{"Раскраски для взрослых", "Люди", 198, 9, []string{"Поп"}, "/preview/9.jpg"},
 	}
 
 	// Create tracks and assign genres
@@ -701,7 +687,9 @@ func seedTracks() error {
 
 		// Check if track already exists, if not create it
 		var track models.Track
-		if err := DB.Where("album_id = ? AND title = ?", album.ID, trackData.Title).First(&track).Error; err != nil {
+		trackExists := DB.Where("album_id = ? AND title = ?", album.ID, trackData.Title).First(&track).Error == nil
+		
+		if !trackExists {
 			// Track doesn't exist, create it
 			track = models.Track{
 				AlbumID:        album.ID,
@@ -722,18 +710,29 @@ func seedTracks() error {
 			existingTracks++
 		}
 
-		// Assign multiple genres
+		// Assign multiple genres - use Replace to avoid duplicates
 		var trackGenres []models.Genre
 		for _, genreName := range trackData.GenreNames {
 			if genre, exists := genreMap[genreName]; exists {
-				trackGenres = append(trackGenres, genre)
+				// Check for duplicates in trackGenres
+				duplicate := false
+				for _, g := range trackGenres {
+					if g.ID == genre.ID {
+						duplicate = true
+						break
+					}
+				}
+				if !duplicate {
+					trackGenres = append(trackGenres, genre)
+				}
 			} else {
 				log.Printf("  WARNING: Genre '%s' not found for track '%s'", genreName, trackData.Title)
 			}
 		}
 
 		if len(trackGenres) > 0 {
-			if err := DB.Model(&track).Association("Genres").Append(trackGenres); err != nil {
+			// Use Replace instead of Append to avoid duplicates for existing tracks
+			if err := DB.Model(&track).Association("Genres").Replace(trackGenres); err != nil {
 				log.Printf("ERROR: Failed to assign genres to track %s: %v", trackData.Title, err)
 				trackGenreErrors++
 			} else {
@@ -908,11 +907,12 @@ func seedReviews() error {
 	if !reviewsExist {
 		log.Println("No reviews found, creating new reviews...")
 		// Create test reviews (using atmosphere ratings 1-10, converted to multiplier)
+		// Альбомы: [0] Жить в твоей голове, [1] Vinyl #1, [2] Горгород, [3] До свидания, [4] Раскраски для взрослых
 		reviews := []models.Review{
 			{
 				UserID:               testUser.ID,
-				AlbumID:              &albums[0].ID, // Abbey Road
-				Text:                 "Невероятный альбом! The Beatles на пике формы. Каждая композиция - это произведение искусства. Особенно выделяется медилейн с 'Come Together' и 'Something'. Звукорежиссура безупречна, аранжировки гениальны.",
+				AlbumID:              &albums[0].ID, // Жить в твоей голове
+				Text:                 "Невероятный альбом! Земфира на пике формы. Каждая композиция - это произведение искусства. Особенно выделяются 'Крым' и 'Ок'. Звукорежиссура безупречна, аранжировки гениальны.",
 				RatingRhymes:         9,
 				RatingStructure:      10,
 				RatingImplementation: 10,
@@ -923,8 +923,8 @@ func seedReviews() error {
 			},
 			{
 				UserID:               testUser.ID,
-				AlbumID:              &albums[1].ID, // Thriller
-				Text:                 "Классика поп-музыки! Michael Jackson создал настоящий шедевр. 'Billie Jean' и 'Beat It' - это вечные хиты. Танцевальные ритмы, запоминающиеся мелодии и неповторимый вокал.",
+				AlbumID:              &albums[1].ID, // Vinyl #1
+				Text:                 "Классика поп-музыки! Zivert создала настоящий шедевр. 'Life' и 'Ещё хочу' - это вечные хиты. Танцевальные ритмы, запоминающиеся мелодии и неповторимый вокал.",
 				RatingRhymes:         8,
 				RatingStructure:      9,
 				RatingImplementation: 10,
@@ -935,8 +935,8 @@ func seedReviews() error {
 			},
 			{
 				UserID:               admin.ID,
-				AlbumID:              &albums[2].ID, // The Chronic
-				Text:                 "Dr. Dre задал новый стандарт для хип-хопа. Битмейкинг на высшем уровне, семплы подобраны идеально. 'Nuthin' But a G Thang' - это гимн эпохи. Альбом звучит свежо даже спустя десятилетия.",
+				AlbumID:              &albums[2].ID, // Горгород
+				Text:                 "Oxxxymiron задал новый стандарт для хип-хопа. Битмейкинг на высшем уровне, семплы подобраны идеально. 'Где нас нет' - это гимн эпохи. Альбом звучит свежо даже спустя годы.",
 				RatingRhymes:         9,
 				RatingStructure:      9,
 				RatingImplementation: 10,
@@ -947,8 +947,8 @@ func seedReviews() error {
 			},
 			{
 				UserID:               testUser.ID,
-				AlbumID:              &albums[3].ID, // Random Access Memories
-				Text:                 "Daft Punk создали что-то особенное. Смешение электроники, диско и фанка работает идеально. 'Get Lucky' - это летний хит, который не надоедает. Альбом звучит как путешествие во времени.",
+				AlbumID:              &albums[3].ID, // До свидания
+				Text:                 "IC3PEAK создали что-то особенное. Смешение электроники, индастриала и трип-хопа работает идеально. 'Смерти больше нет' - это мощный хит, который не надоедает. Альбом звучит как путешествие в темную сторону.",
 				RatingRhymes:         7,
 				RatingStructure:      9,
 				RatingImplementation: 10,
@@ -959,8 +959,8 @@ func seedReviews() error {
 			},
 			{
 				UserID:               admin.ID,
-				AlbumID:              &albums[4].ID, // Kind of Blue
-				Text:                 "Абсолютный шедевр джаза. Miles Davis на этом альбоме создал что-то трансцендентное. Modal jazz в его лучшем проявлении. Каждая нота на своем месте. 'So What' - это икона жанра.",
+				AlbumID:              &albums[4].ID, // Раскраски для взрослых
+				Text:                 "Абсолютный шедевр поп-музыки. Монеточка на этом альбоме создала что-то трансцендентное. Искренность и ирония в их лучшем проявлении. Каждая песня на своем месте. 'Каждый раз' - это икона жанра.",
 				RatingRhymes:         10,
 				RatingStructure:      10,
 				RatingImplementation: 10,
@@ -971,8 +971,8 @@ func seedReviews() error {
 			},
 			{
 				UserID:               testUser.ID,
-				AlbumID:              &albums[0].ID, // Abbey Road (вторая рецензия)
-				Text:                 "Хочу добавить еще несколько слов об этом альбоме. 'Here Comes the Sun' - одна из самых красивых песен в истории музыки. George Harrison показал свой талант композитора.",
+				AlbumID:              &albums[0].ID, // Жить в твоей голове (вторая рецензия)
+				Text:                 "Хочу добавить еще несколько слов об этом альбоме. 'Снег идёт' - одна из самых красивых песен в истории русской музыки. Земфира показала свой талант композитора.",
 				RatingRhymes:         8,
 				RatingStructure:      9,
 				RatingImplementation: 9,
@@ -982,7 +982,7 @@ func seedReviews() error {
 			},
 			{
 				UserID:               testUser.ID,
-				AlbumID:              &albums[1].ID, // Thriller (только оценка, без текста)
+				AlbumID:              &albums[1].ID, // Vinyl #1 (только оценка, без текста)
 				Text:                 "",
 				RatingRhymes:         7,
 				RatingStructure:      8,
@@ -1069,12 +1069,13 @@ func seedReviews() error {
 		}
 
 		// Добавляем больше рецензий для разных альбомов от разных пользователей
+		// Альбомы: [0] Жить в твоей голове, [1] Vinyl #1, [2] Горгород, [3] До свидания, [4] Раскраски для взрослых
 		if len(allTestUsersForReviews) >= 3 && len(albums) >= 5 {
 			additionalReviews := []models.Review{
 				{
 					UserID:               allTestUsersForReviews[2].ID, // musiclover1
-					AlbumID:              &albums[0].ID,                // Abbey Road
-					Text:                 "Классика рока! The Beatles показывают своё мастерство на этом альбоме.",
+					AlbumID:              &albums[0].ID,                // Жить в твоей голове
+					Text:                 "Классика рока! Земфира показывает своё мастерство на этом альбоме.",
 					RatingRhymes:         9,
 					RatingStructure:      9,
 					RatingImplementation: 9,
@@ -1085,8 +1086,8 @@ func seedReviews() error {
 				},
 				{
 					UserID:               allTestUsersForReviews[3].ID, // musiclover2
-					AlbumID:              &albums[1].ID,                // Thriller
-					Text:                 "Великолепный альбом Michael Jackson! 'Thriller' - это легенда.",
+					AlbumID:              &albums[1].ID,                // Vinyl #1
+					Text:                 "Великолепный альбом Zivert! 'Vinyl #1' - это легенда.",
 					RatingRhymes:         9,
 					RatingStructure:      10,
 					RatingImplementation: 10,
@@ -1097,8 +1098,8 @@ func seedReviews() error {
 				},
 				{
 					UserID:               allTestUsersForReviews[4].ID, // musiclover3
-					AlbumID:              &albums[2].ID,                // The Chronic
-					Text:                 "Dr. Dre создал шедевр хип-хопа. Битмейкинг вне времени.",
+					AlbumID:              &albums[2].ID,                // Горгород
+					Text:                 "Oxxxymiron создал шедевр хип-хопа. Битмейкинг вне времени.",
 					RatingRhymes:         10,
 					RatingStructure:      9,
 					RatingImplementation: 10,
@@ -1109,8 +1110,8 @@ func seedReviews() error {
 				},
 				{
 					UserID:               allTestUsersForReviews[5].ID, // musiclover4
-					AlbumID:              &albums[3].ID,                // Random Access Memories
-					Text:                 "Daft Punk на высоте! Электроника встречается с диско.",
+					AlbumID:              &albums[3].ID,                // До свидания
+					Text:                 "IC3PEAK на высоте! Электроника встречается с индастриалом.",
 					RatingRhymes:         8,
 					RatingStructure:      9,
 					RatingImplementation: 10,
@@ -1121,8 +1122,8 @@ func seedReviews() error {
 				},
 				{
 					UserID:               allTestUsersForReviews[6].ID, // musiclover5
-					AlbumID:              &albums[4].ID,                // Kind of Blue
-					Text:                 "Miles Davis создал джазовый шедевр. Каждая композиция - произведение искусства.",
+					AlbumID:              &albums[4].ID,                // Раскраски для взрослых
+					Text:                 "Монеточка создала поп-шедевр. Каждая композиция - произведение искусства.",
 					RatingRhymes:         10,
 					RatingStructure:      10,
 					RatingImplementation: 10,
@@ -1133,8 +1134,8 @@ func seedReviews() error {
 				},
 				{
 					UserID:               allTestUsersForReviews[7].ID, // musiclover6
-					AlbumID:              &albums[0].ID,                // Abbey Road (третья рецензия)
-					Text:                 "Альбом на все времена. The Beatles в лучшей форме.",
+					AlbumID:              &albums[0].ID,                // Жить в твоей голове (третья рецензия)
+					Text:                 "Альбом на все времена. Земфира в лучшей форме.",
 					RatingRhymes:         10,
 					RatingStructure:      10,
 					RatingImplementation: 10,
@@ -1292,11 +1293,11 @@ func seedReviews() error {
 // updateAlbumCoverImages updates cover_image_path for existing albums
 func updateAlbumCoverImages() error {
 	albumMap := map[string]string{
-		"Abbey Road":             "/preview/1.jpg",
-		"Thriller":               "/preview/4.jpg",
-		"The Chronic":            "/preview/7.jpg",
-		"Random Access Memories": "/preview/8.jpg",
-		"Kind of Blue":           "/preview/9.jpg",
+		"Жить в твоей голове":   "/preview/1.jpg",
+		"Vinyl #1":               "/preview/4.jpg",
+		"Горгород":               "/preview/7.jpg",
+		"До свидания":            "/preview/8.jpg",
+		"Раскраски для взрослых": "/preview/9.jpg",
 	}
 
 	for title, coverPath := range albumMap {

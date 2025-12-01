@@ -249,7 +249,22 @@ func (tc *TrackController) GetPopularTracks(c *gin.Context) {
 			log.Printf("Warning: failed to calculate average rating for track %d: %v", tracks[i].ID, err)
 		}
 		// Reload track to get updated rating with all relationships
-		tc.DB.Preload("Album").Preload("Album.Genre").Preload("Genres").Preload("Likes").First(&tracks[i], tracks[i].ID)
+		var updatedTrack models.Track
+		if err := tc.DB.Preload("Album").Preload("Album.Genre").Preload("Genres").Preload("Likes").First(&updatedTrack, tracks[i].ID).Error; err == nil {
+			// Remove duplicate genres by ID
+			genreMap := make(map[uint]models.Genre)
+			for _, genre := range updatedTrack.Genres {
+				if _, exists := genreMap[genre.ID]; !exists {
+					genreMap[genre.ID] = genre
+				}
+			}
+			// Rebuild genres slice without duplicates
+			updatedTrack.Genres = make([]models.Genre, 0, len(genreMap))
+			for _, genre := range genreMap {
+				updatedTrack.Genres = append(updatedTrack.Genres, genre)
+			}
+			tracks[i] = updatedTrack
+		}
 	}
 
 	c.JSON(http.StatusOK, tracks)

@@ -481,3 +481,33 @@
   font-weight: 400;
 }
 
+.review-item-info-blocks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.review-info-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: var(--status-pending-bg);
+  color: var(--status-pending-text);
+  width: fit-content;
+}
+
+.review-info-link {
+  color: var(--status-pending-text);
+  text-decoration: none;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+
+.review-info-link:hover {
+  opacity: 0.8;
+  text-decoration: none;
+}
+
