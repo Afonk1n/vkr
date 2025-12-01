@@ -95,7 +95,15 @@ const AlbumCard = ({ album, onUpdate }) => {
       </div>
       <div className="album-info">
         <h3 className="album-title">{album.title}</h3>
-        <p className="album-artist">{album.artist}</p>
+        <p className="album-artist">
+          <Link 
+            to={`/artists/${encodeURIComponent(album.artist)}`} 
+            className="album-artist-link"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {album.artist}
+          </Link>
+        </p>
         {album.genre && (
           <span className="album-genre">{album.genre.name}</span>
         )}

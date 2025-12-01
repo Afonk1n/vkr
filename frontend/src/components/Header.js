@@ -33,7 +33,10 @@ const Header = () => {
               {theme === 'dark' ? '☀️' : '🌙'}
             </button>
             <Link to="/" className="nav-link">
-              Альбомы
+              Актуальное
+            </Link>
+            <Link to="/search" className="nav-link">
+              Каталог
             </Link>
             {isAuthenticated && (
               <>

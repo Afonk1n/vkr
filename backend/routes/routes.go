@@ -49,7 +49,8 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 		albums := api.Group("/albums")
 		{
 			albums.GET("", albumController.GetAlbums)
-			// More specific route must come before /:id
+			// More specific routes must come before /:id
+			albums.GET("/artist/:name", albumController.GetAlbumsByArtist)
 			albums.GET("/:id/tracks", trackController.GetTracks)
 			albums.GET("/:id", albumController.GetAlbum)
 			albums.POST("", middleware.AuthMiddleware(db), albumController.CreateAlbum)

@@ -78,21 +78,46 @@ const ReviewCard = ({ review, onEdit, onDelete, onUpdate, moderationActions, hid
     <div className="review-card">
       <div className="review-header-compact">
         <div className="review-author-compact">
-          {(review.user?.avatar_path && getImageUrl(review.user.avatar_path) && !avatarError) ? (
-            <img 
-              src={getImageUrl(review.user.avatar_path)} 
-              alt={review.user?.username || 'Пользователь'}
-              className="review-author-avatar"
-              onError={() => setAvatarError(true)}
-            />
+          {review.user?.id ? (
+            <Link to={`/users/${review.user.id}`} className="review-author-avatar-link">
+              {(review.user?.avatar_path && getImageUrl(review.user.avatar_path) && !avatarError) ? (
+                <img 
+                  src={getImageUrl(review.user.avatar_path)} 
+                  alt={review.user?.username || 'Пользователь'}
+                  className="review-author-avatar"
+                  onError={() => setAvatarError(true)}
+                />
+              ) : (
+                <div className="review-author-avatar-placeholder">
+                  {(review.user?.username || 'П')[0].toUpperCase()}
+                </div>
+              )}
+            </Link>
           ) : (
-            <div className="review-author-avatar-placeholder">
-              {(review.user?.username || 'П')[0].toUpperCase()}
-            </div>
+            <>
+              {(review.user?.avatar_path && getImageUrl(review.user.avatar_path) && !avatarError) ? (
+                <img 
+                  src={getImageUrl(review.user.avatar_path)} 
+                  alt={review.user?.username || 'Пользователь'}
+                  className="review-author-avatar"
+                  onError={() => setAvatarError(true)}
+                />
+              ) : (
+                <div className="review-author-avatar-placeholder">
+                  {(review.user?.username || 'П')[0].toUpperCase()}
+                </div>
+              )}
+            </>
           )}
           <div className="review-author-text-compact">
             <div className="review-author-name-row">
-              <strong>{review.user?.username || 'Неизвестный пользователь'}</strong>
+              {review.user?.id ? (
+                <Link to={`/users/${review.user.id}`} className="review-author-name-link">
+                  <strong>{review.user?.username || 'Неизвестный пользователь'}</strong>
+                </Link>
+              ) : (
+                <strong>{review.user?.username || 'Неизвестный пользователь'}</strong>
+              )}
               {review.status !== 'approved' && (
                 <span className="review-status-inline">
                   {getStatusBadge(review.status)}
@@ -107,7 +132,7 @@ const ReviewCard = ({ review, onEdit, onDelete, onUpdate, moderationActions, hid
                 {review.album ? (
                   <>
                     <span className="review-info-badge">
-                      Артист: <Link to={`/albums/${review.album.id}`} className="review-info-link">{review.album.artist}</Link>
+                      Артист: <Link to={`/artists/${encodeURIComponent(review.album.artist)}`} className="review-info-link">{review.album.artist}</Link>
                     </span>
                     <span className="review-info-badge">
                       Альбом: <Link to={`/albums/${review.album.id}`} className="review-info-link">{review.album.title}</Link>
@@ -116,7 +141,7 @@ const ReviewCard = ({ review, onEdit, onDelete, onUpdate, moderationActions, hid
                 ) : review.track ? (
                   <>
                     <span className="review-info-badge">
-                      Артист: <Link to={`/albums/${review.track.album?.id || review.track.album_id}`} className="review-info-link">{review.track.album?.artist || 'Неизвестный артист'}</Link>
+                      Артист: <Link to={`/artists/${encodeURIComponent(review.track.album?.artist || 'Неизвестный артист')}`} className="review-info-link">{review.track.album?.artist || 'Неизвестный артист'}</Link>
                     </span>
                     <span className="review-info-badge">
                       Альбом: <Link to={`/albums/${review.track.album?.id || review.track.album_id}`} className="review-info-link">{review.track.album?.title || 'Неизвестный альбом'}</Link>

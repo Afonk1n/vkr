@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { tracksAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { getImageUrl } from '../utils/imageUtils';
@@ -104,7 +104,18 @@ const TrackCard = ({ track, onUpdate }) => {
       <div className="track-card-info">
         <h3 className="track-card-title">{track.title}</h3>
         <p className="track-card-subtitle">
-          {track.album?.title} • {track.album?.artist}
+          {track.album?.title} •{' '}
+          {track.album?.artist ? (
+            <Link 
+              to={`/artists/${encodeURIComponent(track.album.artist)}`} 
+              className="track-artist-link"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {track.album.artist}
+            </Link>
+          ) : (
+            'Неизвестный артист'
+          )}
         </p>
         {track.genres && track.genres.length > 0 && (
           <div className="track-card-genres">

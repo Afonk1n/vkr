@@ -412,6 +412,12 @@ func seedData() error {
 		return fmt.Errorf("Джаз genre not found or has invalid ID")
 	}
 
+	// Helper function to create time pointer
+	createDate := func(year int, month time.Month, day int) *time.Time {
+		t := time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
+		return &t
+	}
+
 	albums := []models.Album{
 		{
 			Title:          "Жить в твоей голове",
@@ -419,6 +425,16 @@ func seedData() error {
 			GenreID:        rockGenre.ID,
 			CoverImagePath: "/preview/1.jpg",
 			Description:    "Седьмой студийный альбом Земфиры, выпущенный в 2021 году",
+			ReleaseDate:    createDate(2021, 3, 15),
+			AverageRating:  0,
+		},
+		{
+			Title:          "Вендетта",
+			Artist:         "Земфира",
+			GenreID:        rockGenre.ID,
+			CoverImagePath: "/preview/1.jpg",
+			Description:    "Шестой студийный альбом Земфиры, выпущенный в 2013 году",
+			ReleaseDate:    createDate(2013, 6, 1),
 			AverageRating:  0,
 		},
 		{
@@ -427,6 +443,16 @@ func seedData() error {
 			GenreID:        popGenre.ID,
 			CoverImagePath: "/preview/4.jpg",
 			Description:    "Дебютный студийный альбом Zivert, один из самых успешных поп-альбомов 2019 года",
+			ReleaseDate:    createDate(2019, 5, 10),
+			AverageRating:  0,
+		},
+		{
+			Title:          "Сияй",
+			Artist:         "Zivert",
+			GenreID:        popGenre.ID,
+			CoverImagePath: "/preview/4.jpg",
+			Description:    "Второй студийный альбом Zivert, выпущенный в 2021 году",
+			ReleaseDate:    createDate(2021, 9, 17),
 			AverageRating:  0,
 		},
 		{
@@ -435,6 +461,16 @@ func seedData() error {
 			GenreID:        hiphopGenre.ID,
 			CoverImagePath: "/preview/7.jpg",
 			Description:    "Концептуальный альбом Oxxxymiron, выпущенный в 2015 году",
+			ReleaseDate:    createDate(2015, 11, 13),
+			AverageRating:  0,
+		},
+		{
+			Title:          "Красота",
+			Artist:         "Oxxxymiron",
+			GenreID:        hiphopGenre.ID,
+			CoverImagePath: "/preview/7.jpg",
+			Description:    "Третий студийный альбом Oxxxymiron, выпущенный в 2021 году",
+			ReleaseDate:    createDate(2021, 12, 3),
 			AverageRating:  0,
 		},
 		{
@@ -443,6 +479,16 @@ func seedData() error {
 			GenreID:        electronicGenre.ID,
 			CoverImagePath: "/preview/8.jpg",
 			Description:    "Электронный альбом дуэта IC3PEAK с элементами индастриала и трип-хопа",
+			ReleaseDate:    createDate(2018, 4, 20),
+			AverageRating:  0,
+		},
+		{
+			Title:          "Сладкая жизнь",
+			Artist:         "IC3PEAK",
+			GenreID:        electronicGenre.ID,
+			CoverImagePath: "/preview/8.jpg",
+			Description:    "Альбом IC3PEAK, выпущенный в 2020 году",
+			ReleaseDate:    createDate(2020, 10, 30),
 			AverageRating:  0,
 		},
 		{
@@ -451,6 +497,35 @@ func seedData() error {
 			GenreID:        popGenre.ID,
 			CoverImagePath: "/preview/9.jpg",
 			Description:    "Второй студийный альбом Монеточки, выпущенный в 2018 году",
+			ReleaseDate:    createDate(2018, 3, 23),
+			AverageRating:  0,
+		},
+		{
+			Title:          "Раскраски для взрослых 2",
+			Artist:         "Монеточка",
+			GenreID:        popGenre.ID,
+			CoverImagePath: "/preview/9.jpg",
+			Description:    "Третий студийный альбом Монеточки, выпущенный в 2020 году",
+			ReleaseDate:    createDate(2020, 11, 6),
+			AverageRating:  0,
+		},
+		// Добавляем альбомы для других жанров
+		{
+			Title:          "Kind of Blue",
+			Artist:         "Miles Davis",
+			GenreID:        jazzGenre.ID,
+			CoverImagePath: "/preview/9.jpg",
+			Description:    "Классический джазовый альбом, один из самых влиятельных в истории джаза",
+			ReleaseDate:    createDate(1959, 8, 17),
+			AverageRating:  0,
+		},
+		{
+			Title:          "Blue Train",
+			Artist:         "John Coltrane",
+			GenreID:        jazzGenre.ID,
+			CoverImagePath: "/preview/9.jpg",
+			Description:    "Легендарный джазовый альбом John Coltrane",
+			ReleaseDate:    createDate(1957, 9, 15),
 			AverageRating:  0,
 		},
 	}
@@ -458,10 +533,17 @@ func seedData() error {
 	// Seed albums - create or update with cover images
 	albumMap := map[string]string{
 		"Жить в твоей голове":     "/preview/1.jpg",
+		"Вендетта":                "/preview/1.jpg",
 		"Vinyl #1":                "/preview/4.jpg",
+		"Сияй":                    "/preview/4.jpg",
 		"Горгород":                "/preview/7.jpg",
+		"Красота":                 "/preview/7.jpg",
 		"До свидания":             "/preview/8.jpg",
+		"Сладкая жизнь":           "/preview/8.jpg",
 		"Раскраски для взрослых":   "/preview/9.jpg",
+		"Раскраски для взрослых 2": "/preview/9.jpg",
+		"Kind of Blue":            "/preview/9.jpg",
+		"Blue Train":              "/preview/9.jpg",
 	}
 
 	createdAlbums := 0
@@ -661,6 +743,34 @@ func seedTracks() error {
 		{"Раскраски для взрослых", "Песенка", 189, 7, []string{"Поп"}, ""},
 		{"Раскраски для взрослых", "Крошка", 205, 8, []string{"Поп"}, ""},
 		{"Раскраски для взрослых", "Люди", 198, 9, []string{"Поп"}, "/preview/9.jpg"},
+
+		// Земфира - Вендетта
+		{"Вендетта", "Небо", 245, 1, []string{"Рок"}, ""},
+		{"Вендетта", "Вендетта", 198, 2, []string{"Рок"}, ""},
+		{"Вендетта", "Без шансов", 223, 3, []string{"Рок"}, ""},
+		{"Вендетта", "Дождь", 267, 4, []string{"Рок"}, ""},
+		{"Вендетта", "Прости меня моя любовь", 201, 5, []string{"Рок"}, ""},
+
+		// Zivert - Сияй
+		{"Сияй", "Сияй", 201, 1, []string{"Поп", "Электронная"}, ""},
+		{"Сияй", "ЯТЛ", 200, 2, []string{"Поп"}, ""},
+		{"Сияй", "Credo", 195, 3, []string{"Поп"}, ""},
+		{"Сияй", "Life", 198, 4, []string{"Поп", "Электронная"}, ""},
+
+		// Oxxxymiron - Красота
+		{"Красота", "Красота", 240, 1, []string{"Хип-хоп"}, ""},
+		{"Красота", "Переплетено", 267, 2, []string{"Хип-хоп"}, ""},
+		{"Красота", "Где нас нет", 251, 3, []string{"Хип-хоп", "Электронная"}, ""},
+
+		// IC3PEAK - Сладкая жизнь
+		{"Сладкая жизнь", "Сладкая жизнь", 198, 1, []string{"Электронная", "Поп"}, ""},
+		{"Сладкая жизнь", "Сказка", 215, 2, []string{"Электронная", "Поп"}, ""},
+		{"Сладкая жизнь", "Марш", 189, 3, []string{"Электронная"}, ""},
+
+		// Монеточка - Раскраски для взрослых 2
+		{"Раскраски для взрослых 2", "Каждый раз", 198, 1, []string{"Поп"}, ""},
+		{"Раскраски для взрослых 2", "Нимфоманка", 203, 2, []string{"Поп"}, ""},
+		{"Раскраски для взрослых 2", "90", 195, 3, []string{"Поп"}, ""},
 	}
 
 	// Create tracks and assign genres
@@ -1069,7 +1179,7 @@ func seedReviews() error {
 		}
 
 		// Добавляем больше рецензий для разных альбомов от разных пользователей
-		// Альбомы: [0] Жить в твоей голове, [1] Vinyl #1, [2] Горгород, [3] До свидания, [4] Раскраски для взрослых
+		// Альбомы: [0] Жить в твоей голове, [1] Vinyl #1, [2] Горгород, [3] До свидания, [4] Раскраски для взрослых, [5] Вендетта, [6] Сияй, [7] Красота, [8] Сладкая жизнь, [9] Раскраски для взрослых 2, [10] Kind of Blue, [11] Blue Train
 		if len(allTestUsersForReviews) >= 3 && len(albums) >= 5 {
 			additionalReviews := []models.Review{
 				{
@@ -1144,6 +1254,107 @@ func seedReviews() error {
 					Status:               models.ReviewStatusApproved,
 					ModeratedBy:          &admin.ID,
 				},
+			}
+
+			// Добавляем еще больше рецензий от разных пользователей для тестирования просмотра профилей
+			if len(allTestUsersForReviews) >= 8 && len(albums) >= 8 {
+				moreReviews := []models.Review{
+					{
+						UserID:               allTestUsersForReviews[8].ID, // musiclover7
+						AlbumID:              &albums[5].ID,                // Вендетта
+						Text:                 "Классический альбом Земфиры. 'Небо' - это шедевр.",
+						RatingRhymes:         9,
+						RatingStructure:      9,
+						RatingImplementation: 9,
+						RatingIndividuality:  9,
+						AtmosphereMultiplier: convertAtmosphereToMultiplier(8),
+						Status:               models.ReviewStatusApproved,
+						ModeratedBy:          &admin.ID,
+					},
+					{
+						UserID:               allTestUsersForReviews[9].ID, // musiclover8
+						AlbumID:              &albums[6].ID,                // Сияй
+						Text:                 "Zivert продолжает радовать. 'Сияй' - отличный альбом.",
+						RatingRhymes:         8,
+						RatingStructure:      9,
+						RatingImplementation: 9,
+						RatingIndividuality:  8,
+						AtmosphereMultiplier: convertAtmosphereToMultiplier(8),
+						Status:               models.ReviewStatusApproved,
+						ModeratedBy:          &admin.ID,
+					},
+					{
+						UserID:               allTestUsersForReviews[10].ID, // musiclover9
+						AlbumID:              &albums[7].ID,                // Красота
+						Text:                 "Oxxxymiron снова на высоте. Концептуальный альбом.",
+						RatingRhymes:         10,
+						RatingStructure:      9,
+						RatingImplementation: 10,
+						RatingIndividuality:  9,
+						AtmosphereMultiplier: convertAtmosphereToMultiplier(9),
+						Status:               models.ReviewStatusApproved,
+						ModeratedBy:          &admin.ID,
+					},
+					{
+						UserID:               allTestUsersForReviews[11].ID, // musiclover10
+						AlbumID:              &albums[8].ID,                // Сладкая жизнь
+						Text:                 "IC3PEAK создали атмосферный альбом. Электроника на высоте.",
+						RatingRhymes:         8,
+						RatingStructure:      9,
+						RatingImplementation: 10,
+						RatingIndividuality:  8,
+						AtmosphereMultiplier: convertAtmosphereToMultiplier(9),
+						Status:               models.ReviewStatusApproved,
+						ModeratedBy:          &admin.ID,
+					},
+					{
+						UserID:               allTestUsersForReviews[12].ID, // musiclover11
+						AlbumID:              &albums[9].ID,                // Раскраски для взрослых 2
+						Text:                 "Монеточка продолжает радовать. Второй альбом не хуже первого.",
+						RatingRhymes:         9,
+						RatingStructure:      9,
+						RatingImplementation: 9,
+						RatingIndividuality:  9,
+						AtmosphereMultiplier: convertAtmosphereToMultiplier(8),
+						Status:               models.ReviewStatusApproved,
+						ModeratedBy:          &admin.ID,
+					},
+					{
+						UserID:               allTestUsersForReviews[13].ID, // musiclover12
+						AlbumID:              &albums[10].ID,               // Kind of Blue
+						Text:                 "Абсолютная классика джаза. Miles Davis в лучшей форме.",
+						RatingRhymes:         10,
+						RatingStructure:      10,
+						RatingImplementation: 10,
+						RatingIndividuality:  10,
+						AtmosphereMultiplier: convertAtmosphereToMultiplier(10),
+						Status:               models.ReviewStatusApproved,
+						ModeratedBy:          &admin.ID,
+					},
+					{
+						UserID:               allTestUsersForReviews[14].ID, // musiclover13
+						AlbumID:              &albums[11].ID,               // Blue Train
+						Text:                 "John Coltrane - гений джаза. Этот альбом вне времени.",
+						RatingRhymes:         10,
+						RatingStructure:      10,
+						RatingImplementation: 10,
+						RatingIndividuality:  10,
+						AtmosphereMultiplier: convertAtmosphereToMultiplier(10),
+						Status:               models.ReviewStatusApproved,
+						ModeratedBy:          &admin.ID,
+					},
+				}
+
+				for i := range moreReviews {
+					moreReviews[i].CalculateFinalScore()
+					if err := DB.Create(&moreReviews[i]).Error; err != nil {
+						log.Printf("ERROR: Failed to create additional review %d: %v", i+1, err)
+						failedReviews++
+					} else {
+						createdReviews++
+						log.Printf("  ✓ Created additional review %d (ID: %d)", i+1, moreReviews[i].ID)
+					}
+				}
 			}
 
 			// Calculate final scores and create additional reviews

@@ -52,6 +52,7 @@ export const authAPI = {
 export const albumsAPI = {
   getAll: (params) => api.get('/albums', { params }),
   getById: (id) => api.get(`/albums/${id}`),
+  getByArtist: (artistName) => api.get(`/albums/artist/${encodeURIComponent(artistName)}`),
   create: (data) => api.post('/albums', data),
   update: (id, data) => api.put(`/albums/${id}`, data),
   delete: (id) => api.delete(`/albums/${id}`),

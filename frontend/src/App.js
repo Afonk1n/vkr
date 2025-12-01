@@ -10,6 +10,9 @@ import TrackDetailPage from './pages/TrackDetailPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ProfilePage from './pages/ProfilePage';
+import UserProfilePage from './pages/UserProfilePage';
+import ArtistPage from './pages/ArtistPage';
+import SearchPage from './pages/SearchPage';
 import AdminPanel from './pages/AdminPanel';
 import './App.css';
 
@@ -29,6 +32,9 @@ function App() {
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/signup" element={<SignupPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/users/:id" element={<UserProfilePage />} />
+                  <Route path="/artists/:name" element={<ArtistPage />} />
+                  <Route path="/search" element={<SearchPage />} />
                   <Route path="/admin" element={<AdminPanel />} />
                 </Routes>
               </main>

@@ -8,14 +8,31 @@
 
 .albums-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
+  margin-top: 0 !important;
+  margin-bottom: 0;
+  margin-left: 0;
+  margin-right: 0;
+  padding-top: 0 !important;
+  padding-left: 0;
+  padding-right: 0;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
 }
 
 @media (min-width: 1400px) {
   .albums-grid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(5, 1fr);
+  }
+  
+  .tracks-list {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .reviews-grid-popular {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
@@ -50,13 +67,34 @@
 
 .home-section {
   margin-bottom: var(--spacing-2xl);
-  padding: var(--spacing-xl) 0;
+  padding: var(--spacing-xl);
+  padding-top: var(--spacing-xl) !important;
+  padding-bottom: var(--spacing-xl);
+  background-color: rgba(5, 33, 42, 0.95);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+:root[data-theme="light"] .home-section {
+  background-color: rgba(235, 228, 210, 0.95);
+}
+
+.home-section > * {
+  max-width: 100%;
+  width: 100%;
 }
 
 .section-title {
   font-size: 1.75rem;
   font-weight: 600;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: 1.5rem !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
   color: var(--text-color);
   display: flex;
   align-items: center;
@@ -68,23 +106,42 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
+  margin-top: 0 !important;
+  margin-bottom: 0;
+  margin-left: 0;
+  margin-right: 0;
+  padding-top: 0 !important;
+  padding-left: 0;
+  padding-right: 0;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
 }
 
-@media (min-width: 1400px) {
+@media (max-width: 1400px) {
+  .albums-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+  
   .tracks-list {
     grid-template-columns: repeat(4, 1fr);
   }
-}
-
-@media (max-width: 1200px) {
-  .tracks-list {
+  
+  .reviews-grid-popular {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1200px) {
+  .albums-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
   .tracks-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .reviews-grid-popular {
     grid-template-columns: repeat(2, 1fr);
   }
 }
@@ -92,8 +149,17 @@
 .reviews-grid-popular {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-  width: 100%;
+  gap: var(--spacing-lg);
+  margin-top: 0 !important;
+  margin-bottom: 0;
+  margin-left: 0;
+  margin-right: 0;
+  padding-top: 0 !important;
+  padding-left: 0;
+  padding-right: 0;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
 }
 
 .reviews-grid-popular .review-card-small {
@@ -101,15 +167,9 @@
   max-width: 100%;
 }
 
-@media (max-width: 1200px) {
-  .reviews-grid-popular {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
 @media (max-width: 768px) {
   .albums-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
   }
 
@@ -119,6 +179,11 @@
 
   .section-title {
     font-size: 1.25rem;
+    margin-bottom: 1.25rem !important;
+  }
+
+  .tracks-list {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .reviews-grid-popular {

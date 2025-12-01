@@ -121,6 +121,17 @@
   margin: 0;
 }
 
+.track-artist-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.track-artist-link:hover {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
 .track-card-genres {
   display: flex;
   gap: 0.5rem;

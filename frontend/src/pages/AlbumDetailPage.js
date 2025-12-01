@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { albumsAPI, reviewsAPI, tracksAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import ReviewForm from '../components/ReviewForm';
@@ -148,7 +148,14 @@ const AlbumDetailPage = () => {
           </div>
           <div className="album-info-large">
             <h1 className="album-title-large">{album.title}</h1>
-            <p className="album-artist-large">{album.artist}</p>
+            <p className="album-artist-large">
+              <Link 
+                to={`/artists/${encodeURIComponent(album.artist)}`} 
+                className="album-artist-link"
+              >
+                {album.artist}
+              </Link>
+            </p>
             {album.genre && (
               <span className="album-genre-large">{album.genre.name}</span>
             )}

@@ -123,6 +123,17 @@
   margin: 0;
 }
 
+.album-artist-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.album-artist-link:hover {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
 .album-genre {
   display: inline-block;
   background-color: var(--hover-color);

@@ -5,6 +5,7 @@ import (
 	"music-review-site/backend/models"
 	"music-review-site/backend/utils"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -53,7 +54,22 @@ func (ac *AlbumController) GetAlbums(c *gin.Context) {
 	// Sort
 	sortBy := c.DefaultQuery("sort_by", "created_at")
 	sortOrder := c.DefaultQuery("sort_order", "desc")
-	query = query.Order(sortBy + " " + sortOrder)
+	
+	// Handle special sorting cases
+	if sortBy == "release_date" {
+		// For release_date, handle NULL values
+		if sortOrder == "desc" {
+			query = query.Order("release_date DESC NULLS LAST, created_at DESC")
+		} else {
+			query = query.Order("release_date ASC NULLS LAST, created_at ASC")
+		}
+	} else if sortBy == "title" || sortBy == "artist" {
+		// For text fields, use case-insensitive sorting
+		query = query.Order(sortBy + " " + sortOrder)
+	} else {
+		// For numeric fields (average_rating, created_at, etc.)
+		query = query.Order(sortBy + " " + sortOrder)
+	}
 
 	// Pagination
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -85,6 +101,37 @@ func (ac *AlbumController) GetAlbums(c *gin.Context) {
 		"total":  total,
 		"page":   page,
 		"page_size": pageSize,
+	})
+}
+
+// GetAlbumsByArtist retrieves all albums by artist name
+func (ac *AlbumController) GetAlbumsByArtist(c *gin.Context) {
+	artistName := c.Param("name")
+	// URL decode the artist name
+	decodedName, err := url.QueryUnescape(artistName)
+	if err != nil {
+		decodedName = artistName
+	}
+
+	var albums []models.Album
+	query := ac.DB.Model(&models.Album{}).Preload("Genre").Preload("Likes").Where("artist = ?", decodedName)
+
+	// Sort by release_date if available, otherwise by created_at
+	query = query.Order("release_date DESC NULLS LAST, created_at DESC")
+
+	if err := query.Find(&albums).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to fetch albums",
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"albums": albums,
+		"artist": decodedName,
+		"total":  len(albums),
 	})
 }
 
