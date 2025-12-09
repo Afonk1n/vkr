@@ -70,7 +70,7 @@
   padding: var(--spacing-xl);
   padding-top: var(--spacing-xl) !important;
   padding-bottom: var(--spacing-xl);
-  background-color: rgba(5, 33, 42, 0.95);
+  background-color: rgba(20, 20, 20, 0.95);
   border-radius: var(--radius-xl);
   border: 1px solid var(--border-color);
   box-shadow: var(--shadow);

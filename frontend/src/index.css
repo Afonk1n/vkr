@@ -5,10 +5,10 @@
 }
 
 :root {
-  /* Primary colors - Solarized акценты */
-  --primary-color: #268bd2;  /* blue */
-  --primary-hover: #2aa198;  /* cyan */
-  --secondary-color: #6c71c4; /* violet */
+  /* Primary colors - Modern blue accents */
+  --primary-color: #4A9EFF;  /* Modern bright blue */
+  --primary-hover: #6BB0FF;  /* Lighter blue on hover */
+  --secondary-color: #7C8AFF; /* Modern violet-blue */
 }
 
 /* Common variables - одинаковые для всех тем */
@@ -32,62 +32,62 @@
   --transition-base: 0.2s ease;
   --transition-slow: 0.3s ease;
   
-  /* Status colors - Solarized акценты */
-  --error-color: #dc322f;  /* red */
-  --error-hover: #cb4b16;  /* orange */
-  --error-bg: rgba(220, 50, 47, 0.1);
-  --error-bg-solid: rgba(220, 50, 47, 0.15);
-  --success-color: #859900;  /* green */
-  --success-bg: #586e75;  /* base01 */
-  --warning-color: #b58900;  /* yellow */
-  --info-color: #268bd2;  /* blue */
-  --info-bg: rgba(38, 139, 210, 0.1);
+  /* Status colors - Modern colors */
+  --error-color: #FF5C5C;  /* Modern red */
+  --error-hover: #FF7878;  /* Lighter red */
+  --error-bg: rgba(255, 92, 92, 0.1);
+  --error-bg-solid: rgba(255, 92, 92, 0.15);
+  --success-color: #4CAF50;  /* Modern green */
+  --success-bg: #2D4A2F;  /* Dark green background */
+  --warning-color: #FFB84D;  /* Modern orange-yellow */
+  --info-color: #4A9EFF;  /* Modern blue */
+  --info-bg: rgba(74, 158, 255, 0.1);
   
-  /* Status badge colors - для светлой темы (Solarized) */
-  --status-pending-bg: #fdf6e3;  /* base3 */
-  --status-pending-text: #b58900;  /* yellow */
-  --status-approved-bg: #eee8d5;  /* base2 */
-  --status-approved-text: #859900;  /* green */
-  --status-rejected-bg: #fdf6e3;  /* base3 */
-  --status-rejected-text: #dc322f;  /* red */
+  /* Status badge colors - для светлой темы */
+  --status-pending-bg: #FFF8E1;  /* Light yellow background */
+  --status-pending-text: #F57C00;  /* Orange-yellow */
+  --status-approved-bg: #E8F5E9;  /* Light green background */
+  --status-approved-text: #2E7D32;  /* Dark green */
+  --status-rejected-bg: #FFEBEE;  /* Light red background */
+  --status-rejected-text: #C62828;  /* Dark red */
 }
 
-/* Dark theme (default) - Solarized Dark */
+/* Dark theme (default) - Modern Dark Gray */
 :root[data-theme="dark"],
 :root {
-  /* Background colors - Solarized Dark */
-  --background-color: #002b36;  /* base03 */
-  --card-background: #073642;    /* base02 */
-  --card-background-light: rgba(7, 54, 66, 0.5);
-  --hover-color: rgba(101, 123, 131, 0.15);  /* base00 with opacity */
+  /* Background colors - Modern dark grays */
+  --background-color: #0F0F0F;  /* Deep dark gray, almost black */
+  --card-background: #1A1A1A;    /* Dark gray for cards */
+  --card-background-light: rgba(26, 26, 26, 0.5);
+  --hover-color: rgba(45, 45, 45, 0.3);  /* Medium gray with opacity */
   
-  /* Text colors - Solarized Dark */
-  --text-color: #839496;  /* base0 */
-  --text-secondary: #93a1a1;  /* base1 */
-  --text-muted: #657b83;  /* base00 */
+  /* Text colors - Light grays */
+  --text-color: #E5E5E5;  /* Almost white for primary text */
+  --text-secondary: #D0D0D0;  /* Light gray for secondary text */
+  --text-muted: #A0A0A0;  /* Medium gray for muted text */
   
   /* Border and dividers */
-  --border-color: rgba(101, 123, 131, 0.3);  /* base00 */
-  --border-light: rgba(7, 54, 66, 0.5);  /* base02 */
+  --border-color: rgba(60, 60, 60, 0.5);  /* Medium gray borders */
+  --border-light: rgba(40, 40, 40, 0.6);  /* Darker gray for subtle borders */
   
   /* Overlay colors */
-  --overlay-dark: rgba(0, 43, 54, 0.9);  /* base03 */
-  --overlay-medium: rgba(7, 54, 66, 0.8);  /* base02 */
-  --overlay-light: rgba(131, 148, 150, 0.1);  /* base0 */
+  --overlay-dark: rgba(15, 15, 15, 0.95);  /* Deep dark overlay */
+  --overlay-medium: rgba(26, 26, 26, 0.9);  /* Card background overlay */
+  --overlay-light: rgba(160, 160, 160, 0.1);  /* Light gray overlay */
   
-  /* Shadows */
-  --shadow: 0 1px 3px 0 rgba(0, 43, 54, 0.5), 0 1px 2px 0 rgba(0, 43, 54, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 43, 54, 0.5), 0 2px 4px -1px rgba(0, 43, 54, 0.3);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 43, 54, 0.6), 0 4px 6px -2px rgba(0, 43, 54, 0.4);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 43, 54, 0.7), 0 10px 10px -5px rgba(0, 43, 54, 0.5);
+  /* Shadows - Dark gray shadows */
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.6), 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.8), 0 10px 10px -5px rgba(0, 0, 0, 0.6);
   
   /* Status badge colors */
-  --status-pending-bg: rgba(181, 137, 0, 0.2);  /* yellow */
-  --status-pending-text: #b58900;
-  --status-approved-bg: rgba(133, 153, 0, 0.2);  /* green */
-  --status-approved-text: #859900;
-  --status-rejected-bg: rgba(220, 50, 47, 0.2);  /* red */
-  --status-rejected-text: #dc322f;
+  --status-pending-bg: rgba(255, 184, 77, 0.15);  /* Orange-yellow with opacity */
+  --status-pending-text: #FFB84D;
+  --status-approved-bg: rgba(76, 175, 80, 0.15);  /* Green with opacity */
+  --status-approved-text: #4CAF50;
+  --status-rejected-bg: rgba(255, 92, 92, 0.15);  /* Red with opacity */
+  --status-rejected-text: #FF5C5C;
 }
 
 /* Light theme - Solarized Light with "топлёное молоко" palette */
