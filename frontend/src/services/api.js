@@ -85,6 +85,15 @@ export const usersAPI = {
   getById: (id) => api.get(`/users/${id}`),
   getUserReviews: (id, params) => api.get(`/users/${id}/reviews`, { params }),
   update: (id, data) => api.put(`/users/${id}`, data),
+  uploadAvatar: (id, file) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    return api.post(`/users/${id}/avatar`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
   delete: (id) => api.delete(`/users/${id}`),
 };
 
@@ -95,6 +104,21 @@ export const searchAPI = {
 
 // Tracks API
 export const tracksAPI = {
+  getAll: (params) => {
+    // Handle array params for genre_ids
+    const config = { params: {} };
+    if (params) {
+      Object.keys(params).forEach(key => {
+        if (key === 'genre_ids' && Array.isArray(params[key])) {
+          // Convert array to query string format: genre_ids[]=1&genre_ids[]=2
+          config.params[key + '[]'] = params[key];
+        } else {
+          config.params[key] = params[key];
+        }
+      });
+    }
+    return api.get('/tracks', config);
+  },
   getPopular: (params) => api.get('/tracks/popular', { params }),
   getById: (id) => api.get(`/tracks/${id}`),
   getByAlbum: (albumId) => api.get(`/albums/${albumId}/tracks`),

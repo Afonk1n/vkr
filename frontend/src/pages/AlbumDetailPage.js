@@ -183,29 +183,51 @@ const AlbumDetailPage = () => {
           <div className="tracks-section">
             <h2 className="section-title">Треки ({tracks.length})</h2>
             <div className="tracks-list-album">
-              {tracks.map((track) => (
-                <div key={track.id} className="track-item-album">
-                  <div className="track-item-number">{track.track_number || '-'}</div>
-                  <div className="track-item-info">
-                    <div className="track-item-title">{track.title}</div>
-                    {track.genres && track.genres.length > 0 && (
-                      <div className="track-item-genres">
-                        {track.genres.map((genre) => (
-                          <span key={genre.id} className="track-item-genre-badge">
-                            {genre.name}
-                          </span>
-                        ))}
+              {tracks.map((track) => {
+                // Determine cover image: track cover, album cover, or placeholder
+                const trackCoverUrl = track.cover_image_path ? getImageUrl(track.cover_image_path) : null;
+                const albumCoverUrl = album.cover_image_path ? getImageUrl(album.cover_image_path) : null;
+                const coverUrl = trackCoverUrl || albumCoverUrl;
+                
+                return (
+                  <div key={track.id} className="track-item-album">
+                    <div className="track-item-number">{track.track_number || '-'}</div>
+                    <div className="track-item-cover">
+                      {coverUrl ? (
+                        <img 
+                          src={coverUrl} 
+                          alt={track.title}
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div className="track-item-cover-placeholder" style={{ display: coverUrl ? 'none' : 'flex' }}>
+                        🎵
                       </div>
-                    )}
+                    </div>
+                    <div className="track-item-info">
+                      <div className="track-item-title">{track.title}</div>
+                      {track.genres && track.genres.length > 0 && (
+                        <div className="track-item-genres">
+                          {track.genres.map((genre) => (
+                            <span key={genre.id} className="track-item-genre-badge">
+                              {genre.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="track-item-duration">
+                      {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '-'}
+                    </div>
+                    <div className="track-item-link">
+                      <a href={`/tracks/${track.id}`} className="track-link-button">→</a>
+                    </div>
                   </div>
-                  <div className="track-item-duration">
-                    {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '-'}
-                  </div>
-                  <div className="track-item-link">
-                    <a href={`/tracks/${track.id}`} className="track-link-button">→</a>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usersAPI } from '../services/api';
 import ReviewCard from '../components/ReviewCard';
+import BadgeList from '../components/BadgeList';
 import { getImageUrl } from '../utils/imageUtils';
 import './UserProfilePage.css';
 
@@ -51,9 +52,6 @@ const UserProfilePage = () => {
     return (
       <div className="container">
         <div className="error-message">{error || 'Пользователь не найден'}</div>
-        <button onClick={() => navigate(-1)} className="btn-back">
-          Назад
-        </button>
       </div>
     );
   }
@@ -67,10 +65,6 @@ const UserProfilePage = () => {
   return (
     <div className="container">
       <div className="user-profile-page">
-        <button onClick={() => navigate(-1)} className="btn-back">
-          ← Назад
-        </button>
-        
         <div className="profile-header-card">
           <div className="profile-avatar-section">
             {user?.avatar_path && getImageUrl(user.avatar_path) ? (
@@ -93,6 +87,9 @@ const UserProfilePage = () => {
             {user?.is_admin && (
               <span className="admin-badge">Администратор</span>
             )}
+            {user?.badges && user.badges.length > 0 && (
+              <BadgeList badges={user.badges} />
+            )}
             {user?.created_at && (
               <p className="profile-joined">
                 Присоединился: {new Date(user.created_at).toLocaleDateString('ru-RU')}
@@ -103,7 +100,7 @@ const UserProfilePage = () => {
                 <p>{user.bio}</p>
               </div>
             )}
-            {(socialLinks.vk || socialLinks.telegram || socialLinks.instagram) && (
+            {(socialLinks.vk || socialLinks.telegram || socialLinks.max) && (
               <div className="profile-social-links">
                 {socialLinks.vk && (
                   <a href={socialLinks.vk} target="_blank" rel="noopener noreferrer" className="social-link">
@@ -115,9 +112,9 @@ const UserProfilePage = () => {
                     Telegram
                   </a>
                 )}
-                {socialLinks.instagram && (
-                  <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="social-link">
-                    Instagram
+                {socialLinks.max && (
+                  <a href={socialLinks.max.startsWith('http') ? socialLinks.max : `https://max.ru/${socialLinks.max.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="social-link">
+                    MAX
                   </a>
                 )}
               </div>

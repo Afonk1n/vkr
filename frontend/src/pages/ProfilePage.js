@@ -4,10 +4,12 @@ import { useAuth } from '../context/AuthContext';
 import { usersAPI, reviewsAPI } from '../services/api';
 import ReviewCard from '../components/ReviewCard';
 import ProfileEditForm from '../components/ProfileEditForm';
+import BadgeList from '../components/BadgeList';
+import { getImageUrl } from '../utils/imageUtils';
 import './ProfilePage.css';
 
 const ProfilePage = () => {
-  const { user, isAuthenticated, login } = useAuth();
+  const { user, isAuthenticated, updateUser } = useAuth();
   const navigate = useNavigate();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,12 +54,26 @@ const ProfilePage = () => {
   const handleSaveProfile = async (profileData) => {
     try {
       const response = await usersAPI.update(user.id, profileData);
-      setCurrentUser(response.data);
+      const updatedUser = response.data;
+      setCurrentUser(updatedUser);
       setIsEditing(false);
-      // Update auth context
-      if (login) {
-        await login(user.email, profileData.password || 'dummy'); // Re-login to refresh user data
+      
+      // Update auth context without re-login
+      // Only re-login if password was actually changed
+      if (profileData.password && profileData.password.trim() !== '') {
+        // If password was changed, we need to re-login with new password
+        // But we don't have the new password here, so we'll just update user data
+        // The user will need to log in again on next session if password changed
+        if (updateUser) {
+          updateUser(updatedUser);
+        }
+      } else {
+        // No password change, just update user data
+        if (updateUser) {
+          updateUser(updatedUser);
+        }
       }
+      
       alert('Профиль успешно обновлен');
     } catch (err) {
       alert('Ошибка при обновлении профиля');
@@ -99,14 +115,15 @@ const ProfilePage = () => {
             user={currentUser}
             onSave={handleSaveProfile}
             onCancel={() => setIsEditing(false)}
+            updateUser={updateUser}
           />
         ) : (
           <>
             <div className="profile-header-card">
               <div className="profile-avatar-section">
-                {currentUser?.avatar_path ? (
+                {currentUser?.avatar_path && getImageUrl(currentUser.avatar_path) ? (
                   <img 
-                    src={currentUser.avatar_path} 
+                    src={getImageUrl(currentUser.avatar_path)} 
                     alt={currentUser.username}
                     className="profile-avatar"
                   />
@@ -130,6 +147,9 @@ const ProfilePage = () => {
                 {currentUser?.is_admin && (
                   <span className="admin-badge">Администратор</span>
                 )}
+                {currentUser?.badges && currentUser.badges.length > 0 && (
+                  <BadgeList badges={currentUser.badges} />
+                )}
                 {currentUser?.created_at && (
                   <p className="profile-joined">
                     Присоединился: {new Date(currentUser.created_at).toLocaleDateString('ru-RU')}
@@ -140,7 +160,7 @@ const ProfilePage = () => {
                     <p>{currentUser.bio}</p>
                   </div>
                 )}
-                {(socialLinks.vk || socialLinks.telegram || socialLinks.instagram) && (
+                {(socialLinks.vk || socialLinks.telegram || socialLinks.max) && (
                   <div className="profile-social-links">
                     {socialLinks.vk && (
                       <a href={socialLinks.vk} target="_blank" rel="noopener noreferrer" className="social-link">
@@ -152,9 +172,9 @@ const ProfilePage = () => {
                         Telegram
                       </a>
                     )}
-                    {socialLinks.instagram && (
-                      <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="social-link">
-                        Instagram
+                    {socialLinks.max && (
+                      <a href={socialLinks.max.startsWith('http') ? socialLinks.max : `https://max.ru/${socialLinks.max.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="social-link">
+                        MAX
                       </a>
                     )}
                   </div>

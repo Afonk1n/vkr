@@ -15,8 +15,9 @@ type SearchController struct {
 
 // ArtistSearchResult represents artist search result
 type ArtistSearchResult struct {
-	Name  string `json:"name"`
-	Count int    `json:"count"` // Number of albums
+	Name           string `json:"name"`
+	Count          int    `json:"count"` // Number of albums
+	CoverImagePath string `json:"cover_image_path"` // Cover of first album
 }
 
 // SearchResponse represents search results
@@ -71,11 +72,19 @@ func (sc *SearchController) Search(c *gin.Context) {
 		return
 	}
 
+	// Get first album cover for each artist
 	artists := make([]ArtistSearchResult, len(artistResults))
 	for i, result := range artistResults {
+		// Get first album for this artist to use as avatar
+		var firstAlbum models.Album
+		sc.DB.Where("artist = ?", result.Artist).
+			Order("created_at ASC").
+			First(&firstAlbum)
+		
 		artists[i] = ArtistSearchResult{
-			Name:  result.Artist,
-			Count: int(result.Count),
+			Name:           result.Artist,
+			Count:          int(result.Count),
+			CoverImagePath: firstAlbum.CoverImagePath,
 		}
 	}
 

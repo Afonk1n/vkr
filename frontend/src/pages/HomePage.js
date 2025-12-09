@@ -104,7 +104,7 @@ const HomePage = () => {
       {/* Latest Albums Section */}
       {latestAlbums.length > 0 && (
         <section className="home-section">
-          <h2 className="section-title">Релизы</h2>
+          <h2 className="section-title">Последние релизы</h2>
           <div className="albums-grid">
             {latestAlbums.map((album) => (
               <AlbumCard key={album.id} album={album} />
@@ -116,7 +116,7 @@ const HomePage = () => {
       {/* Popular Tracks Section - moved here */}
       {popularTracks.length > 0 && (
         <section className="home-section">
-          <h2 className="section-title">Лайки</h2>
+          <h2 className="section-title">Топ треков за сутки</h2>
           <div className="tracks-list">
             {popularTracks.map((track) => (
               <TrackCard key={track.id} track={track} onUpdate={fetchPopularTracks} />
@@ -137,7 +137,7 @@ const HomePage = () => {
 
         return (
           <section className="home-section">
-            <h2 className="section-title">Рецензии</h2>
+            <h2 className="section-title">Топ рецензий за сутки</h2>
             <div className="reviews-grid-popular">
               {validReviews.map((review) => (
                 <ReviewCardSmall key={`review-${review.id}`} review={review} onUpdate={fetchPopularReviews} />

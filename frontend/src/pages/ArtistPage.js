@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { albumsAPI } from '../services/api';
 import AlbumCard from '../components/AlbumCard';
+import { getImageUrl } from '../utils/imageUtils';
 import './ArtistPage.css';
 
 const ArtistPage = () => {
@@ -42,9 +43,6 @@ const ArtistPage = () => {
   if (error || albums.length === 0) {
     return (
       <div className="container">
-        <button onClick={() => navigate(-1)} className="btn-back">
-          ← Назад
-        </button>
         <div className="error-message">
           {error || `Альбомы артиста "${artistName || name}" не найдены`}
         </div>
@@ -62,13 +60,23 @@ const ArtistPage = () => {
   return (
     <div className="container">
       <div className="artist-page">
-        <button onClick={() => navigate(-1)} className="btn-back">
-          ← Назад
-        </button>
-
         <div className="artist-header">
-          <h1 className="artist-name">{artistName || name}</h1>
-          <div className="artist-stats">
+          <div className="artist-avatar-section">
+            {albums.length > 0 && albums[0].cover_image_path ? (
+              <img 
+                src={getImageUrl(albums[0].cover_image_path)} 
+                alt={artistName || name}
+                className="artist-avatar"
+              />
+            ) : (
+              <div className="artist-avatar-placeholder">
+                {(artistName || name || 'А')[0].toUpperCase()}
+              </div>
+            )}
+          </div>
+          <div className="artist-info-section">
+            <h1 className="artist-name">{artistName || name}</h1>
+            <div className="artist-stats">
             <div className="artist-stat-item">
               <span className="stat-label">Альбомов:</span>
               <span className="stat-value">{totalAlbums}</span>
@@ -85,6 +93,7 @@ const ArtistPage = () => {
                 <span className="stat-value">❤️ {totalLikes}</span>
               </div>
             )}
+          </div>
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { albumsAPI, genresAPI, tracksAPI } from '../services/api';
+import { genresAPI, tracksAPI } from '../services/api';
 import TrackCard from '../components/TrackCard';
 import './SearchPage.css';
 
@@ -46,164 +46,41 @@ const SearchPage = () => {
       setLoading(true);
       setError('');
       try {
-        // Check if we have any filters
-        const hasFilters = searchQuery.trim() || selectedGenres.length > 0;
-        
-        let albums = [];
-        
-        if (hasFilters) {
-          // If filters are applied, get filtered albums
-          const params = {
-            page: 1,
-            page_size: 100, // Get more albums to have more tracks
-            sort_by: sortBy,
-            sort_order: sortOrder,
-          };
-
-          if (searchQuery.trim()) {
-            params.search = searchQuery.trim();
-          }
-
-          // Use first selected genre (API supports only one genre_id at a time)
-          if (selectedGenres.length > 0) {
-            params.genre_id = selectedGenres[0];
-          }
-
-          try {
-            const albumsResponse = await albumsAPI.getAll(params);
-            if (isCancelled) return;
-            albums = albumsResponse.data?.albums || albumsResponse.data || [];
-          } catch (apiErr) {
-            console.error('[SearchPage] Error fetching albums:', apiErr);
-            throw apiErr;
-          }
-        } else {
-          // If no filters, get all albums sorted by created_at DESC
-          const params = {
-            page: 1,
-            page_size: 100, // Get all albums
-            sort_by: 'created_at',
-            sort_order: 'desc',
-          };
-          try {
-            const albumsResponse = await albumsAPI.getAll(params);
-            if (isCancelled) return;
-            albums = albumsResponse.data?.albums || albumsResponse.data || [];
-          } catch (apiErr) {
-            console.error('[SearchPage] Error fetching albums:', apiErr);
-            throw apiErr;
-          }
-        }
-        
-        if (albums.length === 0) {
-          setTracks([]);
-          setPagination({
-            total: 0,
-            page: currentPage,
-            page_size: pageSize,
-          });
-          setLoading(false);
-          return;
-        }
-        
-        // Get all tracks from these albums
-        const trackPromises = albums.map(async (album) => {
-          try {
-            const tracksResponse = await tracksAPI.getByAlbum(album.id);
-            const albumTracks = Array.isArray(tracksResponse.data) ? tracksResponse.data : [];
-            return albumTracks.map(track => ({ ...track, album }));
-          } catch (err) {
-            console.error(`[SearchPage] Error fetching tracks for album ${album.id}:`, err);
-            return [];
-          }
-        });
-
-        const trackArrays = await Promise.all(trackPromises);
-        if (isCancelled) return;
-        
-        // Flatten all tracks
-        let allTracks = trackArrays.flat();
-        
-        if (allTracks.length === 0) {
-          setTracks([]);
-          setPagination({
-            total: 0,
-            page: currentPage,
-            page_size: pageSize,
-          });
-          setLoading(false);
-          return;
-        }
-        
-        // Sort tracks based on sortBy and sortOrder
-        allTracks.sort((a, b) => {
-          let valueA, valueB;
-          let isString = false;
-          
-          switch (sortBy) {
-            case 'created_at': {
-              const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
-              const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
-              valueA = isNaN(dateA.getTime()) ? 0 : dateA.getTime();
-              valueB = isNaN(dateB.getTime()) ? 0 : dateB.getTime();
-              break;
-            }
-            case 'release_date': {
-              const releaseDateA = a.album?.release_date || a.created_at;
-              const releaseDateB = b.album?.release_date || b.created_at;
-              const dateA = releaseDateA ? new Date(releaseDateA) : new Date(0);
-              const dateB = releaseDateB ? new Date(releaseDateB) : new Date(0);
-              valueA = isNaN(dateA.getTime()) ? 0 : dateA.getTime();
-              valueB = isNaN(dateB.getTime()) ? 0 : dateB.getTime();
-              break;
-            }
-            case 'title':
-              valueA = (a.title || '').toLowerCase();
-              valueB = (b.title || '').toLowerCase();
-              isString = true;
-              break;
-            case 'average_rating':
-              valueA = Number(a.average_rating) || 0;
-              valueB = Number(b.average_rating) || 0;
-              break;
-            default: {
-              const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
-              const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
-              valueA = isNaN(dateA.getTime()) ? 0 : dateA.getTime();
-              valueB = isNaN(dateB.getTime()) ? 0 : dateB.getTime();
-              break;
-            }
-          }
-          
-          if (isString) {
-            // String comparison
-            if (sortOrder === 'asc') {
-              return valueA.localeCompare(valueB);
-            } else {
-              return valueB.localeCompare(valueA);
-            }
-          } else {
-            // Number/Date comparison
-            if (sortOrder === 'asc') {
-              return valueA - valueB;
-            } else {
-              return valueB - valueA;
-            }
-          }
-        });
-        
-        // Apply pagination to tracks
-        const startIndex = (currentPage - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        const paginatedTracks = allTracks.slice(startIndex, endIndex);
-        
-        // Ensure all tracks have required fields
-        const validTracks = paginatedTracks.filter(track => track && track.id);
-        setTracks(validTracks);
-        setPagination({
-          total: allTracks.length,
+        // Build params for tracks API
+        const params = {
           page: currentPage,
           page_size: pageSize,
+          sort_by: sortBy,
+          sort_order: sortOrder,
+        };
+
+        // Add search query if provided
+        if (searchQuery.trim()) {
+          params.search = searchQuery.trim();
+        }
+
+        // Add genre_ids array if any genres selected
+        if (selectedGenres.length > 0) {
+          params.genre_ids = selectedGenres;
+        }
+
+        // Fetch tracks directly from API
+        const response = await tracksAPI.getAll(params);
+        if (isCancelled) return;
+
+        const tracksData = response.data?.tracks || response.data || [];
+        const total = response.data?.total || 0;
+        const page = response.data?.page || currentPage;
+        const pageSizeResponse = response.data?.page_size || pageSize;
+
+        // Ensure all tracks have album relationship loaded
+        const validTracks = tracksData.filter(track => track && track.id);
+        
+        setTracks(validTracks);
+        setPagination({
+          total: total,
+          page: page,
+          page_size: pageSizeResponse,
         });
       } catch (err) {
         if (isCancelled) return;
@@ -211,6 +88,11 @@ const SearchPage = () => {
         console.error('[SearchPage] Error fetching tracks:', err);
         console.error('[SearchPage] Error details:', err.response?.data || err.message);
         setTracks([]);
+        setPagination({
+          total: 0,
+          page: currentPage,
+          page_size: pageSize,
+        });
       } finally {
         if (!isCancelled) {
           setLoading(false);
@@ -242,9 +124,23 @@ const SearchPage = () => {
   };
 
   const handleSortChange = (e) => {
-    const [newSortBy, newSortOrder] = e.target.value.split('_');
-    setSortBy(newSortBy);
-    setSortOrder(newSortOrder);
+    const value = e.target.value;
+    if (!value || !value.includes('_')) {
+      console.error('Invalid sort value:', value);
+      return;
+    }
+    const [newSortBy, newSortOrder] = value.split('_');
+    
+    // Validate sortBy and sortOrder
+    const validSortBy = ['created_at', 'release_date', 'title', 'average_rating', 'likes_count'].includes(newSortBy) 
+      ? newSortBy 
+      : 'created_at';
+    const validSortOrder = ['asc', 'desc'].includes(newSortOrder) 
+      ? newSortOrder 
+      : 'desc';
+    
+    setSortBy(validSortBy);
+    setSortOrder(validSortOrder);
     setCurrentPage(1);
   };
 
@@ -310,6 +206,8 @@ const SearchPage = () => {
                 <option value="title_desc">По алфавиту (Я-А)</option>
                 <option value="average_rating_desc">По рейтингу (высокий)</option>
                 <option value="average_rating_asc">По рейтингу (низкий)</option>
+                <option value="likes_count_desc">По лайкам (больше)</option>
+                <option value="likes_count_asc">По лайкам (меньше)</option>
               </select>
             </div>
 

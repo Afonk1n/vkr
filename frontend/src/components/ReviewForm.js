@@ -94,105 +94,131 @@ const ReviewForm = ({ albumId, trackId, onSubmit, initialData, onCancel }) => {
       {error && <div className="error-message">{error}</div>}
       <form onSubmit={handleSubmit} className="review-form">
         <div className="rating-section">
-          <h4>Оценка по критериям (1-10)</h4>
-          
-          <div className="rating-group">
-            <label htmlFor="rating-rhymes">
-              Рифмы / Образы: {ratingRhymes}
-              <span className="tooltip">ℹ️
-                <span className="tooltiptext">
-                  Оценка за текст, учитывающая жанровые особенности. Для легкой фоновой поп-музыки или электронной музыки допускаются тривиальные конструкции для максимального балла. Для текстоцентричных жанров требуется сложная рифмовка и глубокий смысл.
-                </span>
+          {/* Блок базовых оценок */}
+          <div className="base-ratings-group">
+            <div className="group-header">
+              <h4>Базовые критерии (суммируются)</h4>
+              <span className="group-summary">
+                Сумма: {ratingRhymes + ratingStructure + ratingImplementation + ratingIndividuality}
               </span>
-            </label>
-            <input
-              type="range"
-              id="rating-rhymes"
-              min="1"
-              max="10"
-              value={ratingRhymes}
-              onChange={(e) => setRatingRhymes(parseInt(e.target.value))}
-            />
+            </div>
+            <div className="base-ratings-grid">
+              <div className="rating-group">
+                <label htmlFor="rating-rhymes">
+                  Рифмы / Образы: {ratingRhymes}
+                  <span className="tooltip">ℹ️
+                    <span className="tooltiptext">
+                      Оценка за текст, учитывающая жанровые особенности. Для легкой фоновой поп-музыки или электронной музыки допускаются тривиальные конструкции для максимального балла. Для текстоцентричных жанров требуется сложная рифмовка и глубокий смысл.
+                    </span>
+                  </span>
+                </label>
+                <input
+                  type="range"
+                  id="rating-rhymes"
+                  min="1"
+                  max="10"
+                  value={ratingRhymes}
+                  onChange={(e) => setRatingRhymes(parseInt(e.target.value))}
+                />
+              </div>
+
+              <div className="rating-group">
+                <label htmlFor="rating-structure">
+                  Структура / Ритмика: {ratingStructure}
+                  <span className="tooltip">ℹ️
+                    <span className="tooltiptext">
+                      Включает оценку ритмической составляющей (стихотворный ритм — мелодичность, драматургия частей, контрасты) и гармонию структуры (целостность всех частей трека, концепция альбома и расположение песен).
+                    </span>
+                  </span>
+                </label>
+                <input
+                  type="range"
+                  id="rating-structure"
+                  min="1"
+                  max="10"
+                  value={ratingStructure}
+                  onChange={(e) => setRatingStructure(parseInt(e.target.value))}
+                />
+              </div>
+
+              <div className="rating-group">
+                <label htmlFor="rating-implementation">
+                  Реализация стиля: {ratingImplementation}
+                  <span className="tooltip">ℹ️
+                    <span className="tooltiptext">
+                      Оценивает работу исполнителя (качество вокала, речитатив, умение работать с мелодией) и работу звукорежиссера/саунд-продюсера (качество сведения, звучание инструментала).
+                    </span>
+                  </span>
+                </label>
+                <input
+                  type="range"
+                  id="rating-implementation"
+                  min="1"
+                  max="10"
+                  value={ratingImplementation}
+                  onChange={(e) => setRatingImplementation(parseInt(e.target.value))}
+                />
+              </div>
+
+              <div className="rating-group">
+                <label htmlFor="rating-individuality">
+                  Индивидуальность / Харизма: {ratingIndividuality}
+                  <span className="tooltip">ℹ️
+                    <span className="tooltiptext">
+                      Оценивает уникальность тембра голоса, стиль исполнения, узнаваемость, а также способность артиста передать и погрузить слушателя в эмоции (верю — не верю песне).
+                    </span>
+                  </span>
+                </label>
+                <input
+                  type="range"
+                  id="rating-individuality"
+                  min="1"
+                  max="10"
+                  value={ratingIndividuality}
+                  onChange={(e) => setRatingIndividuality(parseInt(e.target.value))}
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="rating-group">
-            <label htmlFor="rating-structure">
-              Структура / Ритмика: {ratingStructure}
-              <span className="tooltip">ℹ️
-                <span className="tooltiptext">
-                  Включает оценку ритмической составляющей (стихотворный ритм — мелодичность, драматургия частей, контрасты) и гармонию структуры (целостность всех частей трека, концепция альбома и расположение песен).
-                </span>
-              </span>
-            </label>
-            <input
-              type="range"
-              id="rating-structure"
-              min="1"
-              max="10"
-              value={ratingStructure}
-              onChange={(e) => setRatingStructure(parseInt(e.target.value))}
-            />
+          {/* Разделитель с формулой */}
+          <div className="rating-divider">
+            <span>× 1.4 ×</span>
           </div>
 
-          <div className="rating-group">
-            <label htmlFor="rating-implementation">
-              Реализация стиля: {ratingImplementation}
-              <span className="tooltip">ℹ️
-                <span className="tooltiptext">
-                  Оценивает работу исполнителя (качество вокала, речитатив, умение работать с мелодией) и работу звукорежиссера/саунд-продюсера (качество сведения, звучание инструментала).
+          {/* Блок множителя */}
+          <div className="multiplier-group">
+            <div className="group-header">
+              <h4>Атмосфера / Вайб (множитель)</h4>
+            </div>
+            <div className="rating-group">
+              <label htmlFor="atmosphere">
+                Атмосфера / Вайб: {atmosphereRating}
+                <span className="tooltip">ℹ️
+                  <span className="tooltiptext">
+                    Субъективная оценка, показывающая, насколько автор сумел передать атмосферу и палитру эмоций композиции. Диапазон: 1-10
+                  </span>
                 </span>
-              </span>
-            </label>
-            <input
-              type="range"
-              id="rating-implementation"
-              min="1"
-              max="10"
-              value={ratingImplementation}
-              onChange={(e) => setRatingImplementation(parseInt(e.target.value))}
-            />
+              </label>
+              <input
+                type="range"
+                id="atmosphere"
+                min="1"
+                max="10"
+                value={atmosphereRating}
+                onChange={(e) => setAtmosphereRating(parseInt(e.target.value))}
+              />
+            </div>
           </div>
 
-          <div className="rating-group">
-            <label htmlFor="rating-individuality">
-              Индивидуальность / Харизма: {ratingIndividuality}
-              <span className="tooltip">ℹ️
-                <span className="tooltiptext">
-                  Оценивает уникальность тембра голоса, стиль исполнения, узнаваемость, а также способность артиста передать и погрузить слушателя в эмоции (верю — не верю песне).
-                </span>
-              </span>
-            </label>
-            <input
-              type="range"
-              id="rating-individuality"
-              min="1"
-              max="10"
-              value={ratingIndividuality}
-              onChange={(e) => setRatingIndividuality(parseInt(e.target.value))}
-            />
-          </div>
-
-          <div className="rating-group">
-            <label htmlFor="atmosphere">
-              Атмосфера / Вайб: {atmosphereRating}
-              <span className="tooltip">ℹ️
-                <span className="tooltiptext">
-                  Субъективная оценка, показывающая, насколько автор сумел передать атмосферу и палитру эмоций композиции. Диапазон: 1-10
-                </span>
-              </span>
-            </label>
-            <input
-              type="range"
-              id="atmosphere"
-              min="1"
-              max="10"
-              value={atmosphereRating}
-              onChange={(e) => setAtmosphereRating(parseInt(e.target.value))}
-            />
-          </div>
-
-          <div className="final-score">
-            <strong>Итоговый балл: {formatScore(finalScore)}</strong>
+          {/* Итоговый балл с формулой */}
+          <div className="final-score-block">
+            <div className="formula">
+              ({ratingRhymes} + {ratingStructure} + {ratingImplementation} + {ratingIndividuality}) × 1.4 × {atmosphereRating} = {formatScore(finalScore)}
+            </div>
+            <div className="final-score-value">
+              Итоговый балл: {formatScore(finalScore)}
+            </div>
           </div>
         </div>
 

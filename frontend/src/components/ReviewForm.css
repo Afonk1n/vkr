@@ -26,6 +26,154 @@
 .rating-section h4 {
   margin-bottom: 0.5rem;
   color: var(--text-color);
+  font-size: 1.125rem;
+}
+
+/* Блок базовых оценок */
+.base-ratings-group {
+  background: var(--card-background);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  position: relative;
+}
+
+.base-ratings-group::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, 
+    var(--primary-color), 
+    var(--secondary-color)
+  );
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.group-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.group-summary {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  background: var(--hover-color);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-sm);
+}
+
+.base-ratings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+/* Разделитель */
+.rating-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0;
+  position: relative;
+}
+
+.rating-divider::before,
+.rating-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+}
+
+.rating-divider span {
+  padding: 0 1rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 1.125rem;
+  background: var(--background-color);
+}
+
+/* Блок множителя */
+.multiplier-group {
+  background: var(--card-background);
+  border: 2px solid var(--primary-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  position: relative;
+}
+
+.multiplier-group::before {
+  content: '×';
+  position: absolute;
+  top: -12px;
+  left: 1.5rem;
+  background: var(--card-background);
+  padding: 0 0.5rem;
+  color: var(--primary-color);
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.multiplier-group .group-header {
+  margin-bottom: 1rem;
+}
+
+.multiplier-group .group-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+/* Итоговый балл */
+.final-score-block {
+  background: linear-gradient(135deg, 
+    var(--primary-color), 
+    var(--secondary-color)
+  );
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  text-align: center;
+  color: white;
+}
+
+.formula {
+  font-size: 0.875rem;
+  opacity: 0.9;
+  margin-bottom: 0.5rem;
+  font-family: 'Courier New', monospace;
+  word-break: break-all;
+}
+
+.final-score-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+/* Старый класс final-score для обратной совместимости */
+.final-score {
+  padding: 1rem;
+  background-color: var(--hover-color);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  text-align: center;
+  font-size: 1.25rem;
+  color: var(--text-color);
+  font-weight: 600;
 }
 
 .rating-group {
@@ -208,6 +356,20 @@
   .btn-cancel,
   .btn-submit {
     width: 100%;
+  }
+
+  .base-ratings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .group-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .formula {
+    font-size: 0.75rem;
   }
 }
 

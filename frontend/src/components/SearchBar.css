@@ -102,6 +102,10 @@
   flex-shrink: 0;
 }
 
+.search-result-image-artist {
+  border-radius: 50%; /* Circular avatar for artists */
+}
+
 .search-result-info {
   flex: 1;
   min-width: 0;

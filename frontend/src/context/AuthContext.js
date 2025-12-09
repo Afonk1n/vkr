@@ -78,11 +78,18 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const updateUser = (userData) => {
+    // Update user data in context and localStorage without re-login
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+  };
+
   const value = {
     user,
     login,
     register,
     logout,
+    updateUser,
     loading,
     isAuthenticated: !!user,
     isAdmin: user?.is_admin || false,

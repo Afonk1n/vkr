@@ -83,6 +83,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 		// Track routes
 		tracks := api.Group("/tracks")
 		{
+			tracks.GET("", trackController.GetAllTracks) // Must come before /:id
 			tracks.GET("/popular", trackController.GetPopularTracks)
 			tracks.GET("/:id", trackController.GetTrack)
 			tracks.POST("", middleware.AuthMiddleware(db), middleware.AdminMiddleware(), trackController.CreateTrack)
@@ -102,6 +103,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 			users.GET("/:id", userController.GetUser)
 			users.GET("/:id/reviews", userController.GetUserReviews)
 			users.PUT("/:id", middleware.AuthMiddleware(db), userController.UpdateUser)
+			users.POST("/:id/avatar", middleware.AuthMiddleware(db), userController.UploadAvatar) // Must come before /:id
 			users.DELETE("/:id", middleware.AuthMiddleware(db), userController.DeleteUser)
 		}
 	}

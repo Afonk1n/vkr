@@ -153,6 +153,13 @@ func InitDB() (*gorm.DB, error) {
 	} else {
 		log.Println("✓ Track likes seeding completed successfully")
 	}
+
+	// Seed album likes (for testing)
+	if err := seedAlbumLikes(); err != nil {
+		log.Printf("ERROR: failed to seed album likes: %v", err)
+	} else {
+		log.Println("✓ Album likes seeding completed successfully")
+	}
 	log.Println("=== Data seeding finished ===")
 
 	// Check database state after seeding
@@ -256,35 +263,52 @@ func fixReviewsTableConstraints() error {
 func seedData() error {
 	log.Println("Seeding initial data...")
 
-	// Seed genres - reload from DB after creation to get correct IDs
-	genresToCreate := []models.Genre{
-		{Name: "Рок", Description: "Рок-музыка"},
-		{Name: "Поп", Description: "Поп-музыка"},
-		{Name: "Хип-хоп", Description: "Хип-хоп и рэп"},
-		{Name: "Электронная", Description: "Электронная музыка"},
-		{Name: "Джаз", Description: "Джаз"},
-		{Name: "Классическая", Description: "Классическая музыка"},
-	}
-
-	// Create genres if they don't exist
-	createdGenres := 0
-	existingGenres := 0
-	for _, genre := range genresToCreate {
-		var existingGenre models.Genre
-		if err := DB.Where("name = ?", genre.Name).First(&existingGenre).Error; err != nil {
-			// Genre doesn't exist, create it
-			if err := DB.Create(&genre).Error; err != nil {
-				log.Printf("ERROR: Failed to create genre %s: %v", genre.Name, err)
-				return fmt.Errorf("failed to seed genre %s: %w", genre.Name, err)
-			}
-			createdGenres++
-			log.Printf("✓ Created genre: %s (ID: %d)", genre.Name, genre.ID)
-		} else {
-			existingGenres++
-			log.Printf("  Genre already exists: %s (ID: %d)", genre.Name, existingGenre.ID)
+	// Check if genres already exist in sufficient quantity (15 жанров)
+	var existingGenreCount int64
+	DB.Model(&models.Genre{}).Count(&existingGenreCount)
+	if existingGenreCount >= 15 {
+		log.Printf("Genres already exist (%d genres), skipping genre seed to avoid duplicates", existingGenreCount)
+		// Still need to reload genres for album creation
+	} else {
+		// Seed genres - 15 самых популярных жанров в РФ за последние годы
+		genresToCreate := []models.Genre{
+			{Name: "Поп", Description: "Поп-музыка"},
+			{Name: "Рэп", Description: "Рэп"},
+			{Name: "Хип-хоп", Description: "Хип-хоп"},
+			{Name: "Рок", Description: "Рок-музыка"},
+			{Name: "Электронная", Description: "Электронная музыка"},
+			{Name: "Поп-рок", Description: "Поп-рок"},
+			{Name: "Инди-поп", Description: "Инди-поп"},
+			{Name: "Альтернативный рок", Description: "Альтернативный рок"},
+			{Name: "R&B", Description: "R&B"},
+			{Name: "Соул", Description: "Соул"},
+			{Name: "Трэп", Description: "Трэп"},
+			{Name: "Дрилл", Description: "Дрилл"},
+			{Name: "Фолк", Description: "Фолк"},
+			{Name: "Шансон", Description: "Шансон"},
+			{Name: "Метал", Description: "Метал"},
 		}
+
+		// Create genres if they don't exist (use FirstOrCreate to avoid duplicates)
+		createdGenres := 0
+		existingGenres := 0
+		for _, genre := range genresToCreate {
+			var existingGenre models.Genre
+			result := DB.Where("name = ?", genre.Name).FirstOrCreate(&existingGenre, genre)
+			if result.Error != nil {
+				log.Printf("ERROR: Failed to create/find genre %s: %v", genre.Name, result.Error)
+				return fmt.Errorf("failed to seed genre %s: %w", genre.Name, result.Error)
+			}
+			if result.RowsAffected > 0 {
+				createdGenres++
+				log.Printf("✓ Created genre: %s (ID: %d)", existingGenre.Name, existingGenre.ID)
+			} else {
+				existingGenres++
+				log.Printf("  Genre already exists: %s (ID: %d)", existingGenre.Name, existingGenre.ID)
+			}
+		}
+		log.Printf("Genres: %d created, %d already existed", createdGenres, existingGenres)
 	}
-	log.Printf("Genres: %d created, %d already existed", createdGenres, existingGenres)
 
 	// Reload all genres from DB to get correct IDs
 	var allGenres []models.Genre
@@ -389,28 +413,31 @@ func seedData() error {
 	}
 	log.Printf("Test users: %d created, %d already existed (total: %d)", createdTestUsers, existingTestUsers, len(allTestUsers))
 
-	// Seed albums - verify genre IDs before using them
-	rockGenre, rockExists := genreMap["Рок"]
-	popGenre, popExists := genreMap["Поп"]
-	hiphopGenre, hiphopExists := genreMap["Хип-хоп"]
-	electronicGenre, electronicExists := genreMap["Электронная"]
-	jazzGenre, jazzExists := genreMap["Джаз"]
+	// Check if albums already exist in sufficient quantity
+	var existingAlbumCount int64
+	DB.Model(&models.Album{}).Count(&existingAlbumCount)
+	if existingAlbumCount >= 12 {
+		log.Printf("Albums already exist (%d albums), skipping album seed to avoid duplicates", existingAlbumCount)
+		// Still need to reload albums for likes
+	} else {
+		// Seed albums - verify genre IDs before using them
+		rockGenre, rockExists := genreMap["Рок"]
+		popGenre, popExists := genreMap["Поп"]
+		hiphopGenre, hiphopExists := genreMap["Хип-хоп"]
+		electronicGenre, electronicExists := genreMap["Электронная"]
 
-	if !rockExists || rockGenre.ID == 0 {
-		return fmt.Errorf("Рок genre not found or has invalid ID")
-	}
-	if !popExists || popGenre.ID == 0 {
-		return fmt.Errorf("Поп genre not found or has invalid ID")
-	}
-	if !hiphopExists || hiphopGenre.ID == 0 {
-		return fmt.Errorf("Хип-хоп genre not found or has invalid ID")
-	}
-	if !electronicExists || electronicGenre.ID == 0 {
-		return fmt.Errorf("Электронная genre not found or has invalid ID")
-	}
-	if !jazzExists || jazzGenre.ID == 0 {
-		return fmt.Errorf("Джаз genre not found or has invalid ID")
-	}
+		if !rockExists || rockGenre.ID == 0 {
+			return fmt.Errorf("Рок genre not found or has invalid ID")
+		}
+		if !popExists || popGenre.ID == 0 {
+			return fmt.Errorf("Поп genre not found or has invalid ID")
+		}
+		if !hiphopExists || hiphopGenre.ID == 0 {
+			return fmt.Errorf("Хип-хоп genre not found or has invalid ID")
+		}
+		if !electronicExists || electronicGenre.ID == 0 {
+			return fmt.Errorf("Электронная genre not found or has invalid ID")
+		}
 
 	// Helper function to create time pointer
 	createDate := func(year int, month time.Month, day int) *time.Time {
@@ -419,142 +446,110 @@ func seedData() error {
 	}
 
 	albums := []models.Album{
-		{
-			Title:          "Жить в твоей голове",
-			Artist:         "Земфира",
-			GenreID:        rockGenre.ID,
-			CoverImagePath: "/preview/1.jpg",
-			Description:    "Седьмой студийный альбом Земфиры, выпущенный в 2021 году",
-			ReleaseDate:    createDate(2021, 3, 15),
-			AverageRating:  0,
-		},
-		{
-			Title:          "Вендетта",
-			Artist:         "Земфира",
-			GenreID:        rockGenre.ID,
-			CoverImagePath: "/preview/1.jpg",
-			Description:    "Шестой студийный альбом Земфиры, выпущенный в 2013 году",
-			ReleaseDate:    createDate(2013, 6, 1),
-			AverageRating:  0,
-		},
-		{
-			Title:          "Vinyl #1",
-			Artist:         "Zivert",
-			GenreID:        popGenre.ID,
-			CoverImagePath: "/preview/4.jpg",
-			Description:    "Дебютный студийный альбом Zivert, один из самых успешных поп-альбомов 2019 года",
-			ReleaseDate:    createDate(2019, 5, 10),
-			AverageRating:  0,
-		},
-		{
-			Title:          "Сияй",
-			Artist:         "Zivert",
-			GenreID:        popGenre.ID,
-			CoverImagePath: "/preview/4.jpg",
-			Description:    "Второй студийный альбом Zivert, выпущенный в 2021 году",
-			ReleaseDate:    createDate(2021, 9, 17),
-			AverageRating:  0,
-		},
-		{
-			Title:          "Горгород",
-			Artist:         "Баста",
-			GenreID:        hiphopGenre.ID,
-			CoverImagePath: "/preview/7.jpg",
-			Description:    "Концептуальный альбом Басты, выпущенный в 2015 году",
-			ReleaseDate:    createDate(2015, 11, 13),
-			AverageRating:  0,
-		},
-		{
-			Title:          "Красота",
-			Artist:         "Баста",
-			GenreID:        hiphopGenre.ID,
-			CoverImagePath: "/preview/7.jpg",
-			Description:    "Третий студийный альбом Басты, выпущенный в 2021 году",
-			ReleaseDate:    createDate(2021, 12, 3),
-			AverageRating:  0,
-		},
-		{
-			Title:          "До свидания",
-			Artist:         "Tesla Boy",
-			GenreID:        electronicGenre.ID,
-			CoverImagePath: "/preview/8.jpg",
-			Description:    "Электронный альбом группы Tesla Boy с элементами синт-попа и нью-вейва",
-			ReleaseDate:    createDate(2018, 4, 20),
-			AverageRating:  0,
-		},
-		{
-			Title:          "Сладкая жизнь",
-			Artist:         "Tesla Boy",
-			GenreID:        electronicGenre.ID,
-			CoverImagePath: "/preview/8.jpg",
-			Description:    "Альбом Tesla Boy, выпущенный в 2020 году",
-			ReleaseDate:    createDate(2020, 10, 30),
-			AverageRating:  0,
-		},
-		{
-			Title:          "Раскраски для взрослых",
-			Artist:         "Монеточка",
-			GenreID:        popGenre.ID,
-			CoverImagePath: "/preview/9.jpg",
-			Description:    "Второй студийный альбом Монеточки, выпущенный в 2018 году",
-			ReleaseDate:    createDate(2018, 3, 23),
-			AverageRating:  0,
-		},
-		{
-			Title:          "Раскраски для взрослых 2",
-			Artist:         "Монеточка",
-			GenreID:        popGenre.ID,
-			CoverImagePath: "/preview/9.jpg",
-			Description:    "Третий студийный альбом Монеточки, выпущенный в 2020 году",
-			ReleaseDate:    createDate(2020, 11, 6),
-			AverageRating:  0,
-		},
-		// Добавляем альбомы для других жанров
-		{
-			Title:          "Ночной джаз",
-			Artist:         "Олег Лундстрем",
-			GenreID:        jazzGenre.ID,
-			CoverImagePath: "/preview/9.jpg",
-			Description:    "Классический джазовый альбом, один из самых влиятельных в истории российского джаза",
-			ReleaseDate:    createDate(2019, 8, 17),
-			AverageRating:  0,
-		},
-		{
-			Title:          "Голубая ночь",
-			Artist:         "Игорь Бутман",
-			GenreID:        jazzGenre.ID,
-			CoverImagePath: "/preview/9.jpg",
-			Description:    "Легендарный джазовый альбом Игоря Бутмана",
-			ReleaseDate:    createDate(2017, 9, 15),
-			AverageRating:  0,
-		},
+		// Баста (Basta / Ноггано) - Хип-хоп
+		{Title: "Баста 1", Artist: "Баста", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/basta1.jpg", Description: "Первый студийный альбом Басты", ReleaseDate: createDate(2006, 1, 1), AverageRating: 0},
+		{Title: "Баста 2", Artist: "Баста", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/basta2.jpg", Description: "Второй студийный альбом Басты", ReleaseDate: createDate(2007, 1, 1), AverageRating: 0},
+		{Title: "Ноггано", Artist: "Баста", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/noggano.jpg", Description: "Альбом под псевдонимом Ноггано", ReleaseDate: createDate(2008, 1, 1), AverageRating: 0},
+		{Title: "Баста 3", Artist: "Баста", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/basta3.jpg", Description: "Третий студийный альбом Басты", ReleaseDate: createDate(2010, 1, 1), AverageRating: 0},
+		
+		// Скриптонит (Scriptonite) - Хип-хоп
+		{Title: "Дом с нормальными явлениями", Artist: "Скриптонит", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/domsnormyavleniyami.jpg", Description: "Дебютный альбом Скриптонита", ReleaseDate: createDate(2015, 1, 1), AverageRating: 0},
+		{Title: "Праздник на улице 36", Artist: "Скриптонит", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/prazdnikulica36.jpg", Description: "Второй альбом Скриптонита", ReleaseDate: createDate(2017, 1, 1), AverageRating: 0},
+		{Title: "2004", Artist: "Скриптонит", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/2004.jpg", Description: "Третий альбом Скриптонита", ReleaseDate: createDate(2018, 1, 1), AverageRating: 0},
+		{Title: "Уроборос: улочка и аллея", Artist: "Скриптонит & 104", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/uroboros.jpg", Description: "Альбом Скриптонита & 104", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
+		
+		// ANNA ASTI - Поп
+		{Title: "Феникс", Artist: "ANNA ASTI", GenreID: popGenre.ID, CoverImagePath: "/preview/fenix.png", Description: "Дебютный альбом ANNA ASTI", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
+		{Title: "Царица", Artist: "ANNA ASTI", GenreID: popGenre.ID, CoverImagePath: "/preview/carica.png", Description: "Второй альбом ANNA ASTI", ReleaseDate: createDate(2023, 1, 1), AverageRating: 0},
+		
+		// Zivert - Поп
+		{Title: "Vinyl #1", Artist: "Zivert", GenreID: popGenre.ID, CoverImagePath: "/preview/venil1.jpg", Description: "Дебютный альбом Zivert", ReleaseDate: createDate(2018, 1, 1), AverageRating: 0},
+		{Title: "Vinyl #2", Artist: "Zivert", GenreID: popGenre.ID, CoverImagePath: "/preview/venil2.jpg", Description: "Второй альбом Zivert", ReleaseDate: createDate(2019, 1, 1), AverageRating: 0},
+		{Title: "Сияй", Artist: "Zivert", GenreID: popGenre.ID, CoverImagePath: "/preview/siyai.jpg", Description: "Третий альбом Zivert", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
+		
+		// IOWA - Поп
+		{Title: "Import", Artist: "IOWA", GenreID: popGenre.ID, CoverImagePath: "/preview/import.jpg", Description: "Первый альбом IOWA", ReleaseDate: createDate(2012, 1, 1), AverageRating: 0},
+		{Title: "Export", Artist: "IOWA", GenreID: popGenre.ID, CoverImagePath: "/preview/export.jpg", Description: "Второй альбом IOWA", ReleaseDate: createDate(2015, 1, 1), AverageRating: 0},
+		{Title: "Французский альбом", Artist: "IOWA", GenreID: popGenre.ID, CoverImagePath: "/preview/french.jpg", Description: "Третий альбом IOWA", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
+		
+		// Клава Кока (Klava Koka) - Поп
+		{Title: "Неприлично о личном", Artist: "Клава Кока", GenreID: popGenre.ID, CoverImagePath: "/preview/neprelichnoolicnom.jpg", Description: "Дебютный альбом Клавы Коки", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
+		{Title: "Красное вино", Artist: "Клава Кока", GenreID: popGenre.ID, CoverImagePath: "/preview/krasnoevino.jpg", Description: "Второй альбом Клавы Коки", ReleaseDate: createDate(2024, 1, 1), AverageRating: 0},
+		
+		// ЛСП (LSP) - Хип-хоп
+		{Title: "Magic City", Artist: "ЛСП", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/magiccity.jpg", Description: "Первый альбом ЛСП", ReleaseDate: createDate(2015, 1, 1), AverageRating: 0},
+		{Title: "Tragic City", Artist: "ЛСП", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/tragiccity.jpg", Description: "Второй альбом ЛСП", ReleaseDate: createDate(2017, 1, 1), AverageRating: 0},
+		{Title: "SAD SOUNDS", Artist: "ЛСП", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/sadsounds.png", Description: "Третий альбом ЛСП", ReleaseDate: createDate(2020, 1, 1), AverageRating: 0},
+		
+		// The Hatters - Рок/Инди
+		{Title: "Безумие", Artist: "The Hatters", GenreID: rockGenre.ID, CoverImagePath: "/preview/bezumie.jpg", Description: "Первый альбом The Hatters", ReleaseDate: createDate(2016, 1, 1), AverageRating: 0},
+		{Title: "Третий", Artist: "The Hatters", GenreID: rockGenre.ID, CoverImagePath: "/preview/tretiy.jpg", Description: "Третий альбом The Hatters", ReleaseDate: createDate(2018, 1, 1), AverageRating: 0},
+		{Title: "Четвёртый", Artist: "The Hatters", GenreID: rockGenre.ID, CoverImagePath: "/preview/chetvertiy.jpg", Description: "Четвёртый альбом The Hatters", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
+		
+		// Miyagi (Miyagi & Эндшпиль / Miyagi & Andy Panda) - Хип-хоп
+		{Title: "Hajime 1", Artist: "Miyagi & Эндшпиль", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/hajime1.jpg", Description: "Первый альбом Miyagi & Эндшпиль", ReleaseDate: createDate(2016, 1, 1), AverageRating: 0},
+		{Title: "Buster Keaton", Artist: "Miyagi & Andy Panda", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/BusterKeaton.jpg", Description: "Альбом Miyagi & Andy Panda", ReleaseDate: createDate(2018, 1, 1), AverageRating: 0},
+		{Title: "Yamakasi", Artist: "Miyagi & Andy Panda", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/Yamakasi.jpg", Description: "Альбом Miyagi & Andy Panda", ReleaseDate: createDate(2020, 1, 1), AverageRating: 0},
+		{Title: "Million Dollars: Happiness", Artist: "Miyagi & Andy Panda", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/MillionDollars.jpg", Description: "Альбом Miyagi & Andy Panda", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
 	}
 
 	// Seed albums - create or update with cover images
 	albumMap := map[string]string{
-		"Жить в твоей голове":      "/preview/1.jpg",
-		"Вендетта":                 "/preview/1.jpg",
-		"Vinyl #1":                 "/preview/4.jpg",
-		"Сияй":                     "/preview/4.jpg",
-		"Горгород":                 "/preview/7.jpg",
-		"Красота":                  "/preview/7.jpg",
-		"До свидания":              "/preview/8.jpg",
-		"Сладкая жизнь":            "/preview/8.jpg",
-		"Ночной джаз":              "/preview/9.jpg",
-		"Голубая ночь":             "/preview/9.jpg",
-		"Раскраски для взрослых":   "/preview/9.jpg",
-		"Раскраски для взрослых 2": "/preview/9.jpg",
-		"Kind of Blue":             "/preview/9.jpg",
-		"Blue Train":               "/preview/9.jpg",
+		"Баста 1": "/preview/basta1.jpg",
+		"Баста 2": "/preview/basta2.jpg",
+		"Ноггано": "/preview/noggano.jpg",
+		"Баста 3": "/preview/basta3.jpg",
+		"Дом с нормальными явлениями": "/preview/domsnormyavleniyami.jpg",
+		"Праздник на улице 36": "/preview/prazdnikulica36.jpg",
+		"2004": "/preview/2004.jpg",
+		"Уроборос: улочка и аллея": "/preview/uroboros.jpg",
+		"Феникс": "/preview/fenix.png",
+		"Царица": "/preview/carica.png",
+		"Vinyl #1": "/preview/venil1.jpg",
+		"Vinyl #2": "/preview/venil2.jpg",
+		"Сияй": "/preview/siyai.jpg",
+		"Import": "/preview/import.jpg",
+		"Export": "/preview/export.jpg",
+		"Французский альбом": "/preview/french.jpg",
+		"Неприлично о личном": "/preview/neprelichnoolicnom.jpg",
+		"Красное вино": "/preview/krasnoevino.jpg",
+		"Magic City": "/preview/magiccity.jpg",
+		"Tragic City": "/preview/tragiccity.jpg",
+		"SAD SOUNDS": "/preview/sadsounds.png",
+		"Безумие": "/preview/bezumie.jpg",
+		"Третий": "/preview/tretiy.jpg",
+		"Четвёртый": "/preview/chetvertiy.jpg",
+		"Hajime 1": "/preview/hajime1.jpg",
+		"Buster Keaton": "/preview/BusterKeaton.jpg",
+		"Yamakasi": "/preview/Yamakasi.jpg",
+		"Million Dollars: Happiness": "/preview/MillionDollars.jpg",
 	}
 
 	createdAlbums := 0
 	existingAlbums := 0
 	skippedAlbums := 0
 	for _, album := range albums {
+		// Verify genre ID is valid before creating
+		if album.GenreID == 0 {
+			log.Printf("ERROR: Album %s has invalid GenreID (0), skipping", album.Title)
+			skippedAlbums++
+			continue
+		}
+		
 		var existingAlbum models.Album
-		if err := DB.Where("title = ? AND artist = ?", album.Title, album.Artist).First(&existingAlbum).Error; err == nil {
-			// Album exists, update cover_image_path if it's empty
+		result := DB.Where("title = ? AND artist = ?", album.Title, album.Artist).FirstOrCreate(&existingAlbum, album)
+		if result.Error != nil {
+			log.Printf("ERROR: Failed to create/find album %s: %v", album.Title, result.Error)
+			skippedAlbums++
+			continue
+		}
+		
+		if result.RowsAffected > 0 {
+			// Album was created
+			createdAlbums++
+			log.Printf("✓ Created album: %s by %s (ID: %d, GenreID: %d)", album.Title, album.Artist, existingAlbum.ID, existingAlbum.GenreID)
+		} else {
+			// Album already exists, update cover_image_path if it's empty
 			existingAlbums++
 			if existingAlbum.CoverImagePath == "" && albumMap[album.Title] != "" {
 				existingAlbum.CoverImagePath = albumMap[album.Title]
@@ -566,63 +561,21 @@ func seedData() error {
 			} else {
 				log.Printf("  Album already exists: %s by %s (ID: %d, GenreID: %d)", album.Title, album.Artist, existingAlbum.ID, existingAlbum.GenreID)
 			}
-		} else {
-			// Album doesn't exist, create it
-			// Verify genre ID is valid before creating
-			if album.GenreID == 0 {
-				log.Printf("ERROR: Album %s has invalid GenreID (0), skipping", album.Title)
-				skippedAlbums++
-				continue
-			}
-			if err := DB.Create(&album).Error; err != nil {
-				log.Printf("ERROR: Failed to create album %s: %v", album.Title, err)
-				return fmt.Errorf("failed to seed album %s: %w", album.Title, err)
-			}
-			createdAlbums++
-			log.Printf("✓ Created album: %s by %s (ID: %d, GenreID: %d)", album.Title, album.Artist, album.ID, album.GenreID)
 		}
 	}
-	log.Printf("Albums seeding complete: %d created, %d already existed, %d skipped", createdAlbums, existingAlbums, skippedAlbums)
+		log.Printf("Albums seeding complete: %d created, %d already existed, %d skipped", createdAlbums, existingAlbums, skippedAlbums)
+	}
 
 	// Reload albums from DB to get correct IDs
 	var allAlbums []models.Album
 	if err := DB.Find(&allAlbums).Error; err != nil {
 		log.Printf("Warning: failed to reload albums: %v", err)
-		allAlbums = albums // Fallback to original albums
+		allAlbums = []models.Album{} // Fallback to empty slice
 	} else {
 		log.Printf("Reloaded %d albums from database", len(allAlbums))
 	}
 
-	// Seed some album likes for testing
-	// Use already created users
-	// Admin likes first 3 albums
-	for i := 0; i < 3 && i < len(allAlbums); i++ {
-		// Check if like already exists
-		var existingLike models.AlbumLike
-		if err := DB.Where("user_id = ? AND album_id = ?", admin.ID, allAlbums[i].ID).First(&existingLike).Error; err != nil {
-			like := models.AlbumLike{
-				UserID:  admin.ID,
-				AlbumID: allAlbums[i].ID,
-			}
-			if err := DB.Create(&like).Error; err != nil {
-				log.Printf("Warning: failed to create album like: %v", err)
-			}
-		}
-	}
-	// testUser likes albums 1-4
-	for i := 0; i < 4 && i < len(allAlbums); i++ {
-		// Check if like already exists
-		var existingLike models.AlbumLike
-		if err := DB.Where("user_id = ? AND album_id = ?", testUser.ID, allAlbums[i].ID).First(&existingLike).Error; err != nil {
-			like := models.AlbumLike{
-				UserID:  testUser.ID,
-				AlbumID: allAlbums[i].ID,
-			}
-			if err := DB.Create(&like).Error; err != nil {
-				log.Printf("Warning: failed to create album like: %v", err)
-			}
-		}
-	}
+	// Album likes are now seeded in seedAlbumLikes() function
 
 	// Final verification - check that data was actually created
 	var userCount, albumCount, genreCount int64
@@ -649,6 +602,14 @@ func seedData() error {
 // seedTracks seeds tracks with multiple genres into database
 func seedTracks() error {
 	log.Println("Seeding tracks...")
+
+	// Check if tracks already exist in sufficient quantity
+	var existingTrackCount int64
+	DB.Model(&models.Track{}).Count(&existingTrackCount)
+	if existingTrackCount >= 50 {
+		log.Printf("Tracks already exist (%d tracks), skipping track seed to avoid duplicates", existingTrackCount)
+		return nil
+	}
 
 	// Get albums
 	var albums []models.Album
@@ -690,89 +651,363 @@ func seedTracks() error {
 		GenreNames     []string // Multiple genres per track
 		CoverImagePath string   // Optional cover image path
 	}{
-		// Земфира - Жить в твоей голове
-		{"Жить в твоей голове", "Крым", 245, 1, []string{"Рок"}, "/preview/1.jpg"},
-		{"Жить в твоей голове", "Ок", 198, 2, []string{"Рок", "Поп"}, "/preview/2.jpg"},
-		{"Жить в твоей голове", "Жить в твоей голове", 223, 3, []string{"Рок"}, ""},
-		{"Жить в твоей голове", "Мы разбиваемся", 267, 4, []string{"Рок"}, ""},
-		{"Жить в твоей голове", "Таблетки", 201, 5, []string{"Рок"}, ""},
-		{"Жить в твоей голове", "Без шансов", 189, 6, []string{"Рок"}, ""},
-		{"Жить в твоей голове", "Абъюза", 215, 7, []string{"Рок", "Поп"}, "/preview/3.jpg"},
-		{"Жить в твоей голове", "Ракеты", 192, 8, []string{"Рок"}, ""},
-		{"Жить в твоей голове", "Снег идёт", 204, 9, []string{"Рок", "Поп"}, ""},
+		// Баста - Баста 1 (2006)
+		{"Баста 1", "Мой друг", 240, 1, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 1", "Наше лето (feat. Гуф)", 267, 2, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 1", "Свобода", 251, 3, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 1", "Ростов", 234, 4, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 1", "Водяной", 228, 5, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 1", "Так плачем было (feat. Лигалайз)", 245, 6, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 1", "Без тебя", 239, 7, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 1", "Мама", 223, 8, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 1", "Город дорог", 256, 9, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 1", "Реквием", 242, 10, []string{"Хип-хоп", "Рэп"}, ""},
 
-		// Zivert - Vinyl #1
+		// Баста - Баста 2 (2007)
+		{"Баста 2", "Intro", 60, 1, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 2", "Моя игра", 240, 2, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 2", "Осень", 267, 3, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 2", "Выпускной (Медлячок)", 251, 4, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 2", "Город", 234, 5, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 2", "Самурай", 228, 6, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 2", "Дождь", 245, 7, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 2", "Life", 239, 8, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 2", "Снится сон", 223, 9, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 2", "Outro", 50, 10, []string{"Хип-хоп", "Рэп"}, ""},
+
+		// Баста - Ноггано (2008)
+		{"Ноггано", "Куба", 240, 1, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Ноггано", "Вечный жид", 267, 2, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Ноггано", "Родина", 251, 3, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Ноггано", "Выпускной", 234, 4, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Ноггано", "Водяной", 228, 5, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Ноггано", "Ствол", 245, 6, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Ноггано", "Рим", 239, 7, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Ноггано", "Мама", 223, 8, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Ноггано", "Медлячок (Remix)", 256, 9, []string{"Хип-хоп", "Рэп", "Электронная"}, ""},
+		{"Ноггано", "Осень (Remix)", 242, 10, []string{"Хип-хоп", "Рэп", "Электронная"}, ""},
+
+		// Баста - Баста 3 (2010)
+		{"Баста 3", "Сансара", 240, 1, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 3", "Чёрное солнце", 267, 2, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 3", "Выпускной (Баста 3)", 251, 3, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 3", "Где я", 234, 4, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 3", "Свобода или смерть", 228, 5, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 3", "Дым", 245, 6, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 3", "Война", 239, 7, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 3", "Любовь и страх", 223, 8, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Баста 3", "Мой рок-н-ролл (feat. Смоки Мо)", 256, 9, []string{"Хип-хоп", "Рок", "Поп-рок"}, ""},
+		{"Баста 3", "Outro", 50, 10, []string{"Хип-хоп", "Рэп"}, ""},
+
+		// Скриптонит - Дом с нормальными явлениями (2015)
+		{"Дом с нормальными явлениями", "Вне игры", 240, 1, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Дом с нормальными явлениями", "RBG", 267, 2, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Дом с нормальными явлениями", "Мы любим...", 251, 3, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Дом с нормальными явлениями", "Экзистенциальная холка", 234, 4, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Дом с нормальными явлениями", "Люби меня", 228, 5, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Дом с нормальными явлениями", "Право на выбор", 245, 6, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Дом с нормальными явлениями", "ПТВ", 239, 7, []string{"Хип-хоп", "Рэп", "Электронная"}, ""},
+		{"Дом с нормальными явлениями", "Гастроль", 223, 8, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Дом с нормальными явлениями", "Феномен", 256, 9, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Дом с нормальными явлениями", "MDM", 242, 10, []string{"Хип-хоп", "Рэп", "Электронная"}, ""},
+		{"Дом с нормальными явлениями", "Тем, кто с нами", 250, 11, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Дом с нормальными явлениями", "Статистика", 235, 12, []string{"Хип-хоп", "Рэп"}, ""},
+
+		// Скриптонит - Праздник на улице 36 (2017)
+		{"Праздник на улице 36", "Время тяжёлое", 240, 1, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Праздник на улице 36", "Праздник на улице 36", 267, 2, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Праздник на улице 36", "Стиль", 251, 3, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Праздник на улице 36", "Личный рай", 234, 4, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Праздник на улице 36", "Пуля-дура", 228, 5, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Праздник на улице 36", "Смок", 245, 6, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Праздник на улице 36", "Слишком сильная любовь", 239, 7, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Праздник на улице 36", "Кино", 223, 8, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Праздник на улице 36", "Зеро", 256, 9, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Праздник на улице 36", "Моя", 242, 10, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Праздник на улице 36", "По полной", 250, 11, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Праздник на улице 36", "Ливень (Bonus Track)", 235, 12, []string{"Хип-хоп", "Рэп"}, ""},
+
+		// Скриптонит - 2004 (2018)
+		{"2004", "2004", 240, 1, []string{"Хип-хоп", "Рэп"}, ""},
+		{"2004", "Герой", 267, 2, []string{"Хип-хоп", "Рэп"}, ""},
+		{"2004", "Барбисайз", 251, 3, []string{"Хип-хоп", "Рэп"}, ""},
+		{"2004", "Нас не видят", 234, 4, []string{"Хип-хоп", "Рэп"}, ""},
+		{"2004", "Фурия", 228, 5, []string{"Хип-хоп", "Рэп"}, ""},
+		{"2004", "Улица", 245, 6, []string{"Хип-хоп", "Рэп"}, ""},
+		{"2004", "Ангел", 239, 7, []string{"Хип-хоп", "Рэп"}, ""},
+		{"2004", "Блок", 223, 8, []string{"Хип-хоп", "Рэп"}, ""},
+		{"2004", "Физрук", 256, 9, []string{"Хип-хоп", "Рэп"}, ""},
+		{"2004", "Твой первый диск", 242, 10, []string{"Хип-хоп", "Рэп"}, ""},
+		{"2004", "Неважно", 250, 11, []string{"Хип-хоп", "Рэп"}, ""},
+
+		// Скриптонит & 104 - Уроборос: улочка и аллея (2021)
+		{"Уроборос: улочка и аллея", "Улочка", 240, 1, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Уроборос: улочка и аллея", "Аллея", 267, 2, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Уроборос: улочка и аллея", "Девочка с картинки", 251, 3, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Уроборос: улочка и аллея", "Мама, я танцую", 234, 4, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Уроборос: улочка и аллея", "Микрофон", 228, 5, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Уроборос: улочка и аллея", "До рассвета", 245, 6, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Уроборос: улочка и аллея", "Бассейн", 239, 7, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Уроборос: улочка и аллея", "Кепка", 223, 8, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Уроборос: улочка и аллея", "Давным-давно", 256, 9, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Уроборос: улочка и аллея", "Один", 242, 10, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Уроборос: улочка и аллея", "Так и должно быть", 250, 11, []string{"Хип-хоп", "Рэп"}, ""},
+
+		// ANNA ASTI - Феникс (2021)
+		{"Феникс", "По барам", 240, 1, []string{"Поп", "Поп-рок"}, ""},
+		{"Феникс", "Феникс", 267, 2, []string{"Поп", "Поп-рок"}, ""},
+		{"Феникс", "Царица", 251, 3, []string{"Поп", "Поп-рок"}, ""},
+		{"Феникс", "Берега", 234, 4, []string{"Поп", "Инди-поп"}, ""},
+		{"Феникс", "Гармония", 228, 5, []string{"Поп", "Инди-поп"}, ""},
+		{"Феникс", "Дикая", 245, 6, []string{"Поп", "Поп-рок"}, ""},
+		{"Феникс", "Я не боюсь", 239, 7, []string{"Поп", "Инди-поп"}, ""},
+		{"Феникс", "Крылья", 223, 8, []string{"Поп", "Поп-рок"}, ""},
+		{"Феникс", "Монро", 256, 9, []string{"Поп", "Поп-рок"}, ""},
+		{"Феникс", "Психиатр", 242, 10, []string{"Поп", "Инди-поп"}, ""},
+		{"Феникс", "Стелс", 250, 11, []string{"Поп", "Поп-рок"}, ""},
+		{"Феникс", "Три дня", 235, 12, []string{"Поп", "Инди-поп"}, ""},
+
+		// ANNA ASTI - Царица (2023)
+		{"Царица", "Интерлюдия: По барам", 60, 1, []string{"Поп", "Инди-поп"}, ""},
+		{"Царица", "Феникс", 267, 2, []string{"Поп", "Поп-рок"}, ""},
+		{"Царица", "Гармония", 251, 3, []string{"Поп", "Инди-поп"}, ""},
+		{"Царица", "Голая", 234, 4, []string{"Поп", "Поп-рок"}, ""},
+		{"Царица", "Берега", 228, 5, []string{"Поп", "Инди-поп"}, ""},
+		{"Царица", "Интерлюдия: Три дня", 60, 6, []string{"Поп", "Инди-поп"}, ""},
+		{"Царица", "Поцелуи", 245, 7, []string{"Поп", "Поп-рок"}, ""},
+		{"Царица", "Дикая", 239, 8, []string{"Поп", "Поп-рок"}, ""},
+		{"Царица", "Стелс", 223, 9, []string{"Поп", "Поп-рок"}, ""},
+		{"Царица", "Интерлюдия: Царица", 60, 10, []string{"Поп", "Инди-поп"}, ""},
+		{"Царица", "Монро", 256, 11, []string{"Поп", "Поп-рок"}, ""},
+		{"Царица", "Почему?", 242, 12, []string{"Поп", "Инди-поп"}, ""},
+		{"Царица", "Интерлюдия: Крылья", 60, 13, []string{"Поп", "Инди-поп"}, ""},
+		{"Царица", "Трафик", 250, 14, []string{"Поп", "Поп-рок"}, ""},
+		{"Царица", "Нас двое", 235, 15, []string{"Поп", "Инди-поп"}, ""},
+		{"Царица", "Царица", 240, 16, []string{"Поп", "Поп-рок"}, ""},
+		{"Царица", "Без тебя", 267, 17, []string{"Поп", "Инди-поп"}, ""},
+		{"Царица", "Априори", 251, 18, []string{"Поп", "Поп-рок"}, ""},
+		{"Царица", "Интерлюдия: Психиатр", 60, 19, []string{"Поп", "Инди-поп"}, ""},
+		{"Царица", "Я не боюсь", 234, 20, []string{"Поп", "Инди-поп"}, ""},
+
+		// Zivert - Vinyl #1 (2018)
 		{"Vinyl #1", "Life", 201, 1, []string{"Поп", "Электронная"}, ""},
-		{"Vinyl #1", "Credo", 200, 2, []string{"Поп"}, ""},
-		{"Vinyl #1", "ЯТЛ", 195, 3, []string{"Поп"}, ""},
-		{"Vinyl #1", "Ещё хочу", 198, 4, []string{"Поп", "Электронная"}, "/preview/4.jpg"},
-		{"Vinyl #1", "Анечка", 203, 5, []string{"Поп", "Рок"}, "/preview/5.jpg"},
-		{"Vinyl #1", "Fly", 197, 6, []string{"Поп", "Электронная"}, "/preview/6.jpg"},
-		{"Vinyl #1", "Чак", 189, 7, []string{"Поп"}, ""},
-		{"Vinyl #1", "Beverly Hills", 192, 8, []string{"Поп", "Электронная"}, ""},
-		{"Vinyl #1", "Океанами стали", 205, 9, []string{"Поп"}, ""},
+		{"Vinyl #1", "Beverly Hills", 192, 2, []string{"Поп", "Электронная"}, ""},
+		{"Vinyl #1", "Fly", 197, 3, []string{"Поп", "Электронная"}, ""},
+		{"Vinyl #1", "Зелёные волны", 205, 4, []string{"Поп"}, ""},
+		{"Vinyl #1", "Ещё хочу", 198, 5, []string{"Поп", "Электронная"}, ""},
+		{"Vinyl #1", "Credo", 200, 6, []string{"Поп"}, ""},
+		{"Vinyl #1", "Поребрик", 195, 7, []string{"Поп"}, ""},
+		{"Vinyl #1", "В метро", 203, 8, []string{"Поп"}, ""},
+		{"Vinyl #1", "Паруса", 189, 9, []string{"Поп"}, ""},
 
-		// Баста - Горгород
-		{"Горгород", "Где нас нет", 240, 1, []string{"Хип-хоп"}, ""},
-		{"Горгород", "Город под подошвой", 267, 2, []string{"Хип-хоп"}, ""},
-		{"Горгород", "Не с начала", 251, 3, []string{"Хип-хоп", "Электронная"}, ""},
-		{"Горгород", "Переплетено", 234, 4, []string{"Хип-хоп"}, ""},
-		{"Горгород", "Дежавю", 228, 5, []string{"Хип-хоп"}, "/preview/7.jpg"},
-		{"Горгород", "Москва против всех", 245, 6, []string{"Хип-хоп"}, ""},
-		{"Горгород", "Полигон", 239, 7, []string{"Хип-хоп"}, ""},
-		{"Горгород", "Колыбельная", 223, 8, []string{"Хип-хоп"}, ""},
-		{"Горгород", "Где нас нет (ремикс)", 256, 9, []string{"Хип-хоп"}, ""},
+		// Zivert - Vinyl #2 (2019)
+		{"Vinyl #2", "Credo", 200, 1, []string{"Поп"}, ""},
+		{"Vinyl #2", "Паруса", 189, 2, []string{"Поп"}, ""},
+		{"Vinyl #2", "Ещё хочу", 198, 3, []string{"Поп", "Электронная"}, ""},
+		{"Vinyl #2", "Чак", 195, 4, []string{"Поп"}, ""},
+		{"Vinyl #2", "Рокки", 203, 5, []string{"Поп"}, ""},
+		{"Vinyl #2", "Анестезия", 197, 6, []string{"Поп"}, ""},
+		{"Vinyl #2", "Натуре мама", 201, 7, []string{"Поп"}, ""},
+		{"Vinyl #2", "Бродвей", 205, 8, []string{"Поп"}, ""},
+		{"Vinyl #2", "ЯТЛ (feat. M'Dee)", 192, 9, []string{"Поп"}, ""},
 
-		// Tesla Boy - До свидания
-		{"До свидания", "Электричество", 198, 1, []string{"Электронная", "Поп"}, ""},
-		{"До свидания", "Синтезатор", 215, 2, []string{"Электронная", "Поп"}, ""},
-		{"До свидания", "Марш", 189, 3, []string{"Электронная"}, ""},
-		{"До свидания", "Грустная ночь", 203, 4, []string{"Электронная", "Поп"}, ""},
-		{"До свидания", "Слёзы", 192, 5, []string{"Электронная", "Рок"}, ""},
-		{"До свидания", "Кости", 207, 6, []string{"Электронная", "Поп"}, ""},
-		{"До свидания", "До свидания", 221, 7, []string{"Электронная", "Поп"}, ""},
-		{"До свидания", "Плакать", 195, 8, []string{"Электронная", "Поп"}, "/preview/8.jpg"},
-		{"До свидания", "Трипута", 201, 9, []string{"Электронная"}, ""},
-		{"До свидания", "Это не любовь", 189, 10, []string{"Электронная"}, ""},
-
-		// Монеточка - Раскраски для взрослых
-		{"Раскраски для взрослых", "Каждый раз", 198, 1, []string{"Поп"}, ""},
-		{"Раскраски для взрослых", "Нимфоманка", 203, 2, []string{"Поп"}, ""},
-		{"Раскраски для взрослых", "90", 195, 3, []string{"Поп"}, ""},
-		{"Раскраски для взрослых", "Последняя дискотека", 201, 4, []string{"Поп", "Электронная"}, ""},
-		{"Раскраски для взрослых", "Раскраски для взрослых", 207, 5, []string{"Поп"}, ""},
-		{"Раскраски для взрослых", "Уйди, но останься", 192, 6, []string{"Поп"}, ""},
-		{"Раскраски для взрослых", "Песенка", 189, 7, []string{"Поп"}, ""},
-		{"Раскраски для взрослых", "Крошка", 205, 8, []string{"Поп"}, ""},
-		{"Раскраски для взрослых", "Люди", 198, 9, []string{"Поп"}, "/preview/9.jpg"},
-
-		// Земфира - Вендетта
-		{"Вендетта", "Небо", 245, 1, []string{"Рок"}, ""},
-		{"Вендетта", "Вендетта", 198, 2, []string{"Рок"}, ""},
-		{"Вендетта", "Без шансов", 223, 3, []string{"Рок"}, ""},
-		{"Вендетта", "Дождь", 267, 4, []string{"Рок"}, ""},
-		{"Вендетта", "Прости меня моя любовь", 201, 5, []string{"Рок"}, ""},
-
-		// Zivert - Сияй
+		// Zivert - Сияй (2021)
 		{"Сияй", "Сияй", 201, 1, []string{"Поп", "Электронная"}, ""},
-		{"Сияй", "ЯТЛ", 200, 2, []string{"Поп"}, ""},
-		{"Сияй", "Credo", 195, 3, []string{"Поп"}, ""},
-		{"Сияй", "Life", 198, 4, []string{"Поп", "Электронная"}, ""},
+		{"Сияй", "Никаких больше вечеринок", 200, 2, []string{"Поп"}, ""},
+		{"Сияй", "Лайки", 195, 3, []string{"Поп"}, ""},
+		{"Сияй", "Good Bye", 198, 4, []string{"Поп", "Электронная"}, ""},
+		{"Сияй", "Добрая сказка", 203, 5, []string{"Поп"}, ""},
+		{"Сияй", "Мотылёк", 197, 6, []string{"Поп"}, ""},
+		{"Сияй", "Крошка", 189, 7, []string{"Поп"}, ""},
+		{"Сияй", "Forever Young", 205, 8, []string{"Поп"}, ""},
+		{"Сияй", "Бесконечно", 192, 9, []string{"Поп"}, ""},
+		{"Сияй", "Новая", 201, 10, []string{"Поп"}, ""},
 
-		// Баста - Красота
-		{"Красота", "Красота", 240, 1, []string{"Хип-хоп"}, ""},
-		{"Красота", "Переплетено", 267, 2, []string{"Хип-хоп"}, ""},
-		{"Красота", "Где нас нет", 251, 3, []string{"Хип-хоп", "Электронная"}, ""},
+		// IOWA - Import (2012)
+		{"Import", "Улыбайся", 240, 1, []string{"Поп", "Электронная"}, ""},
+		{"Import", "Маршрутка", 267, 2, []string{"Поп", "Электронная"}, ""},
+		{"Import", "Бьёт бит", 251, 3, []string{"Поп", "Электронная"}, ""},
+		{"Import", "Ищу тебя", 234, 4, []string{"Поп", "Инди-поп"}, ""},
+		{"Import", "130", 228, 5, []string{"Поп", "Электронная"}, ""},
+		{"Import", "Безответно", 245, 6, []string{"Поп", "Инди-поп"}, ""},
+		{"Import", "Без тебя", 239, 7, []string{"Поп", "Инди-поп"}, ""},
+		{"Import", "Облако", 223, 8, []string{"Поп", "Электронная"}, ""},
+		{"Import", "Три слова", 256, 9, []string{"Поп", "Инди-поп"}, ""},
 
-		// Tesla Boy - Сладкая жизнь
-		{"Сладкая жизнь", "Сладкая жизнь", 198, 1, []string{"Электронная", "Поп"}, ""},
-		{"Сладкая жизнь", "Сказка", 215, 2, []string{"Электронная", "Поп"}, ""},
-		{"Сладкая жизнь", "Марш", 189, 3, []string{"Электронная"}, ""},
+		// IOWA - Export (2015)
+		{"Export", "Тает", 240, 1, []string{"Поп", "Электронная"}, ""},
+		{"Export", "Простая песня", 267, 2, []string{"Поп", "Инди-поп"}, ""},
+		{"Export", "Бьёт бит", 251, 3, []string{"Поп", "Электронная"}, ""},
+		{"Export", "Улыбайся", 234, 4, []string{"Поп", "Электронная"}, ""},
+		{"Export", "Ищи меня", 228, 5, []string{"Поп", "Инди-поп"}, ""},
+		{"Export", "Безответно", 245, 6, []string{"Поп", "Инди-поп"}, ""},
+		{"Export", "130", 239, 7, []string{"Поп", "Электронная"}, ""},
+		{"Export", "Такси", 223, 8, []string{"Поп", "Электронная"}, ""},
+		{"Export", "Несчастный случай", 256, 9, []string{"Поп", "Инди-поп"}, ""},
+		{"Export", "Маршрутка", 242, 10, []string{"Поп", "Электронная"}, ""},
+		{"Export", "Без тебя", 250, 11, []string{"Поп", "Инди-поп"}, ""},
 
-		// Монеточка - Раскраски для взрослых 2
-		{"Раскраски для взрослых 2", "Каждый раз", 198, 1, []string{"Поп"}, ""},
-		{"Раскраски для взрослых 2", "Нимфоманка", 203, 2, []string{"Поп"}, ""},
-		{"Раскраски для взрослых 2", "90", 195, 3, []string{"Поп"}, ""},
+		// IOWA - Французский альбом (2021)
+		{"Французский альбом", "Видели ночь", 240, 1, []string{"Поп", "Инди-поп"}, ""},
+		{"Французский альбом", "Последний раз", 267, 2, []string{"Поп", "Инди-поп"}, ""},
+		{"Французский альбом", "Любовь, которой больше нет", 251, 3, []string{"Поп", "Инди-поп"}, ""},
+		{"Французский альбом", "Один", 234, 4, []string{"Поп", "Инди-поп"}, ""},
+		{"Французский альбом", "Прелюдия", 60, 5, []string{"Поп", "Инди-поп"}, ""},
+		{"Французский альбом", "Она вернётся", 228, 6, []string{"Поп", "Инди-поп"}, ""},
+		{"Французский альбом", "Посмотри в глаза", 245, 7, []string{"Поп", "Инди-поп"}, ""},
+		{"Французский альбом", "Ты мне снишься", 239, 8, []string{"Поп", "Инди-поп"}, ""},
+
+		// Клава Кока - Неприлично о личном (2021)
+		{"Неприлично о личном", "Начнем сначала", 240, 1, []string{"Поп", "Поп-рок"}, ""},
+		{"Неприлично о личном", "Мне так хорошо", 267, 2, []string{"Поп", "Поп-рок"}, ""},
+		{"Неприлично о личном", "Помада", 251, 3, []string{"Поп", "Поп-рок"}, ""},
+		{"Неприлично о личном", "Нас уночит", 234, 4, []string{"Поп", "Инди-поп"}, ""},
+		{"Неприлично о личном", "Крошка моя", 228, 5, []string{"Поп", "Поп-рок"}, ""},
+		{"Неприлично о личном", "Неприлично о личном", 245, 6, []string{"Поп", "Поп-рок"}, ""},
+		{"Неприлично о личном", "Химия", 239, 7, []string{"Поп", "Инди-поп"}, ""},
+		{"Неприлично о личном", "Малыш", 223, 8, []string{"Поп", "Поп-рок"}, ""},
+		{"Неприлично о личном", "Треки", 256, 9, []string{"Поп", "Поп-рок"}, ""},
+		{"Неприлично о личном", "Будто первая любовь", 242, 10, []string{"Поп", "Инди-поп"}, ""},
+		{"Неприлично о личном", "Косы", 250, 11, []string{"Поп", "Поп-рок"}, ""},
+		{"Неприлично о личном", "Пропади", 235, 12, []string{"Поп", "Инди-поп"}, ""},
+
+		// Клава Кока - Красное вино (2024)
+		{"Красное вино", "Красное вино", 240, 1, []string{"Поп", "Поп-рок"}, ""},
+		{"Красное вино", "Дикая", 267, 2, []string{"Поп", "Поп-рок"}, ""},
+		{"Красное вино", "Молодость", 251, 3, []string{"Поп", "Поп-рок"}, ""},
+		{"Красное вино", "Отпусти", 234, 4, []string{"Поп", "Инди-поп"}, ""},
+		{"Красное вино", "Хочешь, я к тебе приеду?", 228, 5, []string{"Поп", "Поп-рок"}, ""},
+		{"Красное вино", "Не в себе", 245, 6, []string{"Поп", "Инди-поп"}, ""},
+		{"Красное вино", "Танцуй красиво", 239, 7, []string{"Поп", "Поп-рок"}, ""},
+		{"Красное вино", "Я и ты", 223, 8, []string{"Поп", "Инди-поп"}, ""},
+		{"Красное вино", "Мандарины", 256, 9, []string{"Поп", "Поп-рок"}, ""},
+		{"Красное вино", "Слухи", 242, 10, []string{"Поп", "Поп-рок"}, ""},
+		{"Красное вино", "С Новым годом, малыш", 250, 11, []string{"Поп", "Инди-поп"}, ""},
+		{"Красное вино", "Родная", 235, 12, []string{"Поп", "Поп-рок"}, ""},
+
+		// ЛСП - Magic City (2015)
+		{"Magic City", "Intro", 60, 1, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Magic City", "Канкан", 240, 2, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Magic City", "Body Talk", 267, 3, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Magic City", "Номера", 251, 4, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Magic City", "Айдище", 234, 5, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Magic City", "Назад", 228, 6, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Magic City", "Танцевать", 245, 7, []string{"Хип-хоп", "Рэп", "Электронная"}, ""},
+		{"Magic City", "Маленький принц", 239, 8, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Magic City", "Крыши", 223, 9, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Magic City", "Мечтатели", 256, 10, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Magic City", "Чайлдфри", 242, 11, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Magic City", "Тройник", 250, 12, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Magic City", "Неваляшка", 235, 13, []string{"Хип-хоп", "Рэп"}, ""},
+
+		// ЛСП - Tragic City (2017)
+		{"Tragic City", "Intro (Выпускной)", 60, 1, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Tragic City", "Крыши", 223, 2, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Tragic City", "Номера", 251, 3, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Tragic City", "Тройник", 250, 4, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Tragic City", "Чайлдфри", 242, 5, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Tragic City", "Неваляшка", 235, 6, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Tragic City", "Маленький принц", 239, 7, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Tragic City", "Танцевать", 245, 8, []string{"Хип-хоп", "Рэп", "Электронная"}, ""},
+		{"Tragic City", "Айдище", 234, 9, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Tragic City", "Мечтатели", 256, 10, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Tragic City", "Outro (Путь домой)", 50, 11, []string{"Хип-хоп", "Рэп"}, ""},
+
+		// ЛСП - SAD SOUNDS (2020)
+		{"SAD SOUNDS", "Intro", 60, 1, []string{"Хип-хоп", "Рэп"}, ""},
+		{"SAD SOUNDS", "Плак-Плак", 240, 2, []string{"Хип-хоп", "Рэп"}, ""},
+		{"SAD SOUNDS", "Without You (feat. МОТ)", 267, 3, []string{"Хип-хоп", "Рэп"}, ""},
+		{"SAD SOUNDS", "Монетка", 251, 4, []string{"Хип-хоп", "Рэп"}, ""},
+		{"SAD SOUNDS", "Привет", 234, 5, []string{"Хип-хоп", "Рэп"}, ""},
+		{"SAD SOUNDS", "Хлоп-Хлоп", 228, 6, []string{"Хип-хоп", "Рэп", "Электронная"}, ""},
+		{"SAD SOUNDS", "Ау", 245, 7, []string{"Хип-хоп", "Рэп"}, ""},
+		{"SAD SOUNDS", "Киса", 239, 8, []string{"Хип-хоп", "Рэп"}, ""},
+		{"SAD SOUNDS", "Outro", 50, 9, []string{"Хип-хоп", "Рэп"}, ""},
+
+		// The Hatters - Безумие (2016)
+		{"Безумие", "Янтарь", 240, 1, []string{"Рок", "Поп-рок"}, ""},
+		{"Безумие", "Солнце Монако", 267, 2, []string{"Рок", "Поп-рок"}, ""},
+		{"Безумие", "Безумие", 251, 3, []string{"Рок", "Альтернативный рок"}, ""},
+		{"Безумие", "Болен тобой", 234, 4, []string{"Рок", "Поп-рок"}, ""},
+		{"Безумие", "Клоун", 228, 5, []string{"Рок", "Альтернативный рок"}, ""},
+		{"Безумие", "Розовое вино (feat. Jah Khalib)", 245, 6, []string{"Рок", "Поп-рок"}, ""},
+		{"Безумие", "Тает дым", 239, 7, []string{"Рок", "Поп-рок"}, ""},
+		{"Безумие", "Косатка", 223, 8, []string{"Рок", "Альтернативный рок"}, ""},
+		{"Безумие", "Наше лето", 256, 9, []string{"Рок", "Поп-рок"}, ""},
+		{"Безумие", "Санрайз", 242, 10, []string{"Рок", "Поп-рок"}, ""},
+
+		// The Hatters - Третий (2018)
+		{"Третий", "Какая разница", 240, 1, []string{"Рок", "Поп-рок"}, ""},
+		{"Третий", "Маршрут", 267, 2, []string{"Рок", "Поп-рок"}, ""},
+		{"Третий", "Русский ковчег", 251, 3, []string{"Рок", "Альтернативный рок"}, ""},
+		{"Третий", "Невеста", 234, 4, []string{"Рок", "Поп-рок"}, ""},
+		{"Третий", "Солнце Монако", 228, 5, []string{"Рок", "Поп-рок"}, ""},
+		{"Третий", "Яд", 245, 6, []string{"Рок", "Альтернативный рок"}, ""},
+		{"Третий", "Безумие", 239, 7, []string{"Рок", "Альтернативный рок"}, ""},
+		{"Третий", "Санрайз", 223, 8, []string{"Рок", "Поп-рок"}, ""},
+		{"Третий", "Болен тобой", 256, 9, []string{"Рок", "Поп-рок"}, ""},
+		{"Третий", "Скажи", 242, 10, []string{"Рок", "Поп-рок"}, ""},
+
+		// The Hatters - Четвёртый (2021)
+		{"Четвёртый", "Старлетка", 240, 1, []string{"Рок", "Поп-рок"}, ""},
+		{"Четвёртый", "Всё решено", 267, 2, []string{"Рок", "Поп-рок"}, ""},
+		{"Четвёртый", "Я твоя", 251, 3, []string{"Рок", "Поп-рок"}, ""},
+		{"Четвёртый", "Пациент", 234, 4, []string{"Рок", "Альтернативный рок"}, ""},
+		{"Четвёртый", "Пляж", 228, 5, []string{"Рок", "Поп-рок"}, ""},
+		{"Четвёртый", "Песня 404", 245, 6, []string{"Рок", "Альтернативный рок"}, ""},
+		{"Четвёртый", "Мир сошёл с ума", 239, 7, []string{"Рок", "Альтернативный рок"}, ""},
+		{"Четвёртый", "Марта", 223, 8, []string{"Рок", "Поп-рок"}, ""},
+		{"Четвёртый", "Рок-н-ролл", 256, 9, []string{"Рок", "Поп-рок"}, ""},
+		{"Четвёртый", "Амстердам", 242, 10, []string{"Рок", "Поп-рок"}, ""},
+
+		// Miyagi & Эндшпиль - Hajime 1 (2016)
+		{"Hajime 1", "Hajime", 240, 1, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Hajime 1", "Captain", 267, 2, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Hajime 1", "Умка", 251, 3, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Hajime 1", "Angel", 234, 4, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Hajime 1", "Ламбада (feat. Рем Дигга)", 228, 5, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Hajime 1", "Fire Man", 245, 6, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Hajime 1", "People", 239, 7, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Hajime 1", "Momento", 223, 8, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Hajime 1", "I Got Love (feat. Эндшпиль)", 256, 9, []string{"Хип-хоп", "Рэп"}, ""},
+
+		// Miyagi & Andy Panda - Buster Keaton (2018)
+		{"Buster Keaton", "Kosandra", 240, 1, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Buster Keaton", "Там ревели горы", 267, 2, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Buster Keaton", "Ударь", 251, 3, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Buster Keaton", "Minor", 234, 4, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Buster Keaton", "Привет", 228, 5, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Buster Keaton", "Забеги", 245, 6, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Buster Keaton", "Тепло", 239, 7, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Buster Keaton", "Buster Keaton", 223, 8, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Buster Keaton", "По волнам", 256, 9, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Buster Keaton", "Found Love", 242, 10, []string{"Хип-хоп", "Рэп"}, ""},
+
+		// Miyagi & Andy Panda - Yamakasi (2020)
+		{"Yamakasi", "Yamakasi", 240, 1, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Yamakasi", "Марал", 267, 2, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Yamakasi", "Ты меня не узнал", 251, 3, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Yamakasi", "Патрон", 234, 4, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Yamakasi", "Сюда", 228, 5, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Yamakasi", "I Got Love", 245, 6, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Yamakasi", "Мой друг", 239, 7, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Yamakasi", "Медлячок", 223, 8, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Yamakasi", "Колизей", 256, 9, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Yamakasi", "Там ревели горы (Remix)", 242, 10, []string{"Хип-хоп", "Рэп", "Электронная"}, ""},
+
+		// Miyagi & Andy Panda - Million Dollars: Happiness (2021)
+		{"Million Dollars: Happiness", "Million Dollars", 240, 1, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Million Dollars: Happiness", "Тепло", 239, 2, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Million Dollars: Happiness", "По волнам", 256, 3, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Million Dollars: Happiness", "Привет", 228, 4, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Million Dollars: Happiness", "Ударь", 251, 5, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Million Dollars: Happiness", "Забеги", 245, 6, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Million Dollars: Happiness", "Kosandra", 240, 7, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Million Dollars: Happiness", "Там ревели горы", 267, 8, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Million Dollars: Happiness", "Minor", 234, 9, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Million Dollars: Happiness", "Buster Keaton", 223, 10, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Million Dollars: Happiness", "Found Love", 242, 11, []string{"Хип-хоп", "Рэп"}, ""},
+		{"Million Dollars: Happiness", "Сontent", 250, 12, []string{"Хип-хоп", "Рэп"}, ""},
 	}
 
 	// Create tracks and assign genres
@@ -783,39 +1018,32 @@ func seedTracks() error {
 	trackGenreErrors := 0
 
 	for _, trackData := range tracks {
-		// Find album
+		// Find album by title and artist (if needed)
 		var album models.Album
-		for _, a := range albums {
-			if a.Title == trackData.AlbumTitle {
-				album = a
-				break
-			}
-		}
-		if album.ID == 0 {
+		if err := DB.Where("title = ?", trackData.AlbumTitle).First(&album).Error; err != nil {
 			log.Printf("  WARNING: Album '%s' not found, skipping track '%s'", trackData.AlbumTitle, trackData.Title)
 			skippedTracks++
 			continue // Skip if album not found
 		}
 
-		// Check if track already exists, if not create it
+		// Check if track already exists, if not create it (use FirstOrCreate to avoid duplicates)
 		var track models.Track
-		trackExists := DB.Where("album_id = ? AND title = ?", album.ID, trackData.Title).First(&track).Error == nil
-
-		if !trackExists {
-			// Track doesn't exist, create it
-			track = models.Track{
-				AlbumID:        album.ID,
-				Title:          trackData.Title,
-				Duration:       &trackData.Duration,
-				TrackNumber:    &trackData.TrackNum,
-				CoverImagePath: trackData.CoverImagePath,
-			}
-
-			if err := DB.Create(&track).Error; err != nil {
-				log.Printf("ERROR: Failed to create track %s: %v", trackData.Title, err)
-				skippedTracks++
-				continue
-			}
+		trackToCreate := models.Track{
+			AlbumID:        album.ID,
+			Title:          trackData.Title,
+			Duration:       &trackData.Duration,
+			TrackNumber:    &trackData.TrackNum,
+			CoverImagePath: trackData.CoverImagePath,
+		}
+		
+		result := DB.Where("album_id = ? AND title = ?", album.ID, trackData.Title).FirstOrCreate(&track, trackToCreate)
+		if result.Error != nil {
+			log.Printf("ERROR: Failed to create/find track %s: %v", trackData.Title, result.Error)
+			skippedTracks++
+			continue
+		}
+		
+		if result.RowsAffected > 0 {
 			createdTracks++
 			log.Printf("  ✓ Created track: %s (ID: %d, AlbumID: %d)", trackData.Title, track.ID, album.ID)
 		} else {
@@ -843,11 +1071,37 @@ func seedTracks() error {
 		}
 
 		if len(trackGenres) > 0 {
-			// Use Replace instead of Append to avoid duplicates for existing tracks
-			if err := DB.Model(&track).Association("Genres").Replace(trackGenres); err != nil {
-				log.Printf("ERROR: Failed to assign genres to track %s: %v", trackData.Title, err)
-				trackGenreErrors++
+			// Check current genres for this track to avoid unnecessary updates
+			var currentGenres []models.Genre
+			DB.Model(&track).Association("Genres").Find(&currentGenres)
+			
+			// Check if genres need to be updated (compare by ID)
+			needsUpdate := false
+			if len(currentGenres) != len(trackGenres) {
+				needsUpdate = true
 			} else {
+				currentGenreIDs := make(map[uint]bool)
+				for _, g := range currentGenres {
+					currentGenreIDs[g.ID] = true
+				}
+				for _, g := range trackGenres {
+					if !currentGenreIDs[g.ID] {
+						needsUpdate = true
+						break
+					}
+				}
+			}
+			
+			if needsUpdate {
+				// Use Replace to update genres (only if needed)
+				if err := DB.Model(&track).Association("Genres").Replace(trackGenres); err != nil {
+					log.Printf("ERROR: Failed to assign genres to track %s: %v", trackData.Title, err)
+					trackGenreErrors++
+				} else {
+					trackGenreAssignments++
+				}
+			} else {
+				// Genres already match, skip update
 				trackGenreAssignments++
 			}
 		}
@@ -886,71 +1140,71 @@ func seedTrackLikes() error {
 	}
 	log.Printf("Found %d tracks for track likes", len(tracks))
 
-	// Group tracks by album/artist to ensure diversity
-	tracksByArtist := make(map[string][]models.Track)
-	for _, track := range tracks {
-		if track.Album.Artist != "" {
-			tracksByArtist[track.Album.Artist] = append(tracksByArtist[track.Album.Artist], track)
-		}
-	}
-
-	// Get current time for setting created_at within last 24 hours
+	// Get current time for setting created_at - distribute over last 7 days
+	// 30% within last 24 hours, 70% over last week
 	now := time.Now()
 	hoursAgo := 0
 
-	// Seed likes: distribute across different artists, ensuring diversity
+	// Seed likes for ALL tracks (not just a few per artist)
 	trackLikes := []models.TrackLike{}
-	trackIndex := 0
 
-	// Process artists in order to ensure diversity
-	artistNames := make([]string, 0, len(tracksByArtist))
-	for artist := range tracksByArtist {
-		artistNames = append(artistNames, artist)
-	}
-
-	// Select top tracks from each artist to get diverse results
-	for _, artistName := range artistNames {
-		artistTracks := tracksByArtist[artistName]
-		// Take top 2-3 tracks from each artist to ensure diversity
-		maxTracksPerArtist := 3
-		if len(artistTracks) < maxTracksPerArtist {
-			maxTracksPerArtist = len(artistTracks)
+	// Process all tracks
+	for trackIndex, track := range tracks {
+		// Generate random number of likes between 5 and 30 for testing "Актуальное"
+		// Use combination of trackIndex and track.ID to create variation
+		// Using modulo 26 to get range 0-25, then add 5 to get 5-30
+		numLikes := 5 + ((trackIndex*7 + int(track.ID)) % 26) // Will give 5-30 likes with variation
+		if numLikes > 30 {
+			numLikes = 30
+		}
+		if numLikes < 5 {
+			numLikes = 5
 		}
 
-		for i := 0; i < maxTracksPerArtist; i++ {
-			track := artistTracks[i]
-			// Generate number of likes between 5 and 20, prioritizing different artists
-			numLikes := 10 + (trackIndex % 11) // Will give 10-20 likes
-			if numLikes > len(allTestUsers) {
-				numLikes = len(allTestUsers)
-			}
+		// Calculate how many likes should be in last 24 hours (30%)
+		likesInLast24Hours := int(float64(numLikes) * 0.3)
 
-			// Create likes from different users
-			startIndex := trackIndex % len(allTestUsers)
-			for j := 0; j < numLikes; j++ {
-				userIndex := (startIndex + j) % len(allTestUsers)
-				// Check if like already exists
-				var existingLike models.TrackLike
-				if err := DB.Where("user_id = ? AND track_id = ?", allTestUsers[userIndex].ID, track.ID).First(&existingLike).Error; err != nil {
-					// Create new like with created_at within last 24 hours
-					like := models.TrackLike{
-						UserID:  allTestUsers[userIndex].ID,
-						TrackID: track.ID,
-					}
-					// Set created_at to be within last 24 hours, distributed over time
-					like.CreatedAt = now.Add(-time.Duration(hoursAgo%24) * time.Hour)
-					trackLikes = append(trackLikes, like)
-					hoursAgo++
-				} else {
-					// Update existing like's created_at to be within last 24 hours
-					existingLike.CreatedAt = now.Add(-time.Duration(hoursAgo%24) * time.Hour)
-					if err := DB.Save(&existingLike).Error; err != nil {
-						log.Printf("Warning: failed to update track like created_at: %v", err)
-					}
-					hoursAgo++
+		// Create likes from different users
+		// Distribute users cyclically to ensure variety
+		startIndex := trackIndex % len(allTestUsers)
+		likesCreated := 0
+		
+		for j := 0; j < numLikes && likesCreated < numLikes; j++ {
+			userIndex := (startIndex + j) % len(allTestUsers)
+			// Check if like already exists
+			var existingLike models.TrackLike
+			if err := DB.Where("user_id = ? AND track_id = ?", allTestUsers[userIndex].ID, track.ID).First(&existingLike).Error; err != nil {
+				// Create new like
+				like := models.TrackLike{
+					UserID:  allTestUsers[userIndex].ID,
+					TrackID: track.ID,
 				}
+				// Set created_at: 30% within last 24 hours, 70% over last 7 days
+				if likesCreated < likesInLast24Hours {
+					// Within last 24 hours
+					like.CreatedAt = now.Add(-time.Duration(hoursAgo%24) * time.Hour)
+				} else {
+					// Over last 7 days (24-168 hours)
+					hoursOffset := 24 + (hoursAgo % 144) // 24-168 hours
+					like.CreatedAt = now.Add(-time.Duration(hoursOffset) * time.Hour)
+				}
+				trackLikes = append(trackLikes, like)
+				hoursAgo++
+				likesCreated++
+			} else {
+				// Update existing like's created_at
+				if likesCreated < likesInLast24Hours {
+					existingLike.CreatedAt = now.Add(-time.Duration(hoursAgo%24) * time.Hour)
+				} else {
+					hoursOffset := 24 + (hoursAgo % 144)
+					existingLike.CreatedAt = now.Add(-time.Duration(hoursOffset) * time.Hour)
+				}
+				if err := DB.Save(&existingLike).Error; err != nil {
+					log.Printf("Warning: failed to update track like created_at: %v", err)
+				}
+				hoursAgo++
+				likesCreated++
 			}
-			trackIndex++
 		}
 	}
 
@@ -967,6 +1221,118 @@ func seedTrackLikes() error {
 	}
 
 	log.Printf("Track likes seeding complete: %d created, %d failed", createdLikes, failedLikes)
+	return nil
+}
+
+// seedAlbumLikes seeds album likes for testing
+func seedAlbumLikes() error {
+	log.Println("Seeding album likes...")
+
+	// Get all test users
+	var allTestUsers []models.User
+	if err := DB.Find(&allTestUsers).Error; err != nil {
+		log.Printf("ERROR: Failed to query users: %v", err)
+		return fmt.Errorf("failed to query users: %w", err)
+	}
+	if len(allTestUsers) == 0 {
+		log.Printf("WARNING: No users found in database, skipping album likes seed")
+		return nil
+	}
+	log.Printf("Found %d users for album likes", len(allTestUsers))
+
+	// Get all albums
+	var albums []models.Album
+	if err := DB.Find(&albums).Error; err != nil {
+		log.Printf("ERROR: Failed to query albums: %v", err)
+		return fmt.Errorf("failed to query albums: %w", err)
+	}
+	if len(albums) == 0 {
+		log.Printf("WARNING: No albums found in database, skipping album likes seed")
+		return nil
+	}
+	log.Printf("Found %d albums for album likes", len(albums))
+
+	// Get current time for setting created_at - distribute over last 7 days
+	// 30% within last 24 hours, 70% over last week
+	now := time.Now()
+	hoursAgo := 0
+
+	// Seed likes for ALL albums
+	albumLikes := []models.AlbumLike{}
+
+	// Process all albums
+	for albumIndex, album := range albums {
+		// Generate random number of likes between 5 and 30 for testing "Актуальное"
+		// Use combination of albumIndex and album.ID to create variation
+		// Using modulo 26 to get range 0-25, then add 5 to get 5-30
+		numLikes := 5 + ((albumIndex*11 + int(album.ID)) % 26) // Will give 5-30 likes with variation
+		if numLikes > 30 {
+			numLikes = 30
+		}
+		if numLikes < 5 {
+			numLikes = 5
+		}
+
+		// Calculate how many likes should be in last 24 hours (30%)
+		likesInLast24Hours := int(float64(numLikes) * 0.3)
+
+		// Create likes from different users
+		// Distribute users cyclically to ensure variety
+		startIndex := albumIndex % len(allTestUsers)
+		likesCreated := 0
+
+		for j := 0; j < numLikes && likesCreated < numLikes; j++ {
+			userIndex := (startIndex + j) % len(allTestUsers)
+			// Check if like already exists
+			var existingLike models.AlbumLike
+			if err := DB.Where("user_id = ? AND album_id = ?", allTestUsers[userIndex].ID, album.ID).First(&existingLike).Error; err != nil {
+				// Create new like
+				like := models.AlbumLike{
+					UserID:  allTestUsers[userIndex].ID,
+					AlbumID: album.ID,
+				}
+				// Set created_at: 30% within last 24 hours, 70% over last 7 days
+				if likesCreated < likesInLast24Hours {
+					// Within last 24 hours
+					like.CreatedAt = now.Add(-time.Duration(hoursAgo%24) * time.Hour)
+				} else {
+					// Over last 7 days (24-168 hours)
+					hoursOffset := 24 + (hoursAgo % 144) // 24-168 hours
+					like.CreatedAt = now.Add(-time.Duration(hoursOffset) * time.Hour)
+				}
+				albumLikes = append(albumLikes, like)
+				hoursAgo++
+				likesCreated++
+			} else {
+				// Update existing like's created_at
+				if likesCreated < likesInLast24Hours {
+					existingLike.CreatedAt = now.Add(-time.Duration(hoursAgo%24) * time.Hour)
+				} else {
+					hoursOffset := 24 + (hoursAgo % 144)
+					existingLike.CreatedAt = now.Add(-time.Duration(hoursOffset) * time.Hour)
+				}
+				if err := DB.Save(&existingLike).Error; err != nil {
+					log.Printf("Warning: failed to update album like created_at: %v", err)
+				}
+				hoursAgo++
+				likesCreated++
+			}
+		}
+	}
+
+	// Create all new likes in batch
+	createdLikes := 0
+	failedLikes := 0
+	for _, like := range albumLikes {
+		if err := DB.Create(&like).Error; err != nil {
+			log.Printf("ERROR: Failed to create album like (UserID: %d, AlbumID: %d): %v", like.UserID, like.AlbumID, err)
+			failedLikes++
+		} else {
+			createdLikes++
+		}
+	}
+
+	log.Printf("Album likes seeding complete: %d created, %d failed", createdLikes, failedLikes)
 	return nil
 }
 
@@ -1018,89 +1384,163 @@ func seedReviews() error {
 	failedReviews := 0
 	if !reviewsExist {
 		log.Println("No reviews found, creating new reviews...")
+		
+		// Find albums by title for reviews
+		var basta1, basta2, noggano, basta3 models.Album
+		var domNorm, prazdnik36, album2004, uroboros models.Album
+		var fenix, carica models.Album
+		var vinyl1, vinyl2, siyai models.Album
+		var importAlbum, exportAlbum, frenchAlbum models.Album
+		var neprilichno, krasnoeVino models.Album
+		var magicCity, tragicCity, sadSounds models.Album
+		var bezumie, tretiy, chetvertiy models.Album
+		var hajime1, busterKeaton, yamakasi, millionDollars models.Album
+		
+		DB.Where("title = ? AND artist = ?", "Баста 1", "Баста").First(&basta1)
+		DB.Where("title = ? AND artist = ?", "Баста 2", "Баста").First(&basta2)
+		DB.Where("title = ? AND artist = ?", "Ноггано", "Баста").First(&noggano)
+		DB.Where("title = ? AND artist = ?", "Баста 3", "Баста").First(&basta3)
+		DB.Where("title = ? AND artist = ?", "Дом с нормальными явлениями", "Скриптонит").First(&domNorm)
+		DB.Where("title = ? AND artist = ?", "Праздник на улице 36", "Скриптонит").First(&prazdnik36)
+		DB.Where("title = ? AND artist = ?", "2004", "Скриптонит").First(&album2004)
+		DB.Where("title = ? AND artist = ?", "Уроборос: улочка и аллея", "Скриптонит & 104").First(&uroboros)
+		DB.Where("title = ? AND artist = ?", "Феникс", "ANNA ASTI").First(&fenix)
+		DB.Where("title = ? AND artist = ?", "Царица", "ANNA ASTI").First(&carica)
+		DB.Where("title = ? AND artist = ?", "Vinyl #1", "Zivert").First(&vinyl1)
+		DB.Where("title = ? AND artist = ?", "Vinyl #2", "Zivert").First(&vinyl2)
+		DB.Where("title = ? AND artist = ?", "Сияй", "Zivert").First(&siyai)
+		DB.Where("title = ? AND artist = ?", "Import", "IOWA").First(&importAlbum)
+		DB.Where("title = ? AND artist = ?", "Export", "IOWA").First(&exportAlbum)
+		DB.Where("title = ? AND artist = ?", "Французский альбом", "IOWA").First(&frenchAlbum)
+		DB.Where("title = ? AND artist = ?", "Неприлично о личном", "Клава Кока").First(&neprilichno)
+		DB.Where("title = ? AND artist = ?", "Красное вино", "Клава Кока").First(&krasnoeVino)
+		DB.Where("title = ? AND artist = ?", "Magic City", "ЛСП").First(&magicCity)
+		DB.Where("title = ? AND artist = ?", "Tragic City", "ЛСП").First(&tragicCity)
+		DB.Where("title = ? AND artist = ?", "SAD SOUNDS", "ЛСП").First(&sadSounds)
+		DB.Where("title = ? AND artist = ?", "Безумие", "The Hatters").First(&bezumie)
+		DB.Where("title = ? AND artist = ?", "Третий", "The Hatters").First(&tretiy)
+		DB.Where("title = ? AND artist = ?", "Четвёртый", "The Hatters").First(&chetvertiy)
+		DB.Where("title = ? AND artist = ?", "Hajime 1", "Miyagi & Эндшпиль").First(&hajime1)
+		DB.Where("title = ? AND artist = ?", "Buster Keaton", "Miyagi & Andy Panda").First(&busterKeaton)
+		DB.Where("title = ? AND artist = ?", "Yamakasi", "Miyagi & Andy Panda").First(&yamakasi)
+		DB.Where("title = ? AND artist = ?", "Million Dollars: Happiness", "Miyagi & Andy Panda").First(&millionDollars)
+		
 		// Create test reviews (using atmosphere ratings 1-10, converted to multiplier)
-		// Альбомы: [0] Жить в твоей голове, [1] Vinyl #1, [2] Горгород, [3] До свидания, [4] Раскраски для взрослых
 		reviews := []models.Review{
+			// Баста - Баста 1 (Хип-хоп)
 			{
 				UserID:               testUser.ID,
-				AlbumID:              &albums[0].ID, // Жить в твоей голове
-				Text:                 "Земфира на этом альбоме демонстрирует зрелое мастерство композитора и исполнителя. Тексты наполнены метафорами и глубокими образами, которые цепляют за живое - особенно в композициях 'Крым' и 'Ок', где каждый куплет раскрывает новую грань эмоционального состояния. Структурно альбом выстроен безупречно: переходы между треками плавные, динамика выдержана от начала до конца, каждый припев имеет свою драматургию. Звукорежиссура на высшем уровне - инструменты звучат объемно, аранжировки не перегружены, но и не пусты. Узнаваемый голос Земфиры с его характерной хрипотцой создает неповторимую атмосферу, которая затягивает с первых секунд. Общий вайб альбома - это смесь ностальгии, грусти и надежды, что делает его актуальным в любое время.",
+				AlbumID:              &basta1.ID,
+				Text:                 "Первый альбом Басты - это классика русского хип-хопа, которая не теряет актуальности. Рифмы сложные, многослойные, с игрой слов - каждый куплет продуман до мелочей. Особенно выделяются треки 'Мой друг' и 'Наше лето' с Гуфом - здесь чувствуется настоящая химия между артистами. Структура треков выстроена идеально: биты качают, куплеты не провисают, припевы цепляют. Продакшн для своего времени на высшем уровне - семплы подобраны идеально, басы мощные, но не перегружают. Подача Басты узнаваема с первых секунд - уверенная, мощная, с правильной интонацией. Альбом создает атмосферу начала 2000-х, ностальгии и одновременно свежести, что делает его вечным.",
 				RatingRhymes:         9,
-				RatingStructure:      10,
-				RatingImplementation: 10,
-				RatingIndividuality:  9,
-				AtmosphereMultiplier: convertAtmosphereToMultiplier(8), // 8/10 -> ~1.4737
-				Status:               models.ReviewStatusApproved,
-				ModeratedBy:          &admin.ID,
-			},
-			{
-				UserID:               testUser.ID,
-				AlbumID:              &albums[1].ID, // Vinyl #1
-				Text:                 "Zivert создала альбом, который стал символом эпохи в русской поп-музыке. Тексты простые, но искренние - они говорят о том, что близко каждому, без излишней пафосности. Структура песен классическая для поп-музыки, но работает идеально: запоминающиеся припевы, динамичные куплеты, бит качает без перебора. Продакшн на высоте - каждый элемент на своем месте, синтезаторы звучат современно, но не навязчиво. Вокал Zivert узнаваем с первых нот - легкий, воздушный, с характерной манерой подачи. Альбом создает позитивную, танцевальную атмосферу, которая поднимает настроение и не надоедает даже после многократного прослушивания.",
-				RatingRhymes:         8,
-				RatingStructure:      9,
-				RatingImplementation: 10,
-				RatingIndividuality:  10,
-				AtmosphereMultiplier: convertAtmosphereToMultiplier(7), // 7/10 -> ~1.4062
-				Status:               models.ReviewStatusApproved,
-				ModeratedBy:          &admin.ID,
-			},
-			{
-				UserID:               admin.ID,
-				AlbumID:              &albums[2].ID, // Горгород
-				Text:                 "Баста на этом альбоме показывает, почему он остается одним из столпов русского хип-хопа. Рифмы сложные, многослойные, с игрой слов и отсылками к классике - это не просто набор строк, а настоящая поэзия в ритме. Структура треков продумана до мелочей: бит меняется в нужных местах, куплеты не провисают, припевы цепляют. Битмейкинг на высшем уровне - семплы подобраны идеально, басы качают, но не перегружают. Подача Басты узнаваема - уверенная, мощная, с правильной интонацией. Альбом создает атмосферу городской жизни, борьбы и надежды, которая резонирует с аудиторией и не теряет актуальности.",
-				RatingRhymes:         9,
-				RatingStructure:      9,
-				RatingImplementation: 10,
-				RatingIndividuality:  9,
-				AtmosphereMultiplier: convertAtmosphereToMultiplier(9), // 9/10 -> ~1.5405
-				Status:               models.ReviewStatusApproved,
-				ModeratedBy:          &admin.ID,
-			},
-			{
-				UserID:               testUser.ID,
-				AlbumID:              &albums[3].ID, // До свидания
-				Text:                 "Tesla Boy создали альбом, который балансирует на грани между поп-музыкой и электроникой. Тексты не претендуют на глубину, но работают в контексте жанра - они создают нужное настроение. Структурно альбом интересен: композиции построены вокруг синтезаторов и ритм-секции, переходы между частями плавные, динамика выдержана. Продакшн качественный - электронные инструменты звучат современно, аранжировки не перегружены. Вокал узнаваем, хотя и не самый уникальный в жанре. Где альбом действительно силен - это атмосфера: он создает ностальгическое настроение 80-х, но с современным звучанием, что цепляет и не отпускает до последнего трека.",
-				RatingRhymes:         7,
-				RatingStructure:      9,
-				RatingImplementation: 10,
-				RatingIndividuality:  8,
-				AtmosphereMultiplier: convertAtmosphereToMultiplier(10), // 10/10 -> 1.6072 (max)
-				Status:               models.ReviewStatusApproved,
-				ModeratedBy:          &admin.ID,
-			},
-			{
-				UserID:               admin.ID,
-				AlbumID:              &albums[4].ID, // Раскраски для взрослых
-				Text:                 "Монеточка на этом альбоме создала что-то особенное - поп-музыку с душой и смыслом. Тексты - это отдельная история: они полны иронии, самоиронии, но при этом искренние и цепляющие. Каждая строчка продумана, метафоры работают, сюжеты песен понятны и близки. Структура песен классическая, но не банальная - припевы запоминаются с первого прослушивания, куплеты развивают тему. Продакшн качественный, хотя и не самый сложный - но это к лучшему, так как не отвлекает от главного. Индивидуальность Монеточки - это её главный козырь: узнаваемый голос, манера подачи, стиль - всё работает на создание уникального образа. Альбом создает атмосферу легкости, ностальгии и одновременно глубины, что делает его универсальным для разных настроений.",
-				RatingRhymes:         10,
-				RatingStructure:      10,
-				RatingImplementation: 10,
-				RatingIndividuality:  10,
-				AtmosphereMultiplier: convertAtmosphereToMultiplier(10), // 10/10 -> 1.6072 (max, gives 90 points)
-				Status:               models.ReviewStatusApproved,
-				ModeratedBy:          &admin.ID,
-			},
-			{
-				UserID:               testUser.ID,
-				AlbumID:              &albums[0].ID, // Жить в твоей голове (вторая рецензия)
-				Text:                 "Хочу добавить несколько замечаний к этому альбому. В целом работа сильная, но есть моменты, которые можно было бы улучшить. Тексты хорошие, образы яркие, но иногда кажется, что не хватает разнообразия в тематике - много песен о внутренних переживаниях. Структурно альбом выстроен хорошо, но некоторые треки могли бы быть короче - есть ощущение, что композиции немного растянуты. Продакшн качественный, но не всегда идеально сбалансирован - иногда вокал теряется на фоне инструментов. Индивидуальность Земфиры, безусловно, чувствуется, но хочется больше экспериментов. Атмосфера альбома цепляет, но не всегда держит внимание до конца - некоторые треки проигрываются фоном, не заставляя вслушиваться.",
-				RatingRhymes:         8,
 				RatingStructure:      9,
 				RatingImplementation: 9,
-				RatingIndividuality:  8,
-				AtmosphereMultiplier: convertAtmosphereToMultiplier(6), // 6/10 -> ~1.3388
-				Status:               models.ReviewStatusPending,
+				RatingIndividuality:  9,
+				AtmosphereMultiplier: convertAtmosphereToMultiplier(9),
+				Status:               models.ReviewStatusApproved,
+				ModeratedBy:          &admin.ID,
 			},
+			// Баста - Баста 2 (Хип-хоп)
+			{
+				UserID:               admin.ID,
+				AlbumID:              &basta2.ID,
+				Text:                 "Второй альбом Басты показывает эволюцию артиста - здесь больше экспериментов, но основа остается узнаваемой. Тексты стали глубже, образы ярче - особенно в треках 'Осень' и 'Выпускной (Медлячок)'. Структура альбома продумана: от интро до аутро всё выстроено логично, каждый трек на своем месте. Битмейкинг улучшился - семплы более разнообразные, аранжировки интереснее. Подача Басты стала более уверенной и зрелой. Альбом создает атмосферу роста, поиска и одновременно уверенности в себе.",
+				RatingRhymes:         9,
+				RatingStructure:      9,
+				RatingImplementation: 10,
+				RatingIndividuality:  9,
+				AtmosphereMultiplier: convertAtmosphereToMultiplier(8),
+				Status:               models.ReviewStatusApproved,
+				ModeratedBy:          &admin.ID,
+			},
+			// Скриптонит - Дом с нормальными явлениями (Хип-хоп)
 			{
 				UserID:               testUser.ID,
-				AlbumID:              &albums[1].ID, // Vinyl #1
-				Text:                 "Альбом Zivert - это качественный поп, но без особых открытий. Тексты простые и понятные, но иногда слишком банальные - не хватает глубины и оригинальности в образах. Структура песен стандартная для жанра, работает, но не удивляет. Продакшн на хорошем уровне, всё звучит чисто и современно. Вокал приятный, но не самый уникальный - можно услышать влияние других исполнителей. Атмосфера позитивная и танцевальная, что хорошо для поп-музыки, но альбом не цепляет на эмоциональном уровне - скорее работает как приятный фон.",
+				AlbumID:              &domNorm.ID,
+				Text:                 "Дебютный альбом Скриптонита - это настоящий прорыв в русском хип-хопе. Тексты наполнены глубокими образами и метафорами, которые работают на нескольких уровнях. Особенно выделяются 'Вне игры' и 'MDM' - здесь чувствуется уникальный стиль артиста. Структура треков нестандартная, но работает идеально - переходы плавные, динамика выдержана. Продакшн качественный - биты качают, аранжировки интересные, не перегружены. Подача Скриптонита узнаваема - характерный голос, манера чтения, стиль. Альбом создает атмосферу казахстанского хип-хопа, которая привнесла свежесть в жанр.",
+				RatingRhymes:         10,
+				RatingStructure:      9,
+				RatingImplementation: 10,
+				RatingIndividuality:  10,
+				AtmosphereMultiplier: convertAtmosphereToMultiplier(10),
+				Status:               models.ReviewStatusApproved,
+				ModeratedBy:          &admin.ID,
+			},
+			// ANNA ASTI - Феникс (Поп)
+			{
+				UserID:               admin.ID,
+				AlbumID:              &fenix.ID,
+				Text:                 "Дебютный альбом ANNA ASTI - это качественный поп с душой. Тексты простые, но искренние - они говорят о том, что близко каждому. Особенно выделяются треки 'Феникс' и 'Царица' - здесь чувствуется характер артиста. Структура песен классическая для поп-музыки, но работает идеально: запоминающиеся припевы, динамичные куплеты. Продакшн на высоте - каждый элемент на своем месте, синтезаторы звучат современно. Вокал ANNA ASTI узнаваем - мощный, эмоциональный, с характерной манерой подачи. Альбом создает позитивную, вдохновляющую атмосферу, которая поднимает настроение.",
+				RatingRhymes:         8,
+				RatingStructure:      9,
+				RatingImplementation: 10,
+				RatingIndividuality:  10,
+				AtmosphereMultiplier: convertAtmosphereToMultiplier(8),
+				Status:               models.ReviewStatusApproved,
+				ModeratedBy:          &admin.ID,
+			},
+			// Zivert - Vinyl #1 (Поп)
+			{
+				UserID:               testUser.ID,
+				AlbumID:              &vinyl1.ID,
+				Text:                 "Дебютный альбом Zivert стал символом эпохи в русской поп-музыке. Тексты простые, но искренние - они говорят о том, что близко каждому, без излишней пафосности. Особенно выделяются треки 'Life' и 'Credo' - здесь чувствуется философия артиста. Структура песен классическая для поп-музыки, но работает идеально: запоминающиеся припевы, динамичные куплеты, бит качает без перебора. Продакшн на высоте - каждый элемент на своем месте, синтезаторы звучат современно, но не навязчиво. Вокал Zivert узнаваем с первых нот - легкий, воздушный, с характерной манерой подачи. Альбом создает позитивную, танцевальную атмосферу, которая поднимает настроение и не надоедает даже после многократного прослушивания.",
+				RatingRhymes:         8,
+				RatingStructure:      9,
+				RatingImplementation: 10,
+				RatingIndividuality:  10,
+				AtmosphereMultiplier: convertAtmosphereToMultiplier(7),
+				Status:               models.ReviewStatusApproved,
+				ModeratedBy:          &admin.ID,
+			},
+			// IOWA - Import (Поп)
+			{
+				UserID:               admin.ID,
+				AlbumID:              &importAlbum.ID,
+				Text:                 "Первый альбом IOWA - это качественный поп с элементами электроники. Тексты простые, но цепляющие - особенно 'Улыбайся' и 'Маршрутка' стали хитами. Структура песен стандартная, но работает - припевы запоминаются, куплеты развивают тему. Продакшн качественный - электронные элементы звучат современно, аранжировки не перегружены. Вокал узнаваем - легкий, воздушный, с характерной манерой. Альбом создает позитивную атмосферу, которая поднимает настроение.",
 				RatingRhymes:         7,
 				RatingStructure:      8,
 				RatingImplementation: 9,
 				RatingIndividuality:  9,
-				AtmosphereMultiplier: convertAtmosphereToMultiplier(6), // 6/10 -> ~1.3388
+				AtmosphereMultiplier: convertAtmosphereToMultiplier(7),
+				Status:               models.ReviewStatusApproved,
+				ModeratedBy:          &admin.ID,
+			},
+			// ЛСП - Magic City (Хип-хоп)
+			{
+				UserID:               testUser.ID,
+				AlbumID:              &magicCity.ID,
+				Text:                 "Первый альбом ЛСП - это уникальный взгляд на русский хип-хоп. Тексты наполнены образами и метафорами, которые работают на эмоциональном уровне. Особенно выделяются треки 'Крыши' и 'Номера' - здесь чувствуется стиль артиста. Структура треков интересная - переходы плавные, динамика выдержана. Продакшн качественный - биты качают, аранжировки интересные. Подача ЛСП узнаваема - характерный голос, манера чтения. Альбом создает атмосферу магического города, которая цепляет и не отпускает.",
+				RatingRhymes:         9,
+				RatingStructure:      9,
+				RatingImplementation: 9,
+				RatingIndividuality:  10,
+				AtmosphereMultiplier: convertAtmosphereToMultiplier(9),
+				Status:               models.ReviewStatusApproved,
+				ModeratedBy:          &admin.ID,
+			},
+			// The Hatters - Безумие (Рок)
+			{
+				UserID:               admin.ID,
+				AlbumID:              &bezumie.ID,
+				Text:                 "Первый альбом The Hatters - это качественный рок с элементами инди. Тексты наполнены образами и метафорами - особенно выделяется 'Солнце Монако'. Структура композиций продумана - переходы плавные, динамика выдержана. Продакшн качественный - инструменты звучат объемно, аранжировки не перегружены. Вокал узнаваем - эмоциональный, с характерной манерой подачи. Альбом создает атмосферу безумия и свободы, которая цепляет и не отпускает.",
+				RatingRhymes:         8,
+				RatingStructure:      9,
+				RatingImplementation: 9,
+				RatingIndividuality:  9,
+				AtmosphereMultiplier: convertAtmosphereToMultiplier(8),
+				Status:               models.ReviewStatusApproved,
+				ModeratedBy:          &admin.ID,
+			},
+			// Miyagi - Hajime 1 (Хип-хоп)
+			{
+				UserID:               testUser.ID,
+				AlbumID:              &hajime1.ID,
+				Text:                 "Первый альбом Miyagi & Эндшпиль - это уникальный взгляд на русский хип-хоп. Тексты наполнены образами и метафорами, которые работают на эмоциональном уровне. Особенно выделяются треки 'Hajime' и 'I Got Love' - здесь чувствуется стиль дуэта. Структура треков интересная - переходы плавные, динамика выдержана. Продакшн качественный - биты качают, аранжировки интересные, с элементами восточной музыки. Подача Miyagi узнаваема - характерный голос, манера чтения. Альбом создает атмосферу начала пути, которая цепляет и не отпускает.",
+				RatingRhymes:         9,
+				RatingStructure:      9,
+				RatingImplementation: 10,
+				RatingIndividuality:  10,
+				AtmosphereMultiplier: convertAtmosphereToMultiplier(9),
 				Status:               models.ReviewStatusApproved,
 				ModeratedBy:          &admin.ID,
 			},
@@ -1118,47 +1558,91 @@ func seedReviews() error {
 			log.Printf("  ✓ Created review %d (ID: %d, UserID: %d, AlbumID: %v)", i+1, reviews[i].ID, reviews[i].UserID, reviews[i].AlbumID)
 		}
 
-		// Get some tracks for track reviews
-		var seedTracks []models.Track
-		if err := DB.Limit(5).Find(&seedTracks).Error; err == nil && len(seedTracks) > 0 {
+		// Get some tracks for track reviews (from new albums)
+		var track1, track2, track3, track4, track5 models.Track
+		DB.Where("title = ?", "Мой друг").First(&track1) // Баста 1
+		DB.Where("title = ?", "Вне игры").First(&track2) // Скриптонит
+		DB.Where("title = ?", "Феникс").First(&track3) // ANNA ASTI
+		DB.Where("title = ?", "Life").First(&track4) // Zivert
+		DB.Where("title = ?", "Улыбайся").First(&track5) // IOWA
+		
+		if track1.ID > 0 || track2.ID > 0 || track3.ID > 0 || track4.ID > 0 || track5.ID > 0 {
 			// Add some track reviews
-			trackReviews := []models.Review{
-				{
+			trackReviews := []models.Review{}
+			
+			if track1.ID > 0 {
+				trackReviews = append(trackReviews, models.Review{
 					UserID:               testUser.ID,
-					TrackID:              &seedTracks[0].ID, // First track
-					Text:                 "Этот трек выделяется на альбоме своей мелодичностью и продуманной аранжировкой. Текст наполнен яркими образами, которые легко визуализировать, хотя рифмы не самые сложные. Структура композиции выстроена идеально - куплеты плавно переходят в запоминающийся припев, динамика нарастает к середине. Продакшн качественный, все инструменты слышны, баланс выдержан. Исполнитель демонстрирует свою индивидуальность через характерную манеру подачи. Трек создает приятную атмосферу, которая цепляет с первых секунд и не отпускает до конца.",
-					RatingRhymes:         8,
+					TrackID:              &track1.ID,
+					Text:                 "Классический трек Басты, который открывает альбом. Текст наполнен образами дружбы и верности, рифмы сложные, многослойные. Структура композиции выстроена идеально - куплеты плавно переходят в запоминающийся припев. Продакшн качественный, бит качает, но не перегружает. Подача Басты узнаваема - уверенная, мощная. Трек создает атмосферу дружбы и братства, которая цепляет с первых секунд.",
+					RatingRhymes:         9,
 					RatingStructure:      9,
 					RatingImplementation: 9,
-					RatingIndividuality:  8,
+					RatingIndividuality:  9,
 					AtmosphereMultiplier: convertAtmosphereToMultiplier(8),
 					Status:               models.ReviewStatusApproved,
 					ModeratedBy:          &admin.ID,
-				},
-				{
+				})
+			}
+			
+			if track2.ID > 0 {
+				trackReviews = append(trackReviews, models.Review{
 					UserID:               admin.ID,
-					TrackID:              &seedTracks[1].ID, // Second track
-					Text:                 "Композиция, которая стала классикой жанра не случайно. Текст наполнен глубокими метафорами и образами, которые работают на нескольких уровнях - можно слушать поверхностно или вникать в детали. Структура трека безупречна: каждый элемент на своем месте, переходы между частями плавные, припев запоминается с первого прослушивания. Продакшн на высшем уровне - каждый звук продуман, аранжировка богатая, но не перегруженная. Вокал неповторим и узнаваем, манера подачи создает уникальную атмосферу. Трек цепляет эмоционально и не теряет актуальности даже после многократного прослушивания.",
-					RatingRhymes:         9,
-					RatingStructure:      10,
+					TrackID:              &track2.ID,
+					Text:                 "Открывающий трек альбома Скриптонита - это заявление о выходе из игры. Текст наполнен глубокими образами и метафорами, которые работают на эмоциональном уровне. Структура трека интересная - переходы плавные, динамика выдержана. Продакшн качественный - бит качает, аранжировки интересные. Подача Скриптонита узнаваема - характерный голос, манера чтения. Трек создает атмосферу начала пути, которая цепляет и не отпускает.",
+					RatingRhymes:         10,
+					RatingStructure:      9,
 					RatingImplementation: 10,
-					RatingIndividuality:  9,
+					RatingIndividuality:  10,
 					AtmosphereMultiplier: convertAtmosphereToMultiplier(9),
 					Status:               models.ReviewStatusApproved,
 					ModeratedBy:          &admin.ID,
-				},
-				{
+				})
+			}
+			
+			if track3.ID > 0 {
+				trackReviews = append(trackReviews, models.Review{
 					UserID:               testUser.ID,
-					TrackID:              &seedTracks[2].ID, // Third track
-					Text:                 "Трек неплохой, но не дотягивает до уровня лучших композиций альбома. Текст простой, без особых изысков - рифмы стандартные, образы не самые яркие. Структура композиции стандартная, работает, но не удивляет - припев запоминается, но не цепляет так сильно, как хотелось бы. Продакшн качественный, но аранжировка могла бы быть интереснее - чувствуется некоторая шаблонность. Индивидуальность исполнителя чувствуется, но не так ярко выражена, как в других треках. Атмосфера приятная, но не цепляет настолько, чтобы возвращаться к треку снова и снова.",
-					RatingRhymes:         7,
-					RatingStructure:      8,
-					RatingImplementation: 8,
-					RatingIndividuality:  7,
+					TrackID:              &track3.ID,
+					Text:                 "Титульный трек альбома ANNA ASTI - это мощная композиция о возрождении. Текст наполнен образами феникса и возрождения, которые работают на эмоциональном уровне. Структура композиции выстроена идеально - куплеты плавно переходят в запоминающийся припев. Продакшн качественный - каждый элемент на своем месте. Вокал ANNA ASTI узнаваем - мощный, эмоциональный. Трек создает вдохновляющую атмосферу, которая поднимает настроение.",
+					RatingRhymes:         8,
+					RatingStructure:      9,
+					RatingImplementation: 10,
+					RatingIndividuality:  10,
+					AtmosphereMultiplier: convertAtmosphereToMultiplier(8),
+					Status:               models.ReviewStatusApproved,
+					ModeratedBy:          &admin.ID,
+				})
+			}
+			
+			if track4.ID > 0 {
+				trackReviews = append(trackReviews, models.Review{
+					UserID:               admin.ID,
+					TrackID:              &track4.ID,
+					Text:                 "Открывающий трек альбома Zivert - это гимн жизни. Текст простой, но искренний - он говорит о том, что близко каждому. Структура композиции классическая для поп-музыки, но работает идеально. Продакшн на высоте - синтезаторы звучат современно. Вокал Zivert узнаваем - легкий, воздушный. Трек создает позитивную атмосферу, которая поднимает настроение.",
+					RatingRhymes:         8,
+					RatingStructure:      9,
+					RatingImplementation: 10,
+					RatingIndividuality:  10,
 					AtmosphereMultiplier: convertAtmosphereToMultiplier(7),
 					Status:               models.ReviewStatusApproved,
 					ModeratedBy:          &admin.ID,
-				},
+				})
+			}
+			
+			if track5.ID > 0 {
+				trackReviews = append(trackReviews, models.Review{
+					UserID:               testUser.ID,
+					TrackID:              &track5.ID,
+					Text:                 "Хитовый трек IOWA - это качественный поп с элементами электроники. Текст простой, но цепляющий - особенно запоминается припев. Структура композиции стандартная, но работает - припев запоминается с первого прослушивания. Продакшн качественный - электронные элементы звучат современно. Вокал узнаваем - легкий, воздушный. Трек создает позитивную атмосферу, которая поднимает настроение.",
+					RatingRhymes:         7,
+					RatingStructure:      8,
+					RatingImplementation: 9,
+					RatingIndividuality:  9,
+					AtmosphereMultiplier: convertAtmosphereToMultiplier(7),
+					Status:               models.ReviewStatusApproved,
+					ModeratedBy:          &admin.ID,
+				})
 			}
 
 			for i := range trackReviews {
@@ -1181,182 +1665,86 @@ func seedReviews() error {
 		}
 
 		// Добавляем больше рецензий для разных альбомов от разных пользователей
-		// Альбомы: [0] Жить в твоей голове, [1] Vinyl #1, [2] Горгород, [3] До свидания, [4] Раскраски для взрослых, [5] Вендетта, [6] Сияй, [7] Красота, [8] Сладкая жизнь, [9] Раскраски для взрослых 2, [10] Kind of Blue, [11] Blue Train
-		if len(allTestUsersForReviews) >= 3 && len(albums) >= 5 {
+		if len(allTestUsersForReviews) >= 3 {
 			additionalReviews := []models.Review{
+				// Баста - Ноггано (Хип-хоп)
 				{
-					UserID:               allTestUsersForReviews[2].ID, // musiclover1
-					AlbumID:              &albums[0].ID,                // Жить в твоей голове
-					Text:                 "Земфира на этом альбоме демонстрирует зрелое мастерство во всех аспектах. Тексты наполнены глубокими образами и метафорами, которые работают на эмоциональном уровне. Структура композиций продумана до мелочей - каждый трек имеет свою драматургию, динамика выдержана. Продакшн качественный, инструменты звучат объемно, аранжировки не перегружены. Узнаваемый голос и манера подачи создают неповторимую индивидуальность. Альбом создает атмосферу, которая цепляет и не отпускает - это классика русского рока, которая не теряет актуальности.",
+					UserID:               allTestUsersForReviews[2].ID,
+					AlbumID:              &noggano.ID,
+					Text:                 "Альбом Ноггано - это продолжение эволюции Басты. Рифмы сложные, многослойные, с игрой слов - особенно выделяются треки 'Куба' и 'Вечный жид'. Структура треков выстроена идеально: бит меняется в нужных местах, куплеты не провисают, припевы цепляют. Битмейкинг на высшем уровне - семплы подобраны идеально, басы качают, но не перегружают. Подача Басты узнаваема - уверенная, мощная, с правильной интонацией. Альбом создает атмосферу городской жизни, борьбы и надежды, которая резонирует с аудиторией.",
 					RatingRhymes:         9,
 					RatingStructure:      9,
-					RatingImplementation: 9,
+					RatingImplementation: 10,
 					RatingIndividuality:  9,
 					AtmosphereMultiplier: convertAtmosphereToMultiplier(9),
 					Status:               models.ReviewStatusApproved,
 					ModeratedBy:          &admin.ID,
 				},
+				// Скриптонит - Праздник на улице 36 (Хип-хоп)
 				{
-					UserID:               allTestUsersForReviews[3].ID, // musiclover2
-					AlbumID:              &albums[1].ID,                // Vinyl #1
-					Text:                 "Альбом Zivert стал настоящим явлением в русской поп-музыке, и это заслуженно. Тексты простые, но искренние - они говорят о том, что близко каждому, без излишней пафосности. Структура песен выстроена идеально: запоминающиеся припевы, динамичные куплеты, бит качает без перебора. Продакшн на высшем уровне - каждый элемент на своем месте, синтезаторы звучат современно. Вокал Zivert узнаваем с первых нот - легкий, воздушный, с характерной манерой подачи. Альбом создает позитивную, танцевальную атмосферу, которая поднимает настроение и не надоедает даже после многократного прослушивания. Это тот случай, когда поп-музыка работает на все сто процентов.",
+					UserID:               allTestUsersForReviews[3].ID,
+					AlbumID:              &prazdnik36.ID,
+					Text:                 "Второй альбом Скриптонита показывает рост артиста. Тексты наполнены образами и метафорами, которые работают на эмоциональном уровне. Особенно выделяются треки 'Праздник на улице 36' и 'Смок' - здесь чувствуется уникальный стиль артиста. Структура треков интересная - переходы плавные, динамика выдержана. Продакшн качественный - биты качают, аранжировки интересные. Подача Скриптонита узнаваема - характерный голос, манера чтения. Альбом создает атмосферу праздника и одновременно глубины, которая цепляет и не отпускает.",
 					RatingRhymes:         9,
-					RatingStructure:      10,
+					RatingStructure:      9,
 					RatingImplementation: 10,
 					RatingIndividuality:  10,
-					AtmosphereMultiplier: convertAtmosphereToMultiplier(10),
+					AtmosphereMultiplier: convertAtmosphereToMultiplier(8),
 					Status:               models.ReviewStatusApproved,
 					ModeratedBy:          &admin.ID,
 				},
+				// ANNA ASTI - Царица (Поп)
 				{
-					UserID:               allTestUsersForReviews[4].ID, // musiclover3
-					AlbumID:              &albums[2].ID,                // Горгород
-					Text:                 "Баста на этом альбоме показывает, почему он остается одним из столпов русского хип-хопа. Рифмы сложные, многослойные, с игрой слов - это не просто набор строк, а настоящая поэзия в ритме. Каждый куплет продуман, образы яркие и запоминающиеся. Структура треков выстроена идеально: бит меняется в нужных местах, куплеты не провисают, припевы цепляют. Битмейкинг на высшем уровне - семплы подобраны идеально, басы качают, но не перегружают. Подача Басты узнаваема - уверенная, мощная, с правильной интонацией. Альбом создает атмосферу городской жизни, борьбы и надежды, которая резонирует с аудиторией.",
-					RatingRhymes:         10,
-					RatingStructure:      9,
-					RatingImplementation: 10,
-					RatingIndividuality:  9,
-					AtmosphereMultiplier: convertAtmosphereToMultiplier(9),
-					Status:               models.ReviewStatusApproved,
-					ModeratedBy:          &admin.ID,
-				},
-				{
-					UserID:               allTestUsersForReviews[5].ID, // musiclover4
-					AlbumID:              &albums[3].ID,                // До свидания
-					Text:                 "Tesla Boy создали альбом, который балансирует на грани между поп-музыкой и электроникой. Тексты не претендуют на глубину, но работают в контексте жанра - они создают нужное настроение, хотя иногда кажутся слишком простыми. Структурно альбом интересен: композиции построены вокруг синтезаторов и ритм-секции, переходы между частями плавные. Продакшн качественный - электронные инструменты звучат современно, аранжировки не перегружены, но и не пусты. Вокал узнаваем, хотя и не самый уникальный в жанре. Где альбом действительно силен - это атмосфера: он создает ностальгическое настроение 80-х, но с современным звучанием, что цепляет и не отпускает до последнего трека.",
+					UserID:               allTestUsersForReviews[4].ID,
+					AlbumID:              &carica.ID,
+					Text:                 "Второй альбом ANNA ASTI - это продолжение качественного попа с душой. Тексты простые, но искренние - особенно выделяется титульный трек 'Царица'. Структура песен классическая для поп-музыки, но работает идеально. Продакшн на высоте - каждый элемент на своем месте. Вокал ANNA ASTI узнаваем - мощный, эмоциональный. Альбом создает позитивную, вдохновляющую атмосферу, которая поднимает настроение.",
 					RatingRhymes:         8,
 					RatingStructure:      9,
 					RatingImplementation: 10,
-					RatingIndividuality:  8,
-					AtmosphereMultiplier: convertAtmosphereToMultiplier(10),
+					RatingIndividuality:  10,
+					AtmosphereMultiplier: convertAtmosphereToMultiplier(8),
 					Status:               models.ReviewStatusApproved,
 					ModeratedBy:          &admin.ID,
 				},
+				// Zivert - Vinyl #2 (Поп)
 				{
-					UserID:               allTestUsersForReviews[6].ID, // musiclover5
-					AlbumID:              &albums[4].ID,                // Раскраски для взрослых
-					Text:                 "Монеточка на этом альбоме создала что-то особенное - поп-музыку с душой и смыслом. Тексты - это отдельная история: они полны иронии, самоиронии, но при этом искренние и цепляющие. Каждая строчка продумана, метафоры работают, сюжеты песен понятны и близки. Структура песен классическая, но не банальная - припевы запоминаются с первого прослушивания, куплеты развивают тему. Продакшн качественный, хотя и не самый сложный - но это к лучшему, так как не отвлекает от главного. Индивидуальность Монеточки - это её главный козырь: узнаваемый голос, манера подачи, стиль - всё работает на создание уникального образа. Альбом создает атмосферу легкости, ностальгии и одновременно глубины.",
-					RatingRhymes:         10,
-					RatingStructure:      10,
+					UserID:               allTestUsersForReviews[5].ID,
+					AlbumID:              &vinyl2.ID,
+					Text:                 "Второй альбом Zivert продолжает традиции первого. Тексты простые, но искренние - они говорят о том, что близко каждому. Структура песен классическая для поп-музыки, но работает идеально. Продакшн на высоте - синтезаторы звучат современно. Вокал Zivert узнаваем - легкий, воздушный. Альбом создает позитивную, танцевальную атмосферу, которая поднимает настроение.",
+					RatingRhymes:         8,
+					RatingStructure:      9,
 					RatingImplementation: 10,
 					RatingIndividuality:  10,
-					AtmosphereMultiplier: convertAtmosphereToMultiplier(10),
+					AtmosphereMultiplier: convertAtmosphereToMultiplier(7),
 					Status:               models.ReviewStatusApproved,
 					ModeratedBy:          &admin.ID,
 				},
+				// IOWA - Export (Поп)
 				{
-					UserID:               allTestUsersForReviews[7].ID, // musiclover6
-					AlbumID:              &albums[0].ID,                // Жить в твоей голове (третья рецензия)
-					Text:                 "Альбом Земфиры - это работа, которая заслуживает внимания со всех сторон. Тексты наполнены глубокими образами и метафорами, которые работают на эмоциональном уровне и заставляют задуматься. Структура композиций продумана до мелочей - каждый трек имеет свою драматургию, динамика выдержана от начала до конца. Продакшн на высшем уровне - инструменты звучат объемно, аранжировки не перегружены, но и не пусты. Узнаваемый голос Земфиры с его характерной хрипотцой создает неповторимую индивидуальность. Альбом создает атмосферу, которая цепляет и не отпускает - это классика русского рока, которая не теряет актуальности даже спустя годы.",
-					RatingRhymes:         10,
-					RatingStructure:      10,
+					UserID:               allTestUsersForReviews[6].ID,
+					AlbumID:              &exportAlbum.ID,
+					Text:                 "Второй альбом IOWA - это качественный поп с элементами электроники. Тексты простые, но цепляющие - особенно 'Тает' и 'Простая песня'. Структура песен стандартная, но работает - припевы запоминаются. Продакшн качественный - электронные элементы звучат современно. Вокал узнаваем - легкий, воздушный. Альбом создает позитивную атмосферу, которая поднимает настроение.",
+					RatingRhymes:         7,
+					RatingStructure:      8,
+					RatingImplementation: 9,
+					RatingIndividuality:  9,
+					AtmosphereMultiplier: convertAtmosphereToMultiplier(7),
+					Status:               models.ReviewStatusApproved,
+					ModeratedBy:          &admin.ID,
+				},
+				// Клава Кока - Неприлично о личном (Поп)
+				{
+					UserID:               allTestUsersForReviews[7].ID,
+					AlbumID:              &neprilichno.ID,
+					Text:                 "Дебютный альбом Клавы Коки - это качественный поп с личными историями. Тексты простые, но искренние - они говорят о личном, без излишней пафосности. Структура песен классическая для поп-музыки, но работает идеально. Продакшн на высоте - каждый элемент на своем месте. Вокал Клавы Коки узнаваем - легкий, эмоциональный. Альбом создает позитивную атмосферу, которая поднимает настроение.",
+					RatingRhymes:         8,
+					RatingStructure:      9,
 					RatingImplementation: 10,
 					RatingIndividuality:  9,
-					AtmosphereMultiplier: convertAtmosphereToMultiplier(9),
+					AtmosphereMultiplier: convertAtmosphereToMultiplier(8),
 					Status:               models.ReviewStatusApproved,
 					ModeratedBy:          &admin.ID,
 				},
-			}
-
-			// Добавляем еще больше рецензий от разных пользователей для тестирования просмотра профилей
-			if len(allTestUsersForReviews) >= 8 && len(albums) >= 8 {
-				moreReviews := []models.Review{
-					{
-						UserID:               allTestUsersForReviews[8].ID, // musiclover7
-						AlbumID:              &albums[5].ID,                // Вендетта
-						Text:                 "Земфира на этом альбоме продолжает демонстрировать свое мастерство. Тексты наполнены яркими образами и метафорами, которые цепляют за живое - особенно в композиции 'Небо', где каждый куплет раскрывает новую грань эмоционального состояния. Структура альбома выстроена хорошо, переходы между треками плавные, динамика выдержана. Продакшн качественный, инструменты звучат объемно, хотя иногда аранжировки могли бы быть интереснее. Узнаваемый голос Земфиры создает неповторимую атмосферу, которая затягивает с первых секунд. Альбом создает настроение, которое резонирует с аудиторией и не теряет актуальности.",
-						RatingRhymes:         9,
-						RatingStructure:      9,
-						RatingImplementation: 9,
-						RatingIndividuality:  9,
-						AtmosphereMultiplier: convertAtmosphereToMultiplier(8),
-						Status:               models.ReviewStatusApproved,
-						ModeratedBy:          &admin.ID,
-					},
-					{
-						UserID:               allTestUsersForReviews[9].ID, // musiclover8
-						AlbumID:              &albums[6].ID,                // Сияй
-						Text:                 "Zivert продолжает радовать качественной поп-музыкой. Тексты простые и понятные, говорят о том, что близко каждому, хотя иногда не хватает глубины в образах. Структура песен стандартная для жанра, но работает идеально - припевы запоминаются, куплеты динамичные. Продакшн на хорошем уровне, всё звучит чисто и современно, синтезаторы не перегружают. Вокал узнаваем и приятен, хотя и не самый уникальный. Альбом создает позитивную, танцевальную атмосферу, которая поднимает настроение, хотя и не цепляет на эмоциональном уровне так сильно, как хотелось бы.",
-						RatingRhymes:         8,
-						RatingStructure:      9,
-						RatingImplementation: 9,
-						RatingIndividuality:  8,
-						AtmosphereMultiplier: convertAtmosphereToMultiplier(8),
-						Status:               models.ReviewStatusApproved,
-						ModeratedBy:          &admin.ID,
-					},
-					{
-						UserID:               allTestUsersForReviews[10].ID, // musiclover9
-						AlbumID:              &albums[7].ID,                 // Красота
-						Text:                 "Баста снова на высоте с этим концептуальным альбомом. Рифмы сложные, многослойные, с игрой слов и отсылками - это настоящая поэзия в ритме, где каждый куплет продуман до мелочей. Структура треков выстроена идеально: бит меняется в нужных местах, куплеты не провисают, припевы цепляют. Битмейкинг на высшем уровне - семплы подобраны идеально, басы качают, но не перегружают. Подача Басты узнаваема - уверенная, мощная, с правильной интонацией. Альбом создает атмосферу, которая резонирует с аудиторией и не теряет актуальности.",
-						RatingRhymes:         10,
-						RatingStructure:      9,
-						RatingImplementation: 10,
-						RatingIndividuality:  9,
-						AtmosphereMultiplier: convertAtmosphereToMultiplier(9),
-						Status:               models.ReviewStatusApproved,
-						ModeratedBy:          &admin.ID,
-					},
-					{
-						UserID:               allTestUsersForReviews[11].ID, // musiclover10
-						AlbumID:              &albums[8].ID,                 // Сладкая жизнь
-						Text:                 "Tesla Boy создали атмосферный альбом, который балансирует между поп-музыкой и электроникой. Тексты не претендуют на глубину, но работают в контексте жанра - они создают нужное настроение, хотя иногда кажутся слишком простыми. Структурно альбом интересен: композиции построены вокруг синтезаторов и ритм-секции, переходы между частями плавные. Продакшн качественный - электронные инструменты звучат современно, аранжировки не перегружены. Вокал узнаваем, хотя и не самый уникальный в жанре. Альбом создает ностальгическое настроение 80-х с современным звучанием, что цепляет и не отпускает.",
-						RatingRhymes:         8,
-						RatingStructure:      9,
-						RatingImplementation: 10,
-						RatingIndividuality:  8,
-						AtmosphereMultiplier: convertAtmosphereToMultiplier(9),
-						Status:               models.ReviewStatusApproved,
-						ModeratedBy:          &admin.ID,
-					},
-					{
-						UserID:               allTestUsersForReviews[12].ID, // musiclover11
-						AlbumID:              &albums[9].ID,                 // Раскраски для взрослых 2
-						Text:                 "Монеточка продолжает радовать качественной поп-музыкой с душой. Тексты по-прежнему полны иронии и самоиронии, но при этом искренние и цепляющие - каждая строчка продумана, метафоры работают. Структура песен классическая, но не банальная - припевы запоминаются, куплеты развивают тему. Продакшн качественный, хотя и не самый сложный - но это к лучшему, так как не отвлекает от главного. Индивидуальность Монеточки чувствуется во всем - узнаваемый голос, манера подачи, стиль. Альбом создает атмосферу легкости и глубины одновременно, что делает его универсальным для разных настроений.",
-						RatingRhymes:         9,
-						RatingStructure:      9,
-						RatingImplementation: 9,
-						RatingIndividuality:  9,
-						AtmosphereMultiplier: convertAtmosphereToMultiplier(8),
-						Status:               models.ReviewStatusApproved,
-						ModeratedBy:          &admin.ID,
-					},
-					{
-						UserID:               allTestUsersForReviews[13].ID, // musiclover12
-						AlbumID:              &albums[10].ID,                // Ночной джаз
-						Text:                 "Олег Лундстрем на этом альбоме демонстрирует классический джаз в лучших традициях жанра. Композиции построены на сложных гармониях и импровизациях, которые показывают мастерство музыкантов. Структура каждой композиции продумана до мелочей - есть место и для соло, и для ансамблевой игры, динамика выдержана идеально. Продакшн качественный, все инструменты слышны, баланс выдержан. Индивидуальность Лундстрема чувствуется в каждой ноте - узнаваемый стиль, манера игры, подход к аранжировкам. Альбом создает атмосферу классического джаза, которая погружает в эпоху и не теряет актуальности.",
-						RatingRhymes:         10,
-						RatingStructure:      10,
-						RatingImplementation: 10,
-						RatingIndividuality:  10,
-						AtmosphereMultiplier: convertAtmosphereToMultiplier(10),
-						Status:               models.ReviewStatusApproved,
-						ModeratedBy:          &admin.ID,
-					},
-					{
-						UserID:               allTestUsersForReviews[14].ID, // musiclover13
-						AlbumID:              &albums[11].ID,                // Голубая ночь
-						Text:                 "Игорь Бутман на этом альбоме демонстрирует современный джаз с классическими корнями. Композиции построены на сложных гармониях и импровизациях, которые показывают мастерство музыкантов и их понимание жанра. Структура каждой композиции продумана - есть место и для соло, и для ансамблевой игры, динамика выдержана. Продакшн качественный, все инструменты слышны, баланс идеален. Индивидуальность Бутмана чувствуется в каждой ноте - узнаваемый стиль, манера игры, подход к аранжировкам. Альбом создает атмосферу современного джаза, которая погружает и не теряет актуальности.",
-						RatingRhymes:         10,
-						RatingStructure:      10,
-						RatingImplementation: 10,
-						RatingIndividuality:  10,
-						AtmosphereMultiplier: convertAtmosphereToMultiplier(10),
-						Status:               models.ReviewStatusApproved,
-						ModeratedBy:          &admin.ID,
-					},
-				}
-
-				for i := range moreReviews {
-					moreReviews[i].CalculateFinalScore()
-					if err := DB.Create(&moreReviews[i]).Error; err != nil {
-						log.Printf("ERROR: Failed to create additional review %d: %v", i+1, err)
-						failedReviews++
-					} else {
-						createdReviews++
-						log.Printf("  ✓ Created additional review %d (ID: %d)", i+1, moreReviews[i].ID)
-					}
-				}
 			}
 
 			// Calculate final scores and create additional reviews
@@ -1441,23 +1829,31 @@ func seedReviews() error {
 		allTestUsers = []models.User{admin, testUser} // Fallback to basic users
 	}
 
-	// Seed review likes for testing - create 5-20 likes per review, распределённые по разным пользователям
-	// Update created_at for review likes to be within last 24 hours
+	// Seed review likes for testing - create 5-30 likes per review for testing "Актуальное"
+	// Distribute: 30% within last 24 hours, 70% over last 7 days
 	nowForLikes := time.Now()
 	likeHoursAgo := 0
 
 	var reviewLikes []models.ReviewLike
 	for i, review := range allReviews {
-		if review.Status == models.ReviewStatusApproved && review.ID > 0 && review.AlbumID != nil {
-			// Generate number of likes between 5 and 20, распределяем чтобы первые рецензии имели больше лайков
-			numLikes := 5 + (i % 16) // Will give 5-20 likes
-			if numLikes > len(allTestUsers) {
-				numLikes = len(allTestUsers)
+		if review.Status == models.ReviewStatusApproved && review.ID > 0 {
+			// Generate random number of likes between 5 and 30
+			// Use combination of review index and review.ID to create variation
+			numLikes := 5 + ((i*13 + int(review.ID)) % 26) // Will give 5-30 likes with variation
+			if numLikes > 30 {
+				numLikes = 30
 			}
+			if numLikes < 5 {
+				numLikes = 5
+			}
+
+			// Calculate how many likes should be in last 24 hours (30%)
+			likesInLast24Hours := int(float64(numLikes) * 0.3)
 
 			// Create likes from different users, используем циклическое распределение для разнообразия
 			startIndex := i % len(allTestUsers) // Начинаем с разных пользователей для каждой рецензии
-			for j := 0; j < numLikes; j++ {
+			likesCreated := 0
+			for j := 0; j < numLikes && likesCreated < numLikes; j++ {
 				userIndex := (startIndex + j) % len(allTestUsers)
 				// Проверяем что пользователь не автор рецензии
 				if allTestUsers[userIndex].ID == review.UserID {
@@ -1466,22 +1862,36 @@ func seedReviews() error {
 				// Check if like already exists
 				var existingLike models.ReviewLike
 				if err := DB.Where("user_id = ? AND review_id = ?", allTestUsers[userIndex].ID, review.ID).First(&existingLike).Error; err != nil {
-					// Create new like with created_at within last 24 hours
+					// Create new like
 					like := models.ReviewLike{
 						UserID:   allTestUsers[userIndex].ID,
 						ReviewID: review.ID,
 					}
-					// Set created_at to be within last 24 hours
-					like.CreatedAt = nowForLikes.Add(-time.Duration(likeHoursAgo%24) * time.Hour)
+					// Set created_at: 30% within last 24 hours, 70% over last 7 days
+					if likesCreated < likesInLast24Hours {
+						// Within last 24 hours
+						like.CreatedAt = nowForLikes.Add(-time.Duration(likeHoursAgo%24) * time.Hour)
+					} else {
+						// Over last 7 days (24-168 hours)
+						hoursOffset := 24 + (likeHoursAgo % 144) // 24-168 hours
+						like.CreatedAt = nowForLikes.Add(-time.Duration(hoursOffset) * time.Hour)
+					}
 					reviewLikes = append(reviewLikes, like)
 					likeHoursAgo++
+					likesCreated++
 				} else {
-					// Update existing like's created_at to be within last 24 hours
-					existingLike.CreatedAt = nowForLikes.Add(-time.Duration(likeHoursAgo%24) * time.Hour)
+					// Update existing like's created_at
+					if likesCreated < likesInLast24Hours {
+						existingLike.CreatedAt = nowForLikes.Add(-time.Duration(likeHoursAgo%24) * time.Hour)
+					} else {
+						hoursOffset := 24 + (likeHoursAgo % 144)
+						existingLike.CreatedAt = nowForLikes.Add(-time.Duration(hoursOffset) * time.Hour)
+					}
 					if err := DB.Save(&existingLike).Error; err != nil {
 						log.Printf("Warning: failed to update review like created_at: %v", err)
 					}
 					likeHoursAgo++
+					likesCreated++
 				}
 			}
 		}

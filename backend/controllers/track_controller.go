@@ -51,6 +51,133 @@ func (tc *TrackController) GetTracks(c *gin.Context) {
 	c.JSON(http.StatusOK, tracks)
 }
 
+// GetAllTracks retrieves all tracks with filtering, sorting and pagination
+func (tc *TrackController) GetAllTracks(c *gin.Context) {
+	var tracks []models.Track
+	query := tc.DB.Model(&models.Track{}).Preload("Album").Preload("Album.Genre").Preload("Genres").Preload("Likes")
+
+	// Filter by genre_ids (array) - AND logic: track must have ALL selected genres
+	if genreIDsParam := c.QueryArray("genre_ids[]"); len(genreIDsParam) > 0 {
+		genreIDs := make([]uint, 0)
+		for _, idStr := range genreIDsParam {
+			if id, err := strconv.ParseUint(idStr, 10, 32); err == nil {
+				genreIDs = append(genreIDs, uint(id))
+			}
+		}
+		if len(genreIDs) > 0 {
+			// Use subquery to find tracks that have ALL selected genres
+			// For each genre, we check if track has it, then count matches
+			query = query.Where(`
+				(SELECT COUNT(DISTINCT genre_id) 
+				 FROM track_genres 
+				 WHERE track_id = tracks.id AND genre_id IN (?)
+				) = ?`, genreIDs, len(genreIDs))
+		}
+	}
+
+	// Search by title or artist (through album)
+	if search := c.Query("search"); search != "" {
+		query = query.Where("tracks.title ILIKE ? OR EXISTS (SELECT 1 FROM albums WHERE albums.id = tracks.album_id AND albums.artist ILIKE ?)", "%"+search+"%", "%"+search+"%")
+	}
+
+	// Sort
+	sortBy := c.DefaultQuery("sort_by", "created_at")
+	sortOrder := c.DefaultQuery("sort_order", "desc")
+
+	// Handle special sorting cases
+	switch sortBy {
+	case "release_date":
+		if sortOrder == "desc" {
+			query = query.Order("(SELECT release_date FROM albums WHERE albums.id = tracks.album_id) DESC NULLS LAST, tracks.created_at DESC")
+		} else {
+			query = query.Order("(SELECT release_date FROM albums WHERE albums.id = tracks.album_id) ASC NULLS LAST, tracks.created_at ASC")
+		}
+	case "title":
+		if sortOrder == "desc" {
+			query = query.Order("tracks.title DESC")
+		} else {
+			query = query.Order("tracks.title ASC")
+		}
+	case "average_rating":
+		if sortOrder == "desc" {
+			query = query.Order("tracks.average_rating DESC NULLS LAST, tracks.created_at DESC")
+		} else {
+			query = query.Order("tracks.average_rating ASC NULLS LAST, tracks.created_at ASC")
+		}
+	case "likes_count":
+		// Sort by number of likes
+		if sortOrder == "desc" {
+			query = query.Order("(SELECT COUNT(*) FROM track_likes WHERE track_likes.track_id = tracks.id) DESC, tracks.created_at DESC")
+		} else {
+			query = query.Order("(SELECT COUNT(*) FROM track_likes WHERE track_likes.track_id = tracks.id) ASC, tracks.created_at ASC")
+		}
+	default: // created_at
+		if sortOrder == "desc" {
+			query = query.Order("tracks.created_at DESC")
+		} else {
+			query = query.Order("tracks.created_at ASC")
+		}
+	}
+
+	// Count total with same filters (before pagination)
+	var total int64
+	countQuery := tc.DB.Model(&models.Track{})
+	
+	// Apply same filters to count query
+	if genreIDsParam := c.QueryArray("genre_ids[]"); len(genreIDsParam) > 0 {
+		genreIDs := make([]uint, 0)
+		for _, idStr := range genreIDsParam {
+			if id, err := strconv.ParseUint(idStr, 10, 32); err == nil {
+				genreIDs = append(genreIDs, uint(id))
+			}
+		}
+		if len(genreIDs) > 0 {
+			countQuery = countQuery.Where(`
+				(SELECT COUNT(DISTINCT genre_id) 
+				 FROM track_genres 
+				 WHERE track_id = tracks.id AND genre_id IN (?)
+				) = ?`, genreIDs, len(genreIDs))
+		}
+	}
+	if search := c.Query("search"); search != "" {
+		countQuery = countQuery.Where("tracks.title ILIKE ? OR EXISTS (SELECT 1 FROM albums WHERE albums.id = tracks.album_id AND albums.artist ILIKE ?)", "%"+search+"%", "%"+search+"%")
+	}
+	countQuery.Count(&total)
+
+	// Pagination
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	offset := (page - 1) * pageSize
+
+	if err := query.Offset(offset).Limit(pageSize).Find(&tracks).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to fetch tracks",
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
+	// Calculate average ratings for all tracks
+	for i := range tracks {
+		if err := tc.CalculateAverageRating(tracks[i].ID); err != nil {
+			log.Printf("Warning: failed to calculate average rating for track %d: %v", tracks[i].ID, err)
+		}
+		// Reload track to get updated rating
+		var updatedTrack models.Track
+		if err := tc.DB.Preload("Album").Preload("Album.Genre").Preload("Genres").Preload("Likes").First(&updatedTrack, tracks[i].ID).Error; err == nil {
+			tracks[i] = updatedTrack
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"tracks":    tracks,
+		"total":     total,
+		"page":      page,
+		"page_size": pageSize,
+	})
+}
+
 // GetTrack retrieves track by ID
 func (tc *TrackController) GetTrack(c *gin.Context) {
 	id := c.Param("id")

@@ -62,7 +62,7 @@ const SearchBar = () => {
   };
 
   const handleTrackClick = (track) => {
-    navigate(`/albums/${track.album_id}`);
+    navigate(`/tracks/${track.id}`);
     setShowResults(false);
     setQuery('');
   };
@@ -114,6 +114,13 @@ const SearchBar = () => {
                       className="search-result-item"
                       onClick={() => handleArtistClick(artist.name)}
                     >
+                      {getImageUrl(artist.cover_image_path) && (
+                        <img
+                          src={getImageUrl(artist.cover_image_path)}
+                          alt={artist.name}
+                          className="search-result-image search-result-image-artist"
+                        />
+                      )}
                       <div className="search-result-info">
                         <div className="search-result-title">{artist.name}</div>
                         <div className="search-result-subtitle">
