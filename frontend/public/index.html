@@ -4,15 +4,104 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
+    
+    <!-- Основные метаданные -->
+    <title>Мьюзик Рейтинг - Платформа для рецензирования музыкальных альбомов и треков</title>
     <meta
       name="description"
-      content="Мьюзик Рейтинг - сайт для рецензирования музыкальных альбомов"
+      content="Платформа для рецензирования музыкального творчества. Оставляйте оценки альбомам и трекам, читайте рецензии других пользователей, открывайте новую музыку."
     />
-    <title>Мьюзик Рейтинг</title>
+    <meta name="keywords" content="музыка, рецензии, альбомы, треки, музыкальные обзоры, рейтинг музыки, музыкальные критики, оценки альбомов, музыкальная платформа" />
+    <meta name="author" content="Афонькин А.В." />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/apple-touch-icon.png" />
+    
+    <!-- Open Graph метатеги для социальных сетей -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Мьюзик Рейтинг - Рецензии музыкальных альбомов и треков" />
+    <meta property="og:description" content="Платформа для рецензирования музыкального творчества. Оставляйте оценки, читайте рецензии, открывайте новую музыку." />
+    <meta property="og:image" content="%PUBLIC_URL%/og-image.jpg" />
+    <meta property="og:url" content="https://vkr-ashen.vercel.app/" />
+    <meta property="og:site_name" content="Мьюзик Рейтинг" />
+    <meta property="og:locale" content="ru_RU" />
+    
+    <!-- Twitter Card метатеги -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Мьюзик Рейтинг - Рецензии музыкальных альбомов" />
+    <meta name="twitter:description" content="Платформа для рецензирования музыкального творчества" />
+    <meta name="twitter:image" content="%PUBLIC_URL%/og-image.jpg" />
+    
+    <!-- Schema.org структурированные данные -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Мьюзик Рейтинг",
+      "description": "Платформа для рецензирования музыкальных альбомов и треков",
+      "url": "https://vkr-ashen.vercel.app/",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://vkr-ashen.vercel.app/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+    
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Мьюзик Рейтинг",
+      "description": "Веб-приложение для рецензирования музыкального творчества",
+      "applicationCategory": "EntertainmentApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "RUB"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "Афонькин А.В."
+      }
+    }
+    </script>
+    
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
+    
+    <!-- Яндекс.Метрика -->
+    <script type="text/javascript">
+       (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+       m[i].l=1*new Date();
+       for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+       k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+       (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+       ym(XXXXXXXX, "init", {
+            clickmap:true,
+            trackLinks:true,
+            accurateTrackBounce:true,
+            webvisor:true
+       });
+    </script>
+    <noscript><div><img src="https://mc.yandex.ru/watch/XXXXXXXX" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    
+    <!-- Метатеги верификации -->
+    <meta name="google-site-verification" content="GOOGLE_VERIFICATION_CODE" />
+    <meta name="yandex-verification" content="YANDEX_VERIFICATION_CODE" />
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <noscript>Для работы приложения необходимо включить JavaScript.</noscript>
     <div id="root"></div>
   </body>
 </html>
-
