@@ -738,13 +738,19 @@ Sitemap: https://yourdomain.com/sitemap.xml
 
 ### Полный URL развёрнутого приложения
 
-**Текущее состояние:** Приложение работает локально.
+**Текущее состояние:** Приложение развёрнуто на Vercel.
 
-**Локальный URL:**
+**Production URL:**
+- Frontend: `https://afonkinvkr.vercel.app`
+- Альтернативные домены:
+  - `https://afonkinvkr-git-main-afonkin-maksims-projects.vercel.app`
+  - `https://afonkinvkr-a4lhul7sf-afonkin-maksims-projects.vercel.app`
+
+**Локальный URL (для разработки):**
 - Frontend: `http://localhost:3000`
 - Backend API: `http://localhost:8080/api`
 
-**Рекомендация для production:**
+**Рекомендация для production (если нужен кастомный домен):**
 - Frontend: `https://musicrating.ru` (или другой домен)
 - Backend API: `https://api.musicrating.ru` (или `https://musicrating.ru/api`)
 
@@ -752,12 +758,63 @@ Sitemap: https://yourdomain.com/sitemap.xml
 
 ### Платформа хостинга
 
-**Текущее состояние:** Не развёрнуто в production.
+**Текущее состояние:** Развёрнуто на **Vercel**.
 
-**Рекомендации для deployment:**
+**Конфигурация Vercel:**
+- **Платформа:** Vercel
+- **Framework:** Create React App
+- **Build Directory:** `frontend/build`
+- **Environment:** Production
+- **Status:** Ready (Latest)
+
+**Конфигурационный файл `vercel.json`:**
+
+```json
+{
+  "version": 2,
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/build",
+  "devCommand": "cd frontend && npm start",
+  "installCommand": "cd frontend && npm install",
+  "framework": "create-react-app",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Важные настройки:**
+- `rewrites` - перенаправляет все маршруты на `index.html` для работы React Router (SPA)
+- `headers` - настраивает кэширование статических файлов
+- `outputDirectory` - указывает папку с собранным приложением
+
+**Альтернативные платформы для deployment:**
 
 #### Frontend (React):
-- **Vercel** (рекомендуется) - отличная поддержка React, автоматический CI/CD
+- **Vercel** ✅ (используется) - отличная поддержка React, автоматический CI/CD
 - **Netlify** - хорошая альтернатива, простой deployment
 - **GitHub Pages** - бесплатный вариант для статических сайтов
 - **Cloudflare Pages** - быстрый CDN, бесплатный план
@@ -774,30 +831,6 @@ Sitemap: https://yourdomain.com/sitemap.xml
 - **Supabase** - бесплатный PostgreSQL с хорошим API
 - **DigitalOcean Managed Databases** - управляемая БД
 - **AWS RDS** - масштабируемое решение
-
-**Пример конфигурации для Vercel (frontend):**
-
-Создать файл `vercel.json`:
-```json
-{
-  "version": 2,
-  "builds": [
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "frontend/build"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/frontend/$1"
-    }
-  ]
-}
-```
 
 ---
 
