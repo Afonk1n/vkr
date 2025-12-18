@@ -39,6 +39,17 @@ const AlbumCard = ({ album, onUpdate }) => {
   const handleLikeClick = async (e) => {
     e.preventDefault();
     e.stopPropagation();
+    // ВРЕМЕННО: для демо без backend просто меняем состояние локально
+    if (process.env.REACT_APP_USE_MOCK === 'true' || !process.env.REACT_APP_API_URL) {
+      if (isLiked) {
+        setLikeCount(prev => Math.max(0, prev - 1));
+        setIsLiked(false);
+      } else {
+        setLikeCount(prev => prev + 1);
+        setIsLiked(true);
+      }
+      return;
+    }
     try {
       if (isLiked) {
         await handleUnlike();

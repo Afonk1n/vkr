@@ -31,6 +31,11 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // ВРЕМЕННО: отключаем редирект на login для демо без backend
+    if (process.env.REACT_APP_USE_MOCK === 'true' || !process.env.REACT_APP_API_URL) {
+      console.warn('API error (ignored in mock mode):', error);
+      return Promise.reject(error);
+    }
     if (error.response?.status === 401) {
       // Unauthorized - clear auth and redirect to login
       localStorage.removeItem('userId');

@@ -5,7 +5,11 @@ import AlbumCard from '../components/AlbumCard';
 import TrackCard from '../components/TrackCard';
 import ReviewCardSmall from '../components/ReviewCardSmall';
 import Filters from '../components/Filters';
+import { mockAlbums, mockTracks, mockReviews } from '../data/mockData';
 import './HomePage.css';
+
+// ВРЕМЕННЫЙ ФЛАГ ДЛЯ ДЕМОНСТРАЦИИ БЕЗ BACKEND
+const USE_MOCK_DATA = true;
 
 const HomePage = () => {
   const [albums, setAlbums] = useState([]);
@@ -21,7 +25,29 @@ const HomePage = () => {
     page_size: 20,
   });
 
+  // Загрузка моковых данных
+  const loadMockData = () => {
+    setLoading(true);
+    // Имитация задержки загрузки
+    setTimeout(() => {
+      setLatestAlbums(mockAlbums.slice(0, 5));
+      setPopularTracks(mockTracks.slice(0, 8));
+      setPopularReviews(mockReviews.slice(0, 6));
+      setAlbums(mockAlbums);
+      setPagination({
+        total: mockAlbums.length,
+        page: 1,
+        page_size: 20,
+      });
+      setLoading(false);
+    }, 500);
+  };
+
   const fetchAlbums = useCallback(async () => {
+    if (USE_MOCK_DATA) {
+      loadMockData();
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -46,6 +72,9 @@ const HomePage = () => {
   }, [filters]);
 
   const fetchPopularTracks = async () => {
+    if (USE_MOCK_DATA) {
+      return; // Данные уже загружены в loadMockData
+    }
     try {
       const response = await tracksAPI.getPopular({ limit: 8 });
       setPopularTracks(response.data);
@@ -55,6 +84,9 @@ const HomePage = () => {
   };
 
   const fetchLatestAlbums = async () => {
+    if (USE_MOCK_DATA) {
+      return; // Данные уже загружены в loadMockData
+    }
     try {
       const response = await albumsAPI.getAll({
         sort_by: 'created_at',
@@ -68,6 +100,9 @@ const HomePage = () => {
   };
 
   const fetchPopularReviews = async () => {
+    if (USE_MOCK_DATA) {
+      return; // Данные уже загружены в loadMockData
+    }
     try {
       const response = await reviewsAPI.getPopular({ limit: 6 });
       console.log('Popular reviews fetched:', response.data);
@@ -79,11 +114,15 @@ const HomePage = () => {
   };
 
   useEffect(() => {
-    fetchAlbums();
-    fetchPopularTracks();
-    fetchLatestAlbums();
-    fetchPopularReviews();
-  }, [fetchAlbums]);
+    if (USE_MOCK_DATA) {
+      loadMockData();
+    } else {
+      fetchAlbums();
+      fetchPopularTracks();
+      fetchLatestAlbums();
+      fetchPopularReviews();
+    }
+  }, [USE_MOCK_DATA ? null : fetchAlbums]);
 
   const handleFilterChange = (newFilters) => {
     updateFilters({ ...newFilters, page: 1, page_size: 20 });

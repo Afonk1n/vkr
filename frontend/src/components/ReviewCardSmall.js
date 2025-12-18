@@ -26,6 +26,12 @@ const ReviewCardSmall = ({ review, onUpdate }) => {
   const handleLike = async (e) => {
     e.preventDefault();
     e.stopPropagation();
+    // ВРЕМЕННО: для демо без backend просто меняем состояние локально
+    if (process.env.REACT_APP_USE_MOCK === 'true' || !process.env.REACT_APP_API_URL) {
+      setLikeCount(prev => prev + 1);
+      setIsLiked(true);
+      return;
+    }
     try {
       await reviewsAPI.like(review.id);
       setLikeCount(prev => prev + 1);
@@ -39,6 +45,12 @@ const ReviewCardSmall = ({ review, onUpdate }) => {
   const handleUnlike = async (e) => {
     e.preventDefault();
     e.stopPropagation();
+    // ВРЕМЕННО: для демо без backend просто меняем состояние локально
+    if (process.env.REACT_APP_USE_MOCK === 'true' || !process.env.REACT_APP_API_URL) {
+      setLikeCount(prev => Math.max(0, prev - 1));
+      setIsLiked(false);
+      return;
+    }
     try {
       await reviewsAPI.unlike(review.id);
       setLikeCount(prev => Math.max(0, prev - 1));
