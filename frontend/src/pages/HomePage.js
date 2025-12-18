@@ -74,8 +74,9 @@ const HomePage = () => {
   };
 
   const fetchAlbums = useCallback(async () => {
+    // В моковом режиме полностью отключаем API запросы
     if (USE_MOCK_DATA) {
-      loadMockData();
+      console.log('fetchAlbums: skipping API call in mock mode');
       return;
     }
     setLoading(true);
@@ -99,11 +100,13 @@ const HomePage = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [USE_MOCK_DATA ? null : filters]); // Отключаем зависимость в моковом режиме
 
   const fetchPopularTracks = async () => {
+    // В моковом режиме полностью отключаем API запросы
     if (USE_MOCK_DATA) {
-      return; // Данные уже загружены в loadMockData
+      console.log('fetchPopularTracks: skipping API call in mock mode');
+      return;
     }
     try {
       const response = await tracksAPI.getPopular({ limit: 8 });
@@ -114,8 +117,10 @@ const HomePage = () => {
   };
 
   const fetchLatestAlbums = async () => {
+    // В моковом режиме полностью отключаем API запросы
     if (USE_MOCK_DATA) {
-      return; // Данные уже загружены в loadMockData
+      console.log('fetchLatestAlbums: skipping API call in mock mode');
+      return;
     }
     try {
       const response = await albumsAPI.getAll({
@@ -130,8 +135,10 @@ const HomePage = () => {
   };
 
   const fetchPopularReviews = async () => {
+    // В моковом режиме полностью отключаем API запросы
     if (USE_MOCK_DATA) {
-      return; // Данные уже загружены в loadMockData
+      console.log('fetchPopularReviews: skipping API call in mock mode');
+      return;
     }
     try {
       const response = await reviewsAPI.getPopular({ limit: 6 });
@@ -146,8 +153,10 @@ const HomePage = () => {
   useEffect(() => {
     console.log('HomePage useEffect, USE_MOCK_DATA:', USE_MOCK_DATA);
     if (USE_MOCK_DATA) {
+      // В моковом режиме загружаем данные сразу, без API запросов
       loadMockData();
     } else {
+      // Только если НЕ моковый режим - делаем API запросы
       fetchAlbums();
       fetchPopularTracks();
       fetchLatestAlbums();
@@ -155,6 +164,14 @@ const HomePage = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Отключаем обновление при изменении filters в моковом режиме
+  useEffect(() => {
+    if (!USE_MOCK_DATA && filters) {
+      fetchAlbums();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [USE_MOCK_DATA ? null : filters]);
 
   const handleFilterChange = (newFilters) => {
     updateFilters({ ...newFilters, page: 1, page_size: 20 });

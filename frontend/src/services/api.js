@@ -13,12 +13,14 @@ const api = axios.create({
 // Add request interceptor to include auth token
 api.interceptors.request.use(
   (config) => {
+    // ВРЕМЕННО: отключаем логирование API запросов в моковом режиме
+    // (можно оставить, но не критично)
     const userId = localStorage.getItem('userId');
     if (userId) {
       config.headers['X-User-ID'] = userId;
-      console.log('API request with X-User-ID:', userId, 'to', config.url);
+      // console.log('API request with X-User-ID:', userId, 'to', config.url);
     } else {
-      console.warn('API request without X-User-ID header to', config.url);
+      // console.warn('API request without X-User-ID header to', config.url);
     }
     return config;
   },
