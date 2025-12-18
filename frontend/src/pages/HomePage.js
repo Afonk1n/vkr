@@ -11,6 +11,13 @@ import './HomePage.css';
 // ВРЕМЕННЫЙ ФЛАГ ДЛЯ ДЕМОНСТРАЦИИ БЕЗ BACKEND
 const USE_MOCK_DATA = true;
 
+// Проверка импорта моковых данных
+console.log('Mock data check:', {
+  mockAlbums: mockAlbums?.length || 0,
+  mockTracks: mockTracks?.length || 0,
+  mockReviews: mockReviews?.length || 0
+});
+
 const HomePage = () => {
   const [albums, setAlbums] = useState([]);
   const [popularTracks, setPopularTracks] = useState([]);
@@ -27,20 +34,43 @@ const HomePage = () => {
 
   // Загрузка моковых данных
   const loadMockData = () => {
-    setLoading(true);
-    // Имитация задержки загрузки
-    setTimeout(() => {
-      setLatestAlbums(mockAlbums.slice(0, 5));
-      setPopularTracks(mockTracks.slice(0, 8));
-      setPopularReviews(mockReviews.slice(0, 6));
-      setAlbums(mockAlbums);
-      setPagination({
-        total: mockAlbums.length,
-        page: 1,
-        page_size: 20,
-      });
+    console.log('Loading mock data...', { 
+      mockAlbumsCount: mockAlbums?.length || 0, 
+      mockTracksCount: mockTracks?.length || 0, 
+      mockReviewsCount: mockReviews?.length || 0 
+    });
+    
+    if (!mockAlbums || mockAlbums.length === 0) {
+      console.error('Mock albums are empty or undefined!');
       setLoading(false);
-    }, 500);
+      return;
+    }
+    
+    setLoading(true);
+    
+    // Загружаем данные сразу, без задержки
+    const latest = mockAlbums.slice(0, 5);
+    const popular = mockTracks.slice(0, 8);
+    const reviews = mockReviews.slice(0, 6);
+    
+    console.log('Setting mock data:', { 
+      latestCount: latest.length, 
+      popularCount: popular.length, 
+      reviewsCount: reviews.length 
+    });
+    
+    setLatestAlbums(latest);
+    setPopularTracks(popular);
+    setPopularReviews(reviews);
+    setAlbums(mockAlbums);
+    setPagination({
+      total: mockAlbums.length,
+      page: 1,
+      page_size: 20,
+    });
+    setLoading(false);
+    
+    console.log('Mock data loaded successfully');
   };
 
   const fetchAlbums = useCallback(async () => {
@@ -114,6 +144,7 @@ const HomePage = () => {
   };
 
   useEffect(() => {
+    console.log('HomePage useEffect, USE_MOCK_DATA:', USE_MOCK_DATA);
     if (USE_MOCK_DATA) {
       loadMockData();
     } else {
@@ -122,13 +153,25 @@ const HomePage = () => {
       fetchLatestAlbums();
       fetchPopularReviews();
     }
-  }, [USE_MOCK_DATA ? null : fetchAlbums]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleFilterChange = (newFilters) => {
     updateFilters({ ...newFilters, page: 1, page_size: 20 });
   };
 
-  if (loading && albums.length === 0) {
+  // Отладочная информация
+  useEffect(() => {
+    console.log('HomePage state:', {
+      loading,
+      latestAlbums: latestAlbums.length,
+      popularTracks: popularTracks.length,
+      popularReviews: popularReviews.length,
+      USE_MOCK_DATA
+    });
+  }, [loading, latestAlbums, popularTracks, popularReviews]);
+
+  if (loading && latestAlbums.length === 0 && popularTracks.length === 0) {
     return (
       <div className="container">
         <div className="loading">Загрузка...</div>
@@ -136,12 +179,20 @@ const HomePage = () => {
     );
   }
 
+  // Отладочная информация для рендеринга
+  console.log('Rendering HomePage with:', {
+    loading,
+    latestAlbums: latestAlbums.length,
+    popularTracks: popularTracks.length,
+    popularReviews: popularReviews.length
+  });
+
   return (
     <div className="container">
       <h1 className="page-title">Актуальное</h1>
       
       {/* Latest Albums Section */}
-      {latestAlbums.length > 0 && (
+      {latestAlbums && latestAlbums.length > 0 ? (
         <section className="home-section">
           <h2 className="section-title">Последние релизы</h2>
           <div className="albums-grid">
@@ -150,10 +201,12 @@ const HomePage = () => {
             ))}
           </div>
         </section>
+      ) : (
+        !loading && <div>Нет альбомов для отображения</div>
       )}
 
-      {/* Popular Tracks Section - moved here */}
-      {popularTracks.length > 0 && (
+      {/* Popular Tracks Section */}
+      {popularTracks && popularTracks.length > 0 ? (
         <section className="home-section">
           <h2 className="section-title">Топ треков за сутки</h2>
           <div className="tracks-list">
@@ -162,29 +215,35 @@ const HomePage = () => {
             ))}
           </div>
         </section>
+      ) : (
+        !loading && <div>Нет треков для отображения</div>
       )}
 
       {/* Popular Reviews Section */}
-      {(() => {
-        const validReviews = popularReviews
-          .filter(review => review && review.album_id && review.album)
-          .slice(0, 6); // Ограничиваем до 6 для сетки 2x3
-        
-        if (validReviews.length === 0) {
-          return null;
-        }
+      {popularReviews && popularReviews.length > 0 ? (
+        (() => {
+          const validReviews = popularReviews
+            .filter(review => review && review.album_id && review.album)
+            .slice(0, 6);
+          
+          if (validReviews.length === 0) {
+            return null;
+          }
 
-        return (
-          <section className="home-section">
-            <h2 className="section-title">Топ рецензий за сутки</h2>
-            <div className="reviews-grid-popular">
-              {validReviews.map((review) => (
-                <ReviewCardSmall key={`review-${review.id}`} review={review} onUpdate={fetchPopularReviews} />
-              ))}
-            </div>
-          </section>
-        );
-      })()}
+          return (
+            <section className="home-section">
+              <h2 className="section-title">Топ рецензий за сутки</h2>
+              <div className="reviews-grid-popular">
+                {validReviews.map((review) => (
+                  <ReviewCardSmall key={`review-${review.id}`} review={review} onUpdate={fetchPopularReviews} />
+                ))}
+              </div>
+            </section>
+          );
+        })()
+      ) : (
+        !loading && <div>Нет рецензий для отображения</div>
+      )}
     </div>
   );
 };
