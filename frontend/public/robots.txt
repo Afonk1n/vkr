@@ -5,4 +5,4 @@ Disallow: /login
 Disallow: /signup
 Disallow: /profile
 
-Sitemap: https://vkr-ashen.vercel.app/sitemap.xml
+Sitemap: https://musicrating.vercel.app/sitemap.xml
