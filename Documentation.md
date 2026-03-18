@@ -183,7 +183,13 @@ FinalScore = (RatingRhymes + RatingStructure + RatingImplementation + RatingIndi
 ## 🎯 API документация
 
 ### База URL
-Все API endpoints доступны по адресу: `http://localhost:8080/api`
+База API зависит от режима запуска:
+
+- **Docker Compose dev**: `http://localhost:8080/api` (frontend в браузере ходит в backend на хосте)
+- **Docker Compose prod-like**: `/api` (frontend отдаёт nginx и проксирует `/api` в backend внутри compose)
+- **Локальный запуск без Docker**: обычно `http://localhost:8080/api`
+
+На фронте это управляется через переменную окружения `REACT_APP_API_URL` (см. раздел “Установка и запуск”).
 
 ### Авторизация
 Для доступа к защищенным эндпоинтам необходимо передавать заголовок `X-User-ID` с ID пользователя.
@@ -259,7 +265,7 @@ FinalScore = (RatingRhymes + RatingStructure + RatingImplementation + RatingIndi
 **Формат пути:**
 - Путь к изображению указывается относительно корня проекта (например, `/preview/1.jpg`)
 - Изображения должны находиться в папке `frontend/public/`
-- URL для доступа: `http://localhost:3000/preview/1.jpg`
+- URL для доступа: `{frontend_origin}/preview/1.jpg` (например, `http://localhost:3000/preview/1.jpg`)
 
 **Обработка ошибок:**
 - Если изображение не найдено, отображается placeholder (🎵)
@@ -274,7 +280,35 @@ FinalScore = (RatingRhymes + RatingStructure + RatingImplementation + RatingIndi
 - **Node.js 16+** - [Скачать](https://nodejs.org/)
 - **PostgreSQL 12+** - [Скачать](https://www.postgresql.org/download/)
 
+Если используете Docker/Compose, достаточно:
+- Docker Engine / Docker Desktop (WSL2)
+- Docker Compose v2 (`docker compose ...`)
+
 ### Быстрая установка
+
+#### Вариант A (рекомендуется): Docker Compose (dev / prod-like)
+
+Из корня репозитория:
+
+```bash
+docker compose up --build
+```
+
+- Frontend: `http://localhost:3000`
+- Backend healthcheck: `http://localhost:8080/healthz`
+
+Prod-like демо:
+
+```bash
+docker compose -f compose.prod.yml up --build
+```
+
+- Frontend: `http://localhost/`
+- API: `http://localhost/api/...` (через nginx proxy `/api`)
+
+Примечание: до внедрения SQL-миграций (Этап 2), при первом запуске prod-like демо может понадобиться временно выставить `MIGRATIONS_MODE=auto`, чтобы схема создалась через AutoMigrate.
+
+#### Вариант B: Локальный запуск без Docker
 
 #### 1. Подготовка базы данных
 Убедитесь, что PostgreSQL запущен. База данных создается автоматически при первом запуске backend.
@@ -303,7 +337,7 @@ GIN_MODE=debug
 go run main.go
 ```
 
-Backend будет доступен на `http://localhost:8080`
+Backend будет доступен на `http://localhost:8080` (API: `http://localhost:8080/api`)
 
 #### 3. Настройка Frontend
 
@@ -317,7 +351,7 @@ npm install
 Создайте файл `.env` в папке `frontend/`:
 ```env
 REACT_APP_API_URL=http://localhost:8080/api
-DANGEROUSLY_DISABLE_HOST_CHECK=true
+REACT_APP_USE_MOCK=false
 ```
 
 Запустите приложение:
@@ -531,7 +565,7 @@ music-review-site/
 **Пути к изображениям:**
 - Хранятся в БД как `/preview/1.jpg` (относительный путь)
 - Физически находятся в `frontend/public/preview/`
-- Утилита `getImageUrl()` формирует полный URL: `http://localhost:3000/preview/1.jpg`
+- Утилита `getImageUrl()` нормализует путь до вида `/{path}` (браузер резолвит относительно origin, например `{origin}/preview/1.jpg`)
 
 **Обработка ошибок:**
 - Если изображение не найдено, отображается placeholder (🎵)
@@ -560,7 +594,8 @@ music-review-site/
 ### Границы документации в репозитории
 
 - `Documentation.md` — актуальная техническая документация по системе (архитектура/модели/API/запуск).
-- `labs/` и `SEO_Technical_Info.md` (если присутствуют) — учебные артефакты, не влияющие на production-деплой напрямую.
+- `README.md` — обзор проекта и быстрый старт.
+- `Roadmap.md` — поэтапный план развития (production-like практики) и текущее состояние внедрения.
 
 ### Стандарты кода
 
