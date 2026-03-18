@@ -1,0 +1,77 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-music_review_db}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+      target: dev
+    environment:
+      APP_ENV: ${APP_ENV:-dev}
+      PORT: ${BACKEND_PORT:-8080}
+      GIN_MODE: ${GIN_MODE:-debug}
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-http://localhost:3000}
+
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-music_review_db}
+      DB_SSLMODE: ${DB_SSLMODE:-disable}
+
+      SEED_ENABLED: ${SEED_ENABLED:-true}
+      DB_CREATE_ENABLED: ${DB_CREATE_ENABLED:-true}
+      MIGRATIONS_MODE: ${MIGRATIONS_MODE:-auto}
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - go_mod_cache:/go/pkg/mod
+      - go_build_cache:/root/.cache/go-build
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/healthz >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 3s
+      retries: 15
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    environment:
+      PORT: 3000
+      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8080/api}
+      REACT_APP_USE_MOCK: ${REACT_APP_USE_MOCK:-false}
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000 >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:
+  go_mod_cache:
+  go_build_cache:
+

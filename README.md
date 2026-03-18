@@ -2,6 +2,11 @@
 
 Веб-приложение для рецензирования музыкальных альбомов и треков. Пользователи могут просматривать альбомы, оставлять отзывы с детальной системой оценки и взаимодействовать с рецензиями других пользователей.
 
+## 🧭 Навигация по документации
+
+- **`Documentation.md`** — основная техническая документация (архитектура, модели, API, запуск).
+- **`Roadmap.md`** — план улучшений (production-like практики по этапам + какие роли агентов использовать).
+
 ## 🚀 Быстрый старт
 
 ### Требования
@@ -15,7 +20,8 @@
    ```bash
    cd backend
    go mod tidy
-   # Создайте .env файл (см. Documentation.md)
+   # Скопируйте env-шаблон:
+   # cp .env.example .env
    go run main.go
    ```
 
@@ -23,13 +29,48 @@
    ```bash
    cd frontend
    npm install
-   # Создайте .env файл (см. Documentation.md)
+   # Скопируйте env-шаблон:
+   # cp .env.example .env
    npm start
    ```
 
 3. Откройте `http://localhost:3000` в браузере
 
 **Подробная инструкция:** см. [Documentation.md](Documentation.md#установка-и-запуск)
+
+## 🐳 Запуск через Docker Compose (рекомендуется для WSL)
+
+> Важно для Windows/WSL: для лучшей скорости и чтобы избегать проблем с правами/notify, лучше держать рабочую копию проекта **внутри файловой системы WSL** (например, `~/work/vkr`), а не на `/mnt/d/...`.
+
+### Dev-контур (Postgres + backend + frontend)
+
+Из корня репозитория:
+
+```bash
+docker compose up --build
+```
+
+Откроется:
+- Frontend: `http://localhost:3000`
+- Backend healthcheck: `http://localhost:8080/healthz`
+
+**Переменные окружения (опционально)** можно переопределять через переменные shell или через `.env` в корне (не коммитить):
+- `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_SSLMODE`
+- `CORS_ALLOW_ORIGINS` (дефолт `http://localhost:3000`)
+- `REACT_APP_API_URL` (дефолт `http://localhost:8080/api`)
+- `SEED_ENABLED`, `DB_CREATE_ENABLED`, `MIGRATIONS_MODE`
+
+### Prod-like демо (frontend через nginx + proxy /api)
+
+```bash
+docker compose -f compose.prod.yml up --build
+```
+
+Откроется:
+- Frontend: `http://localhost/`
+- API доступно через `http://localhost/api/...` (nginx проксирует в backend)
+
+Примечание: до внедрения SQL-миграций (Этап 2) при первом запуске может понадобиться временно задать `MIGRATIONS_MODE=auto`, чтобы схема создалась автоматически.
 
 ### Тестовые пользователи
 
@@ -93,7 +134,6 @@ music-review-site/
 │   └── public/             # Публичные файлы
 ├── README.md               # Этот файл
 ├── Documentation.md        # Полная техническая документация
-└── Tasks.md                # Задачи от пользователя
 ```
 
 ## 📚 Документация
@@ -101,7 +141,6 @@ music-review-site/
 ### Основные файлы
 
 - **[Documentation.md](Documentation.md)** - **Полная техническая документация** (ТЗ, архитектура, API, установка) - начните отсюда для разработки!
-- **[Tasks.md](Tasks.md)** - Задачи от пользователя
 
 ### Что содержит Documentation.md
 

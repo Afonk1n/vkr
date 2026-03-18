@@ -1,0 +1,11 @@
+.env
+.env.*
+*.log
+
+bin/
+dist/
+tmp/
+
+.git/
+.cursor/
+

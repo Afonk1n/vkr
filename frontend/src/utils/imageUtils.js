@@ -13,7 +13,7 @@ export const getImageUrl = (imagePath) => {
   
   // В Create React App файлы из public доступны по корневому пути
   // Путь должен начинаться с / и указывать на файл в public папке
-  // Например: /preview/1.jpg -> http://localhost:3000/preview/1.jpg
+  // Например: /preview/1.jpg -> {origin}/preview/1.jpg
   
   // Если путь уже начинается с /, используем его напрямую
   if (imagePath.startsWith('/')) {

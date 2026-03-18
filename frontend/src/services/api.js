@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+const isApiConfigured = Boolean(process.env.REACT_APP_API_URL);
+const API_BASE_URL = (process.env.REACT_APP_API_URL || '/api').replace(/\/$/, '');
 
 // Create axios instance
 const api = axios.create({
@@ -34,7 +35,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     // ВРЕМЕННО: отключаем редирект на login для демо без backend
-    if (process.env.REACT_APP_USE_MOCK === 'true' || !process.env.REACT_APP_API_URL) {
+    if (process.env.REACT_APP_USE_MOCK === 'true' || !isApiConfigured) {
       console.warn('API error (ignored in mock mode):', error);
       return Promise.reject(error);
     }

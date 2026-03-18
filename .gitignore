@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+
+# Cursor / IDE
+.cursor/
+
+# OS / tooling
+Thumbs.db
+Desktop.ini
+

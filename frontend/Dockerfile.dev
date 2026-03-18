@@ -1,0 +1,17 @@
+FROM node:18-bullseye-slim
+
+WORKDIR /app
+
+ENV CI=true
+ENV PORT=3000
+
+COPY package.json package-lock.json ./
+
+# Use npm install (not ci) to be tolerant to lock drift during active development.
+RUN npm install
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["npm", "start"]

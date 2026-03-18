@@ -6,6 +6,7 @@ import (
 	"music-review-site/backend/models"
 	"music-review-site/backend/utils"
 	"os"
+	"strings"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -14,6 +15,29 @@ import (
 )
 
 var DB *gorm.DB
+
+func envDefault(key, def string) string {
+	val := strings.TrimSpace(os.Getenv(key))
+	if val == "" {
+		return def
+	}
+	return val
+}
+
+func envBool(key string, def bool) bool {
+	val := strings.TrimSpace(os.Getenv(key))
+	if val == "" {
+		return def
+	}
+	switch strings.ToLower(val) {
+	case "1", "true", "yes", "y", "on":
+		return true
+	case "0", "false", "no", "n", "off":
+		return false
+	default:
+		return def
+	}
+}
 
 // ensureDatabaseExists checks if database exists and creates it if not
 func ensureDatabaseExists() error {
@@ -83,9 +107,17 @@ func ensureDatabaseExists() error {
 
 // InitDB initializes database connection and runs migrations
 func InitDB() (*gorm.DB, error) {
-	// Ensure database exists
-	if err := ensureDatabaseExists(); err != nil {
-		return nil, fmt.Errorf("database setup failed: %w", err)
+	appEnv := envDefault("APP_ENV", "dev")
+	dbCreateEnabledDefault := appEnv == "dev"
+	dbCreateEnabled := envBool("DB_CREATE_ENABLED", dbCreateEnabledDefault)
+
+	// Ensure database exists (dev convenience; disabled in prod-like by default)
+	if dbCreateEnabled {
+		if err := ensureDatabaseExists(); err != nil {
+			return nil, fmt.Errorf("database setup failed: %w", err)
+		}
+	} else {
+		log.Println("DB_CREATE_ENABLED=false: skipping database auto-creation")
 	}
 
 	// Build DSN from environment variables
@@ -111,60 +143,78 @@ func InitDB() (*gorm.DB, error) {
 
 	log.Println("Database connection established")
 
-	// Run migrations
-	if err := runMigrations(); err != nil {
-		return nil, fmt.Errorf("failed to run migrations: %w", err)
-	}
+	migrationsMode := envDefault("MIGRATIONS_MODE", func() string {
+		if appEnv == "dev" {
+			return "auto"
+		}
+		return "manual"
+	}())
 
-	// Check database state before seeding
-	log.Println("=== Database state BEFORE seeding ===")
-	logDatabaseState()
-
-	// Seed initial data
-	log.Println("=== Starting data seeding ===")
-	if err := seedData(); err != nil {
-		log.Printf("ERROR: failed to seed data: %v", err)
+	// Run migrations (AutoMigrate) only in auto mode
+	if migrationsMode == "auto" {
+		if err := runMigrations(); err != nil {
+			return nil, fmt.Errorf("failed to run migrations: %w", err)
+		}
 	} else {
-		log.Println("✓ Data seeding completed successfully")
+		log.Printf("MIGRATIONS_MODE=%s: skipping AutoMigrate", migrationsMode)
 	}
 
-	// Update cover images for existing albums (even if seed was skipped)
-	if err := updateAlbumCoverImages(); err != nil {
-		log.Printf("Warning: failed to update album cover images: %v", err)
-	}
+	seedEnabledDefault := appEnv == "dev"
+	seedEnabled := envBool("SEED_ENABLED", seedEnabledDefault)
 
-	// Seed tracks (separate check, can be added even if albums exist)
-	if err := seedTracks(); err != nil {
-		log.Printf("ERROR: failed to seed tracks: %v", err)
+	if seedEnabled {
+		// Check database state before seeding
+		log.Println("=== Database state BEFORE seeding ===")
+		logDatabaseState()
+
+		// Seed initial data
+		log.Println("=== Starting data seeding ===")
+		if err := seedData(); err != nil {
+			log.Printf("ERROR: failed to seed data: %v", err)
+		} else {
+			log.Println("✓ Data seeding completed successfully")
+		}
+
+		// Update cover images for existing albums (even if seed was skipped)
+		if err := updateAlbumCoverImages(); err != nil {
+			log.Printf("Warning: failed to update album cover images: %v", err)
+		}
+
+		// Seed tracks (separate check, can be added even if albums exist)
+		if err := seedTracks(); err != nil {
+			log.Printf("ERROR: failed to seed tracks: %v", err)
+		} else {
+			log.Println("✓ Tracks seeding completed successfully")
+		}
+
+		// Seed reviews (separate check, can be added even if users exist)
+		if err := seedReviews(); err != nil {
+			log.Printf("ERROR: failed to seed reviews: %v", err)
+		} else {
+			log.Println("✓ Reviews seeding completed successfully")
+		}
+
+		// Seed track likes (for testing)
+		if err := seedTrackLikes(); err != nil {
+			log.Printf("ERROR: failed to seed track likes: %v", err)
+		} else {
+			log.Println("✓ Track likes seeding completed successfully")
+		}
+
+		// Seed album likes (for testing)
+		if err := seedAlbumLikes(); err != nil {
+			log.Printf("ERROR: failed to seed album likes: %v", err)
+		} else {
+			log.Println("✓ Album likes seeding completed successfully")
+		}
+		log.Println("=== Data seeding finished ===")
+
+		// Check database state after seeding
+		log.Println("=== Database state AFTER seeding ===")
+		logDatabaseState()
 	} else {
-		log.Println("✓ Tracks seeding completed successfully")
+		log.Println("SEED_ENABLED=false: skipping all seeding")
 	}
-
-	// Seed reviews (separate check, can be added even if users exist)
-	if err := seedReviews(); err != nil {
-		log.Printf("ERROR: failed to seed reviews: %v", err)
-	} else {
-		log.Println("✓ Reviews seeding completed successfully")
-	}
-
-	// Seed track likes (for testing)
-	if err := seedTrackLikes(); err != nil {
-		log.Printf("ERROR: failed to seed track likes: %v", err)
-	} else {
-		log.Println("✓ Track likes seeding completed successfully")
-	}
-
-	// Seed album likes (for testing)
-	if err := seedAlbumLikes(); err != nil {
-		log.Printf("ERROR: failed to seed album likes: %v", err)
-	} else {
-		log.Println("✓ Album likes seeding completed successfully")
-	}
-	log.Println("=== Data seeding finished ===")
-
-	// Check database state after seeding
-	log.Println("=== Database state AFTER seeding ===")
-	logDatabaseState()
 
 	return DB, nil
 }

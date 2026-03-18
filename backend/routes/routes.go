@@ -23,6 +23,9 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
+	r.GET("/healthz", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
+	})
 
 	// API routes
 	api := r.Group("/api")
