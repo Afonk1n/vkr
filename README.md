@@ -60,6 +60,31 @@ docker compose up --build
 - `REACT_APP_API_URL` (дефолт `http://localhost:8080/api`)
 - `SEED_ENABLED`, `DB_CREATE_ENABLED`, `MIGRATIONS_MODE`
 
+### SQL-миграции схемы БД (golang-migrate)
+
+Схема PostgreSQL теперь управляется **SQL-миграциями** (а не только GORM AutoMigrate).  
+Миграции лежат в каталоге `backend/migrations/`:
+
+- `0001_init_schema.up.sql` / `0001_init_schema.down.sql` — базовая схема (`users`, `genres`, `albums`, `tracks`, `track_genres`, `reviews`, `review_likes`, `track_likes`, `album_likes`).
+- `0002_fix_reviews_nullable.up.sql` / `0002_fix_reviews_nullable.down.sql` — делаем `album_id` и `track_id` в `reviews` nullable (как в моделях).
+
+Пример запуска миграций локально (dev):
+
+```bash
+cd backend
+
+# DSN в формате postgres://user:password@host:port/dbname?sslmode=disable
+export DB_DSN="postgres://$DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_NAME?sslmode=$DB_SSLMODE"
+
+migrate -path ./migrations -database "$DB_DSN" up
+```
+
+Откат последней миграции:
+
+```bash
+migrate -path ./migrations -database "$DB_DSN" down 1
+```
+
 ### Prod-like демо (frontend через nginx + proxy /api)
 
 ```bash
@@ -117,13 +142,14 @@ docker compose -f compose.prod.yml up --build
 ```
 music-review-site/
 ├── backend/                 # Backend приложение (Go)
-│   ├── main.go             # Точка входа
-│   ├── routes/             # Маршруты API
-│   ├── controllers/        # Контроллеры
-│   ├── models/             # Модели данных
-│   ├── middleware/         # Middleware
-│   ├── database/           # Настройка БД и миграции
-│   └── utils/              # Утилиты
+│   ├── main.go              # Точка входа
+│   ├── routes/              # Маршруты API
+│   ├── controllers/         # Контроллеры
+│   ├── models/              # Модели данных
+│   ├── middleware/          # Middleware
+│   ├── database/            # Настройка БД и подключение
+│   ├── migrations/          # SQL-миграции (golang-migrate)
+│   └── utils/               # Утилиты
 ├── frontend/               # Frontend приложение (React)
 │   ├── src/
 │   │   ├── components/     # React компоненты

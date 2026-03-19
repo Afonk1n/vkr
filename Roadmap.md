@@ -102,7 +102,12 @@
 
 ### Дальше (следующий агент)
 
-- **Frontend часть Этапа 1**: обратиться к роли **`frontend-developer`**.
+- Этапы 1–2 (локальный контур и миграции) реализованы в базовом объёме.
+- **Следующий осмысленный шаг** — перейти к Этапу 4 (CI), т.к. Docker/Compose-контур из Этапа 3 уже присутствует.
+- Обратиться к роли **`devops-automator`** для настройки минимального CI:
+  - GitHub Actions (или аналог) для lint/test/build backend;
+  - build frontend;
+  - сборка Docker-образов (без обязательного деплоя).
 
 ---
 
@@ -118,6 +123,17 @@
 - `software-architect`: ADR “миграции vs automigrate”.
 - `backend-architect`: внедрение миграций и корректный lifecycle старта.
 - `security-engineer`: политика запуска миграций (отдельной командой/джобой), запрет “самовольных” изменений схемы в prod.
+
+### Прогресс (зафиксировано)
+
+- Принято ADR о переходе с AutoMigrate на SQL-миграции (golang-migrate) и политике их запуска.
+- Реализован каталог `backend/migrations/` с начальными миграциями:
+  - `0001_init_schema` — базовая схема (users, genres, albums, tracks, track_genres, reviews, review_likes, track_likes, album_likes).
+  - `0002_fix_reviews_nullable` — делает `album_id` и `track_id` в `reviews` nullable.
+- Обновлены `README.md` и `Documentation.md`, описывающие:
+  - использование golang-migrate для применения миграций;
+  - dev/prod-like правила (`MIGRATIONS_MODE=auto` только для dev, `manual` для prod-like);
+  - что seed включён только в dev (через `SEED_ENABLED=true`).
 
 ---
 
@@ -156,6 +172,14 @@
 
 - `devops-automator`: pipeline.
 - `git-workflow-master`: стиль веток/PR, если будешь оформлять процесс.
+
+### Прогресс (зафиксировано)
+
+- Добавлен workflow `.github/workflows/ci.yml`:
+  - Job `backend`: `go vet`, `go test ./...`, `go build ./...` в каталоге `backend`.
+  - Job `frontend`: `npm ci` и `npm run build` в каталоге `frontend` (с `REACT_APP_API_URL=http://localhost:8080/api`).
+  - Job `docker`: сборка Docker-образов `backend/Dockerfile` и `frontend/Dockerfile` (без push, теги `backend:ci`, `frontend:ci`).
+- CI запускается на `push` и `pull_request` в ветки `main`/`master` и служит базовой проверкой, что проект собирается до мерджа.
 
 ---
 
