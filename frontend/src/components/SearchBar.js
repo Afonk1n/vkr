@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { searchAPI } from '../services/api';
 import { getImageUrl } from '../utils/imageUtils';
 import './SearchBar.css';
@@ -12,7 +12,6 @@ const SearchBar = () => {
   const searchRef = useRef(null);
   const resultsRef = useRef(null);
   const navigate = useNavigate();
-  const location = useLocation();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -74,7 +73,7 @@ const SearchBar = () => {
   };
 
   const hasResults = results.artists.length > 0 || results.albums.length > 0 || results.tracks.length > 0;
-  
+
   const handleFiltersClick = () => {
     navigate('/search');
   };
@@ -99,95 +98,95 @@ const SearchBar = () => {
             🔍 Фильтры
           </button>
         </div>
-      {showResults && (hasResults || loading) && (
-        <div className="search-results" ref={resultsRef}>
-          {loading ? (
-            <div className="search-loading">Поиск...</div>
-          ) : (
-            <>
-              {results.artists.length > 0 && (
-                <div className="search-section">
-                  <div className="search-section-title">Артисты</div>
-                  {results.artists.map((artist, index) => (
-                    <div
-                      key={index}
-                      className="search-result-item"
-                      onClick={() => handleArtistClick(artist.name)}
-                    >
-                      {getImageUrl(artist.cover_image_path) && (
-                        <img
-                          src={getImageUrl(artist.cover_image_path)}
-                          alt={artist.name}
-                          className="search-result-image search-result-image-artist"
-                        />
-                      )}
-                      <div className="search-result-info">
-                        <div className="search-result-title">{artist.name}</div>
-                        <div className="search-result-subtitle">
-                          {artist.count} {artist.count === 1 ? 'альбом' : artist.count < 5 ? 'альбома' : 'альбомов'}
+        {showResults && (hasResults || loading) && (
+          <div className="search-results" ref={resultsRef}>
+            {loading ? (
+              <div className="search-loading">Поиск...</div>
+            ) : (
+              <>
+                {results.artists.length > 0 && (
+                  <div className="search-section">
+                    <div className="search-section-title">Артисты</div>
+                    {results.artists.map((artist, index) => (
+                      <div
+                        key={index}
+                        className="search-result-item"
+                        onClick={() => handleArtistClick(artist.name)}
+                      >
+                        {getImageUrl(artist.cover_image_path) && (
+                          <img
+                            src={getImageUrl(artist.cover_image_path)}
+                            alt={artist.name}
+                            className="search-result-image search-result-image-artist"
+                          />
+                        )}
+                        <div className="search-result-info">
+                          <div className="search-result-title">{artist.name}</div>
+                          <div className="search-result-subtitle">
+                            {artist.count} {artist.count === 1 ? 'альбом' : artist.count < 5 ? 'альбома' : 'альбомов'}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {results.albums.length > 0 && (
-                <div className="search-section">
-                  <div className="search-section-title">Альбомы</div>
-                  {results.albums.map((album) => (
-                    <div
-                      key={album.id}
-                      className="search-result-item"
-                      onClick={() => handleAlbumClick(album.id)}
-                    >
-                      {getImageUrl(album.cover_image_path) && (
-                        <img
-                          src={getImageUrl(album.cover_image_path)}
-                          alt={album.title}
-                          className="search-result-image"
-                        />
-                      )}
-                      <div className="search-result-info">
-                        <div className="search-result-title">{album.title}</div>
-                        <div className="search-result-subtitle">{album.artist}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {results.tracks.length > 0 && (
-                <div className="search-section">
-                  <div className="search-section-title">Треки</div>
-                  {results.tracks.map((track) => (
-                    <div
-                      key={track.id}
-                      className="search-result-item"
-                      onClick={() => handleTrackClick(track)}
-                    >
-                      {getImageUrl(track.cover_image_path) && (
-                        <img
-                          src={getImageUrl(track.cover_image_path)}
-                          alt={track.title}
-                          className="search-result-image"
-                        />
-                      )}
-                      <div className="search-result-info">
-                        <div className="search-result-title">{track.title}</div>
-                        <div className="search-result-subtitle">
-                          {track.album_title} • {track.artist}
+                    ))}
+                  </div>
+                )}
+                {results.albums.length > 0 && (
+                  <div className="search-section">
+                    <div className="search-section-title">Альбомы</div>
+                    {results.albums.map((album) => (
+                      <div
+                        key={album.id}
+                        className="search-result-item"
+                        onClick={() => handleAlbumClick(album.id)}
+                      >
+                        {getImageUrl(album.cover_image_path) && (
+                          <img
+                            src={getImageUrl(album.cover_image_path)}
+                            alt={album.title}
+                            className="search-result-image"
+                          />
+                        )}
+                        <div className="search-result-info">
+                          <div className="search-result-title">{album.title}</div>
+                          <div className="search-result-subtitle">{album.artist}</div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {!hasResults && query.length >= 2 && (
-                <div className="search-no-results">Ничего не найдено</div>
-              )}
-            </>
-          )}
-        </div>
-      )}
+                    ))}
+                  </div>
+                )}
+                {results.tracks.length > 0 && (
+                  <div className="search-section">
+                    <div className="search-section-title">Треки</div>
+                    {results.tracks.map((track) => (
+                      <div
+                        key={track.id}
+                        className="search-result-item"
+                        onClick={() => handleTrackClick(track)}
+                      >
+                        {getImageUrl(track.cover_image_path) && (
+                          <img
+                            src={getImageUrl(track.cover_image_path)}
+                            alt={track.title}
+                            className="search-result-image"
+                          />
+                        )}
+                        <div className="search-result-info">
+                          <div className="search-result-title">{track.title}</div>
+                          <div className="search-result-subtitle">
+                            {track.album_title} • {track.artist}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {!hasResults && query.length >= 2 && (
+                  <div className="search-no-results">Ничего не найдено</div>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
     </>
   );

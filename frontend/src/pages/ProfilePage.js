@@ -32,16 +32,7 @@ const ProfilePage = () => {
     }
   }, [user]);
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-    fetchUserReviews();
-    fetchCurrentUser();
-  }, [isAuthenticated, navigate, fetchUserReviews]);
-
-  const fetchCurrentUser = async () => {
+  const fetchCurrentUser = useCallback(async () => {
     if (!user) return;
     try {
       const response = await usersAPI.getById(user.id);
@@ -49,7 +40,16 @@ const ProfilePage = () => {
     } catch (err) {
       console.error('Error fetching user:', err);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    fetchUserReviews();
+    fetchCurrentUser();
+  }, [isAuthenticated, navigate, fetchUserReviews, fetchCurrentUser]);
 
   const handleSaveProfile = async (profileData) => {
     try {

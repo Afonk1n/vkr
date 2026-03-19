@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext';
 import ReviewForm from '../components/ReviewForm';
 import ReviewCard from '../components/ReviewCard';
 import LikeButton from '../components/LikeButton';
-import TrackCard from '../components/TrackCard';
 import { getImageUrl } from '../utils/imageUtils';
 import './AlbumDetailPage.css';
 

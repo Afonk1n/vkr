@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import { usersAPI } from '../services/api';
 import ReviewCard from '../components/ReviewCard';
 import BadgeList from '../components/BadgeList';
@@ -8,18 +8,12 @@ import './UserProfilePage.css';
 
 const UserProfilePage = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    fetchUserData();
-    fetchUserReviews();
-  }, [id]);
-
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     try {
       const response = await usersAPI.getById(id);
       setUser(response.data);
@@ -29,16 +23,21 @@ const UserProfilePage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
-  const fetchUserReviews = async () => {
+  const fetchUserReviews = useCallback(async () => {
     try {
       const response = await usersAPI.getUserReviews(id);
       setReviews(response.data.reviews);
     } catch (err) {
       console.error('Error fetching reviews:', err);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchUserData();
+    fetchUserReviews();
+  }, [fetchUserData, fetchUserReviews]);
 
   if (loading) {
     return (

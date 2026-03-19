@@ -54,6 +54,7 @@ const ReviewForm = ({ albumId, trackId, onSubmit, initialData, onCancel }) => {
         rating_implementation: ratingImplementation,
         rating_individuality: ratingIndividuality,
         atmosphere_rating: atmosphereRating,
+        atmosphere_multiplier: atmosphereMultiplier,
         text: hasText ? text : '',
       };
       

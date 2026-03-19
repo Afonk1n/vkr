@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import { albumsAPI } from '../services/api';
 import AlbumCard from '../components/AlbumCard';
 import { getImageUrl } from '../utils/imageUtils';
@@ -7,17 +7,12 @@ import './ArtistPage.css';
 
 const ArtistPage = () => {
   const { name } = useParams();
-  const navigate = useNavigate();
   const [albums, setAlbums] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [artistName, setArtistName] = useState('');
 
-  useEffect(() => {
-    fetchAlbums();
-  }, [name]);
-
-  const fetchAlbums = async () => {
+  const fetchAlbums = useCallback(async () => {
     try {
       setLoading(true);
       const decodedName = decodeURIComponent(name);
@@ -30,7 +25,11 @@ const ArtistPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [name]);
+
+  useEffect(() => {
+    fetchAlbums();
+  }, [fetchAlbums]);
 
   if (loading) {
     return (
