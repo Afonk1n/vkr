@@ -177,8 +177,9 @@
 
 - Добавлен workflow `.github/workflows/ci.yml`:
   - Job `backend`: `go vet`, `go test ./...`, `go build ./...` в каталоге `backend`.
-  - Job `frontend`: `npm ci` и `npm run build` в каталоге `frontend` (с `REACT_APP_API_URL=http://localhost:8080/api`).
-  - Job `docker`: сборка Docker-образов `backend/Dockerfile` и `frontend/Dockerfile` (без push, теги `backend:ci`, `frontend:ci`).
+  - Job `frontend`: `npm install` и `npm run build` в каталоге `frontend` (с `REACT_APP_API_URL=http://localhost:8080/api`).
+  - Job `docker`: сборка образов из `backend/Dockerfile` и `frontend/Dockerfile`; при **push** в `main`/`master` — **push в GHCR** (`ghcr.io/<owner>/<repo>/backend|frontend`, теги `<sha>` и `latest`). На PR — только сборка без публикации.
+- Для деплоя на VPS: `compose.deploy.yml` (образы из реестра) и runbook `docs/DEPLOY-VPS.md`.
 - CI запускается на `push` и `pull_request` в ветки `main`/`master` и служит базовой проверкой, что проект собирается до мерджа.
 
 ---
