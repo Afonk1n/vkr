@@ -5,8 +5,13 @@ import { useAuth } from '../context/AuthContext';
 import ReviewForm from '../components/ReviewForm';
 import ReviewCard from '../components/ReviewCard';
 import LikeButton from '../components/LikeButton';
+import AverageScoreBadge from '../components/AverageScoreBadge';
 import { getImageUrl } from '../utils/imageUtils';
 import './AlbumDetailPage.css';
+
+const formatDuration = (duration) => (
+  duration ? `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')}` : '-'
+);
 
 const AlbumDetailPage = () => {
   const { id } = useParams();
@@ -54,6 +59,7 @@ const AlbumDetailPage = () => {
     fetchAlbum();
     fetchReviews();
     fetchTracks();
+    setCoverImageError(false);
   }, [fetchAlbum, fetchReviews, fetchTracks]);
 
   const handleReviewSubmit = async (reviewData) => {
@@ -66,9 +72,9 @@ const AlbumDetailPage = () => {
       setShowReviewForm(false);
       setEditingReview(null);
       fetchReviews();
-      fetchAlbum(); // Refresh album to update average rating
+      fetchAlbum();
+      fetchTracks();
     } catch (err) {
-      // Ошибка обрабатывается в ReviewForm
       throw err;
     }
   };
@@ -84,6 +90,7 @@ const AlbumDetailPage = () => {
         await reviewsAPI.delete(reviewId);
         fetchReviews();
         fetchAlbum();
+        fetchTracks();
       } catch (err) {
         alert('Ошибка при удалении рецензии');
         console.error('Error deleting review:', err);
@@ -136,33 +143,24 @@ const AlbumDetailPage = () => {
         <div className="album-header">
           <div className="album-cover-large">
             {getImageUrl(album.cover_image_path) && !coverImageError ? (
-              <img 
-                src={getImageUrl(album.cover_image_path)} 
+              <img
+                src={getImageUrl(album.cover_image_path)}
                 alt={album.title}
                 onError={() => setCoverImageError(true)}
               />
             ) : (
-              <div className="album-cover-placeholder-large">🎵</div>
+              <div className="album-cover-placeholder-large">♪</div>
             )}
           </div>
           <div className="album-info-large">
             <h1 className="album-title-large">{album.title}</h1>
             <p className="album-artist-large">
-              <Link 
-                to={`/artists/${encodeURIComponent(album.artist)}`} 
-                className="album-artist-link"
-              >
+              <Link to={`/artists/${encodeURIComponent(album.artist)}`} className="album-artist-link">
                 {album.artist}
               </Link>
             </p>
-            {album.genre && (
-              <span className="album-genre-large">{album.genre.name}</span>
-            )}
-            {album.average_rating > 0 && (
-              <div className="album-rating-large">
-                ⭐ Средний рейтинг: {Math.round(album.average_rating)}
-              </div>
-            )}
+            {album.genre && <span className="album-genre-large">{album.genre.name}</span>}
+            <AverageScoreBadge source={album} reviews={reviews} className="album-average-score" />
             <div className="album-actions-large">
               <LikeButton
                 item={album}
@@ -171,39 +169,35 @@ const AlbumDetailPage = () => {
                 onUnlike={handleAlbumUnlike}
               />
             </div>
-            {album.description && (
-              <p className="album-description">{album.description}</p>
-            )}
+            {album.description && <p className="album-description">{album.description}</p>}
           </div>
         </div>
 
-        {/* Tracks Section */}
         {tracks.length > 0 && (
           <div className="tracks-section">
             <h2 className="section-title">Треки ({tracks.length})</h2>
             <div className="tracks-list-album">
               {tracks.map((track) => {
-                // Determine cover image: track cover, album cover, or placeholder
                 const trackCoverUrl = track.cover_image_path ? getImageUrl(track.cover_image_path) : null;
                 const albumCoverUrl = album.cover_image_path ? getImageUrl(album.cover_image_path) : null;
                 const coverUrl = trackCoverUrl || albumCoverUrl;
-                
+
                 return (
-                  <div key={track.id} className="track-item-album">
+                  <Link key={track.id} to={`/tracks/${track.id}`} className="track-item-album">
                     <div className="track-item-number">{track.track_number || '-'}</div>
                     <div className="track-item-cover">
                       {coverUrl ? (
-                        <img 
-                          src={coverUrl} 
+                        <img
+                          src={coverUrl}
                           alt={track.title}
                           onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextSibling.style.display = 'flex';
                           }}
                         />
                       ) : null}
                       <div className="track-item-cover-placeholder" style={{ display: coverUrl ? 'none' : 'flex' }}>
-                        🎵
+                        ♪
                       </div>
                     </div>
                     <div className="track-item-info">
@@ -218,13 +212,9 @@ const AlbumDetailPage = () => {
                         </div>
                       )}
                     </div>
-                    <div className="track-item-duration">
-                      {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : '-'}
-                    </div>
-                    <div className="track-item-link">
-                      <a href={`/tracks/${track.id}`} className="track-link-button">→</a>
-                    </div>
-                  </div>
+                    <AverageScoreBadge source={track} size="small" className="track-item-score" />
+                    <div className="track-item-duration">{formatDuration(track.duration)}</div>
+                  </Link>
                 );
               })}
             </div>
@@ -235,10 +225,7 @@ const AlbumDetailPage = () => {
           <div className="reviews-header">
             <h2>Рецензии ({reviews.length})</h2>
             {isAuthenticated && !showReviewForm && (
-              <button
-                onClick={() => setShowReviewForm(true)}
-                className="btn-edit"
-              >
+              <button onClick={() => setShowReviewForm(true)} className="btn-edit">
                 Добавить рецензию
               </button>
             )}
@@ -275,4 +262,3 @@ const AlbumDetailPage = () => {
 };
 
 export default AlbumDetailPage;
-

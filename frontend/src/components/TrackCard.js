@@ -92,7 +92,7 @@ const TrackCard = ({ track, onUpdate }) => {
           <div className="track-card-stats">
             {likeCount > 0 && (
               <div className="track-card-stat-item">
-                <span className="stat-icon">❤️</span>
+                <span className="stat-icon">❤</span>
                 <span className="stat-count">{likeCount}</span>
               </div>
             )}
@@ -101,7 +101,7 @@ const TrackCard = ({ track, onUpdate }) => {
                 className="track-card-stat-item"
                 title="Средний итоговый балл по рецензиям (та же шкала, что у рецензий)"
               >
-                <span className="stat-icon">⭐</span>
+                <span className="stat-icon">★</span>
                 <span className="stat-count">{Math.round(track.average_rating)}</span>
               </div>
             )}
@@ -111,7 +111,7 @@ const TrackCard = ({ track, onUpdate }) => {
             onClick={handleLikeClick}
             title="Поставить лайк"
           >
-            {isLiked ? '❤️' : '🤍'}
+            {isLiked ? '❤' : '♡'}
           </button>
         </div>
       </div>
@@ -148,4 +148,3 @@ const TrackCard = ({ track, onUpdate }) => {
 };
 
 export default TrackCard;
-

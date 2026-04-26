@@ -95,7 +95,8 @@ const SearchBar = () => {
             onClick={handleFiltersClick}
             title="Фильтры"
           >
-            🔍 Фильтры
+            <span className="search-filter-icon" aria-hidden>⌕</span>
+            <span>Фильтры</span>
           </button>
         </div>
         {showResults && (hasResults || loading) && (

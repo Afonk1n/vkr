@@ -62,7 +62,7 @@ const LikeButton = ({ item, itemType, onLike, onUnlike }) => {
       disabled={loading || !isAuthenticated}
       title={isAuthenticated ? (liked ? 'Убрать лайк' : 'Поставить лайк') : 'Войдите, чтобы ставить лайки'}
     >
-      <span className="like-icon">{liked ? '❤️' : '🤍'}</span>
+      <span className="like-icon">{liked ? '❤' : '♡'}</span>
       {likeCount > 0 && <span className="like-count">{likeCount}</span>}
     </button>
   );

@@ -83,6 +83,11 @@
   color: var(--text-color);
 }
 
+.album-average-score,
+.track-average-score {
+  width: fit-content;
+}
+
 .album-actions-large {
   margin-top: 1rem;
   display: flex;
@@ -134,6 +139,8 @@
   background-color: var(--card-background-light);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
+  color: var(--text-color);
+  text-decoration: none;
   transition: all var(--transition-base);
 }
 
@@ -170,6 +177,8 @@
 .track-item-album:hover {
   background-color: var(--hover-color);
   border-color: var(--border-color);
+  text-decoration: none;
+  transform: translateY(-1px);
 }
 
 .track-item-number {
@@ -214,30 +223,6 @@
   color: var(--text-secondary);
   text-align: right;
   min-width: 3rem;
-}
-
-.track-item-link {
-  display: flex;
-  align-items: center;
-}
-
-.track-link-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  background-color: var(--hover-color);
-  color: var(--text-color);
-  border-radius: var(--radius-sm);
-  text-decoration: none;
-  font-size: 1.25rem;
-  transition: all var(--transition-base);
-}
-
-.track-link-button:hover {
-  background-color: var(--card-background);
-  transform: scale(1.1);
 }
 
 .reviews-section {
@@ -333,6 +318,10 @@
 
   .track-item-duration {
     display: none;
+  }
+
+  .track-item-score {
+    justify-self: end;
   }
 }
 

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"log"
 	"music-review-site/backend/middleware"
 	"music-review-site/backend/models"
 	"music-review-site/backend/utils"
@@ -18,22 +19,22 @@ type AlbumController struct {
 
 // CreateAlbumRequest represents album creation request
 type CreateAlbumRequest struct {
-	Title         string  `json:"title" binding:"required"`
-	Artist        string  `json:"artist" binding:"required"`
-	GenreID       uint    `json:"genre_id" binding:"required"`
+	Title          string `json:"title" binding:"required"`
+	Artist         string `json:"artist" binding:"required"`
+	GenreID        uint   `json:"genre_id" binding:"required"`
 	CoverImagePath string `json:"cover_image_path"`
-	Description   string  `json:"description"`
-	ReleaseDate   string  `json:"release_date"`
+	Description    string `json:"description"`
+	ReleaseDate    string `json:"release_date"`
 }
 
 // UpdateAlbumRequest represents album update request
 type UpdateAlbumRequest struct {
-	Title         string `json:"title"`
-	Artist        string `json:"artist"`
-	GenreID       uint   `json:"genre_id"`
+	Title          string `json:"title"`
+	Artist         string `json:"artist"`
+	GenreID        uint   `json:"genre_id"`
 	CoverImagePath string `json:"cover_image_path"`
-	Description   string `json:"description"`
-	ReleaseDate   string `json:"release_date"`
+	Description    string `json:"description"`
+	ReleaseDate    string `json:"release_date"`
 }
 
 // GetAlbums retrieves list of albums with filters
@@ -54,7 +55,7 @@ func (ac *AlbumController) GetAlbums(c *gin.Context) {
 	// Sort
 	sortBy := c.DefaultQuery("sort_by", "created_at")
 	sortOrder := c.DefaultQuery("sort_order", "desc")
-	
+
 	// Handle special sorting cases
 	if sortBy == "release_date" {
 		// For release_date, handle NULL values
@@ -97,9 +98,9 @@ func (ac *AlbumController) GetAlbums(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"albums": albums,
-		"total":  total,
-		"page":   page,
+		"albums":    albums,
+		"total":     total,
+		"page":      page,
 		"page_size": pageSize,
 	})
 }
@@ -148,6 +149,9 @@ func (ac *AlbumController) GetAlbum(c *gin.Context) {
 		})
 		return
 	}
+	if err := ac.AttachAverageScoreBreakdown(&album); err != nil {
+		log.Printf("Warning: failed to attach average score breakdown for album %d: %v", album.ID, err)
+	}
 
 	c.JSON(http.StatusOK, album)
 }
@@ -176,12 +180,12 @@ func (ac *AlbumController) CreateAlbum(c *gin.Context) {
 	}
 
 	album := models.Album{
-		Title:         req.Title,
-		Artist:        req.Artist,
-		GenreID:       req.GenreID,
+		Title:          req.Title,
+		Artist:         req.Artist,
+		GenreID:        req.GenreID,
 		CoverImagePath: req.CoverImagePath,
-		Description:   req.Description,
-		AverageRating: 0,
+		Description:    req.Description,
+		AverageRating:  0,
 	}
 
 	if err := ac.DB.Create(&album).Error; err != nil {
@@ -311,6 +315,47 @@ func (ac *AlbumController) CalculateAverageRating(albumID uint) error {
 	return ac.DB.Model(&models.Album{}).Where("id = ?", albumID).Update("average_rating", roundedAverage).Error
 }
 
+// AttachAverageScoreBreakdown adds transient average criterion values to an album response.
+func (ac *AlbumController) AttachAverageScoreBreakdown(album *models.Album) error {
+	var avg struct {
+		Count          int64
+		Rhymes         float64
+		Structure      float64
+		Implementation float64
+		Individuality  float64
+		AtmosphereMult float64
+		FinalScore     float64
+	}
+
+	if err := ac.DB.Model(&models.Review{}).
+		Select(`
+			COUNT(*) AS count,
+			COALESCE(AVG(rating_rhymes), 0) AS rhymes,
+			COALESCE(AVG(rating_structure), 0) AS structure,
+			COALESCE(AVG(rating_implementation), 0) AS implementation,
+			COALESCE(AVG(rating_individuality), 0) AS individuality,
+			COALESCE(AVG(atmosphere_multiplier), 0) AS atmosphere_mult,
+			COALESCE(AVG(final_score), 0) AS final_score
+		`).
+		Where("album_id = ? AND status = ?", album.ID, models.ReviewStatusApproved).
+		Scan(&avg).Error; err != nil {
+		return err
+	}
+
+	if avg.Count == 0 {
+		return nil
+	}
+
+	album.ApprovedReviewsCount = avg.Count
+	album.AverageRating = float64(int(avg.FinalScore + 0.5))
+	album.AverageRatingRhymes = avg.Rhymes
+	album.AverageRatingStructure = avg.Structure
+	album.AverageRatingImplementation = avg.Implementation
+	album.AverageRatingIndividuality = avg.Individuality
+	album.AverageAtmosphereRating = 1 + (avg.AtmosphereMult-1.0)/(0.6072/9.0)
+	return nil
+}
+
 // LikeAlbum adds a like to an album
 func (ac *AlbumController) LikeAlbum(c *gin.Context) {
 	albumID := c.Param("id")
@@ -396,4 +441,3 @@ func (ac *AlbumController) UnlikeAlbum(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Album unliked", "liked": false})
 }
-

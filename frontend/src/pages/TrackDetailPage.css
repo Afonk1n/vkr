@@ -63,9 +63,14 @@
 .track-album-info {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
   font-size: 1.25rem;
   color: var(--text-secondary);
+}
+
+.track-meta-dot {
+  color: var(--text-muted);
 }
 
 .track-album-label {
@@ -100,6 +105,10 @@
 .track-number {
   font-size: 1rem;
   color: var(--text-secondary);
+}
+
+.track-average-score {
+  width: fit-content;
 }
 
 .track-genres {

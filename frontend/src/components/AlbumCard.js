@@ -84,7 +84,7 @@ const AlbumCard = ({ album, onUpdate }) => {
           <div className="album-stats">
             {likeCount > 0 && (
               <div className="album-stat-item">
-                <span className="stat-icon">❤️</span>
+                <span className="stat-icon">❤</span>
                 <span className="stat-count">{likeCount}</span>
               </div>
             )}
@@ -93,7 +93,7 @@ const AlbumCard = ({ album, onUpdate }) => {
                 className="album-stat-item"
                 title="Средний итоговый балл по рецензиям (та же шкала, что у рецензий)"
               >
-                <span className="stat-icon">⭐</span>
+                <span className="stat-icon">★</span>
                 <span className="stat-count">{Math.round(album.average_rating)}</span>
               </div>
             )}
@@ -103,7 +103,7 @@ const AlbumCard = ({ album, onUpdate }) => {
             onClick={handleLikeClick}
             title="Поставить лайк"
           >
-            {isLiked ? '❤️' : '🤍'}
+            {isLiked ? '❤' : '♡'}
           </button>
         </div>
       </div>
@@ -127,4 +127,3 @@ const AlbumCard = ({ album, onUpdate }) => {
 };
 
 export default AlbumCard;
-

@@ -5,8 +5,13 @@ import { useAuth } from '../context/AuthContext';
 import ReviewForm from '../components/ReviewForm';
 import ReviewCard from '../components/ReviewCard';
 import LikeButton from '../components/LikeButton';
+import AverageScoreBadge from '../components/AverageScoreBadge';
 import { getImageUrl } from '../utils/imageUtils';
 import './TrackDetailPage.css';
+
+const formatDuration = (duration) => (
+  duration ? `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')}` : '-'
+);
 
 const TrackDetailPage = () => {
   const { id } = useParams();
@@ -43,7 +48,7 @@ const TrackDetailPage = () => {
   useEffect(() => {
     fetchTrack();
     fetchReviews();
-    setCoverImageError(false); // Reset error when track changes
+    setCoverImageError(false);
   }, [fetchTrack, fetchReviews]);
 
   const handleReviewSubmit = async (reviewData) => {
@@ -56,6 +61,7 @@ const TrackDetailPage = () => {
       setShowReviewForm(false);
       setEditingReview(null);
       fetchReviews();
+      fetchTrack();
     } catch (err) {
       throw err;
     }
@@ -71,6 +77,7 @@ const TrackDetailPage = () => {
       try {
         await reviewsAPI.delete(reviewId);
         fetchReviews();
+        fetchTrack();
       } catch (err) {
         alert('Ошибка при удалении рецензии');
         console.error('Error deleting review:', err);
@@ -117,37 +124,39 @@ const TrackDetailPage = () => {
     );
   }
 
+  const coverPath = track.cover_image_path || track.album?.cover_image_path;
+
   return (
     <div className="container">
       <div className="track-detail">
         <div className="track-header">
           <div className="track-cover-large">
-            {getImageUrl(track.cover_image_path || track.album?.cover_image_path) && !coverImageError ? (
-              <img 
-                src={getImageUrl(track.cover_image_path || track.album?.cover_image_path)} 
+            {getImageUrl(coverPath) && !coverImageError ? (
+              <img
+                src={getImageUrl(coverPath)}
                 alt={track.album?.title || track.title}
                 onError={() => setCoverImageError(true)}
               />
             ) : null}
-            <div className="track-cover-placeholder-large" style={{ display: (!getImageUrl(track.cover_image_path) && !getImageUrl(track.album?.cover_image_path)) || coverImageError ? 'flex' : 'none' }}>
-              🎵
+            <div
+              className="track-cover-placeholder-large"
+              style={{ display: !getImageUrl(coverPath) || coverImageError ? 'flex' : 'none' }}
+            >
+              ♪
             </div>
           </div>
           <div className="track-info-large">
             <h1 className="track-title-large">{track.title}</h1>
             {track.album && (
               <div className="track-album-info">
-                <span className="track-album-label">Альбом:</span>{' '}
+                <span className="track-album-label">Альбом:</span>
                 <Link to={`/albums/${track.album.id}`} className="track-album-link">
                   {track.album.title}
                 </Link>
                 {track.album.artist && (
                   <>
-                    {' • '}
-                    <Link 
-                      to={`/artists/${encodeURIComponent(track.album.artist)}`} 
-                      className="track-artist-link"
-                    >
+                    <span className="track-meta-dot">·</span>
+                    <Link to={`/artists/${encodeURIComponent(track.album.artist)}`} className="track-artist-link">
                       {track.album.artist}
                     </Link>
                   </>
@@ -155,15 +164,12 @@ const TrackDetailPage = () => {
               </div>
             )}
             {track.duration && (
-              <div className="track-duration">
-                Длительность: {Math.floor(track.duration / 60)}:{(track.duration % 60).toString().padStart(2, '0')}
-              </div>
+              <div className="track-duration">Длительность: {formatDuration(track.duration)}</div>
             )}
             {track.track_number && (
-              <div className="track-number">
-                Номер трека: {track.track_number}
-              </div>
+              <div className="track-number">Номер трека: {track.track_number}</div>
             )}
+            <AverageScoreBadge source={track} reviews={reviews} className="track-average-score" />
             {track.genres && track.genres.length > 0 && (
               <div className="track-genres">
                 <span className="track-genres-label">Жанры:</span>
@@ -177,12 +183,7 @@ const TrackDetailPage = () => {
               </div>
             )}
             <div className="track-actions-large">
-              <LikeButton
-                item={track}
-                itemType="track"
-                onLike={handleTrackLike}
-                onUnlike={handleTrackUnlike}
-              />
+              <LikeButton item={track} itemType="track" onLike={handleTrackLike} onUnlike={handleTrackUnlike} />
             </div>
           </div>
         </div>
@@ -201,9 +202,7 @@ const TrackDetailPage = () => {
               <div className="album-link-info">
                 <h3>{track.album.title}</h3>
                 <p>{track.album.artist}</p>
-                {track.album.genre && (
-                  <span className="album-link-genre">{track.album.genre.name}</span>
-                )}
+                {track.album.genre && <span className="album-link-genre">{track.album.genre.name}</span>}
               </div>
             </Link>
           </div>
@@ -213,10 +212,7 @@ const TrackDetailPage = () => {
           <div className="reviews-header">
             <h2>Рецензии ({reviews.length})</h2>
             {isAuthenticated && !showReviewForm && (
-              <button
-                onClick={() => setShowReviewForm(true)}
-                className="btn-edit"
-              >
+              <button onClick={() => setShowReviewForm(true)} className="btn-edit">
                 Добавить рецензию
               </button>
             )}
@@ -253,4 +249,3 @@ const TrackDetailPage = () => {
 };
 
 export default TrackDetailPage;
-

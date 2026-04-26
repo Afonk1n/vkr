@@ -188,12 +188,12 @@ const ReviewCard = ({ review, onEdit, onDelete, onUpdate, moderationActions, hid
               <div className="review-actions-compact">
                 {onEdit && (
                   <button onClick={() => onEdit(review)} className="btn-edit-small" title="Редактировать">
-                    ✏️
+                    ✎
                   </button>
                 )}
                 {onDelete && (
                   <button onClick={() => onDelete(review.id)} className="btn-delete-small" title="Удалить">
-                    🗑️
+                    ×
                   </button>
                 )}
               </div>
@@ -219,4 +219,3 @@ const ReviewCard = ({ review, onEdit, onDelete, onUpdate, moderationActions, hid
 };
 
 export default ReviewCard;
-

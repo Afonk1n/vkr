@@ -8,16 +8,22 @@ import (
 
 // Track represents a track in an album
 type Track struct {
-	ID             uint           `json:"id" gorm:"primaryKey"`
-	AlbumID        uint           `json:"album_id" gorm:"not null"`
-	Title          string         `json:"title" gorm:"not null"`
-	Duration       *int           `json:"duration"` // Duration in seconds
-	TrackNumber    *int           `json:"track_number"`
-	CoverImagePath string         `json:"cover_image_path"`
-	AverageRating  float64        `json:"average_rating" gorm:"default:0"`
-	CreatedAt      time.Time      `json:"created_at"`
-	UpdatedAt      time.Time      `json:"updated_at"`
-	DeletedAt      gorm.DeletedAt `json:"-" gorm:"index"`
+	ID                          uint           `json:"id" gorm:"primaryKey"`
+	AlbumID                     uint           `json:"album_id" gorm:"not null"`
+	Title                       string         `json:"title" gorm:"not null"`
+	Duration                    *int           `json:"duration"` // Duration in seconds
+	TrackNumber                 *int           `json:"track_number"`
+	CoverImagePath              string         `json:"cover_image_path"`
+	AverageRating               float64        `json:"average_rating" gorm:"default:0"`
+	AverageRatingRhymes         float64        `json:"average_rating_rhymes,omitempty" gorm:"-"`
+	AverageRatingStructure      float64        `json:"average_rating_structure,omitempty" gorm:"-"`
+	AverageRatingImplementation float64        `json:"average_rating_implementation,omitempty" gorm:"-"`
+	AverageRatingIndividuality  float64        `json:"average_rating_individuality,omitempty" gorm:"-"`
+	AverageAtmosphereRating     float64        `json:"average_atmosphere_rating,omitempty" gorm:"-"`
+	ApprovedReviewsCount        int64          `json:"approved_reviews_count,omitempty" gorm:"-"`
+	CreatedAt                   time.Time      `json:"created_at"`
+	UpdatedAt                   time.Time      `json:"updated_at"`
+	DeletedAt                   gorm.DeletedAt `json:"-" gorm:"index"`
 
 	// Relationships
 	Album   Album       `json:"album,omitempty" gorm:"foreignKey:AlbumID"`

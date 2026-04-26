@@ -1,4 +1,6 @@
 .review-card-small {
+  position: relative;
+  z-index: 0;
   padding: 1rem;
   background-color: var(--card-background);
   border-radius: 0.5rem;
@@ -9,6 +11,12 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+.review-card-small:has(.review-scores-strip:hover),
+.review-card-small:has(.review-scores-strip:focus-visible),
+.review-card-small:focus-within {
+  z-index: 80;
 }
 
 .review-card-small:hover {
@@ -27,6 +35,16 @@
 .review-card-small-user {
   font-weight: 500;
   color: var(--text-color);
+}
+
+.review-card-small-user-link {
+  color: var(--text-color);
+  text-decoration: none;
+}
+
+.review-card-small-user-link:hover {
+  color: var(--primary-color);
+  text-decoration: none;
 }
 
 .review-card-small-scores {
@@ -157,4 +175,3 @@
 .review-card-small-like-button.liked {
   background: var(--error-color);
 }
-

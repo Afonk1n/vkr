@@ -1,29 +1,32 @@
-.review-scores-strip {
+.average-score-badge {
   position: relative;
   display: inline-flex;
-  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.2rem;
+  height: 2.35rem;
+  padding: 0 0.75rem;
   border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
-  border-radius: 12px;
+  border-radius: 10px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 52%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 56%),
     var(--card-background);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.08) inset,
     0 8px 22px rgba(0, 0, 0, 0.08);
-  padding: 0.5rem 0.65rem 0.55rem;
+  color: var(--text-color);
   cursor: help;
   outline: none;
   transition:
     transform var(--transition-fast),
     border-color var(--transition-fast),
-    box-shadow var(--transition-fast),
-    background var(--transition-fast);
+    box-shadow var(--transition-fast);
 }
 
-.review-scores-strip:hover,
-.review-scores-strip:focus-visible,
-.review-scores-strip:focus-within {
-  z-index: 40;
+.average-score-badge:hover,
+.average-score-badge:focus-visible,
+.average-score-badge:focus-within {
+  z-index: 60;
   transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--accent-color, var(--text-secondary)) 54%, var(--border-color));
   box-shadow:
@@ -31,72 +34,29 @@
     0 12px 28px rgba(0, 0, 0, 0.14);
 }
 
-.review-scores-strip-inner {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(3.7rem, auto);
-  justify-items: center;
-  gap: 0.18rem;
+.average-score-badge--small {
+  min-width: 2.45rem;
+  height: 1.9rem;
+  padding: 0 0.55rem;
+  border-radius: 8px;
 }
 
-.review-scores-strip--small {
-  border-radius: 10px;
-  padding: 0.35rem 0.48rem 0.4rem;
-}
-
-.review-scores-strip--small .review-scores-strip-inner {
-  grid-template-columns: minmax(3.1rem, auto);
-  gap: 0.12rem;
-}
-
-.review-scores-strip-total {
-  font-weight: 850;
-  color: var(--text-color);
-  line-height: 0.95;
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-}
-
-.review-scores-strip--default .review-scores-strip-total {
-  font-size: 2rem;
-}
-
-.review-scores-strip--small .review-scores-strip-total {
+.average-score-main {
   font-size: 1.45rem;
-}
-
-.review-scores-strip-cells {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.2rem;
-  width: 100%;
-}
-
-.review-scores-strip-cell {
-  min-width: 1.05rem;
-  padding: 0.08rem 0.12rem;
-  border-radius: 5px;
-  background: color-mix(in srgb, var(--hover-color) 78%, transparent);
-  color: var(--text-secondary);
-  font-size: 0.68rem;
-  font-weight: 750;
-  line-height: 1.15;
-  text-align: center;
+  line-height: 1;
+  font-weight: 850;
   font-variant-numeric: tabular-nums;
 }
 
-.review-scores-strip--small .review-scores-strip-cell {
-  min-width: 0.9rem;
-  padding: 0.05rem 0.08rem;
-  font-size: 0.58rem;
+.average-score-badge--small .average-score-main {
+  font-size: 1.05rem;
 }
 
-.review-scores-strip-panel {
+.average-score-panel {
   position: absolute;
   right: 50%;
   top: calc(100% + 10px);
-  z-index: 100;
+  z-index: 120;
   width: min(20rem, calc(100vw - 2rem));
   padding: 0.8rem 0.9rem 0.9rem;
   border-radius: 12px;
@@ -113,7 +73,7 @@
     transform var(--transition-fast);
 }
 
-.review-scores-strip-panel::before {
+.average-score-panel::before {
   content: "";
   position: absolute;
   right: calc(50% - 7px);
@@ -126,23 +86,23 @@
   transform: rotate(45deg);
 }
 
-.review-scores-strip:hover .review-scores-strip-panel,
-.review-scores-strip:focus-visible .review-scores-strip-panel,
-.review-scores-strip:focus-within .review-scores-strip-panel {
+.average-score-badge:hover .average-score-panel,
+.average-score-badge:focus-visible .average-score-panel,
+.average-score-badge:focus-within .average-score-panel {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
   transform: translate(50%, 0);
 }
 
-.review-scores-strip-panel-title {
+.average-score-panel-title {
   margin-bottom: 0.5rem;
   font-size: 0.78rem;
   font-weight: 750;
   color: var(--text-color);
 }
 
-.review-scores-strip-formula {
+.average-score-formula {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -154,33 +114,17 @@
   border: 1px solid var(--border-light, var(--border-color));
   color: var(--text-color);
   font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
 }
 
-.review-scores-strip-formula-nums,
-.review-scores-strip-formula-m,
-.review-scores-strip-formula-res {
-  font-weight: 750;
-}
-
-.review-scores-strip-formula-m {
+.average-score-vibe {
   color: var(--primary-color, #4a9eff);
   padding: 0.04rem 0.32rem;
   background: color-mix(in srgb, var(--primary-color, #4a9eff) 12%, transparent);
   border-radius: 4px;
 }
 
-.review-scores-strip-formula-res {
-  font-size: 0.92rem;
-}
-
-.review-scores-strip-formula-op,
-.review-scores-strip-formula-bracket {
-  color: var(--text-muted);
-  font-weight: 650;
-}
-
-.review-scores-strip-legend {
+.average-score-list {
   display: grid;
   gap: 0.35rem;
   margin: 0;
@@ -191,32 +135,32 @@
   line-height: 1.35;
 }
 
-.review-scores-strip-legend li {
+.average-score-list li {
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: baseline;
   gap: 0.75rem;
 }
 
-.review-scores-strip-legend strong {
+.average-score-list strong {
   color: var(--text-color);
   font-size: 0.82rem;
   font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 768px) {
-  .review-scores-strip-panel {
+  .average-score-panel {
     right: 0;
     transform: translate(0, -4px);
   }
 
-  .review-scores-strip:hover .review-scores-strip-panel,
-  .review-scores-strip:focus-visible .review-scores-strip-panel,
-  .review-scores-strip:focus-within .review-scores-strip-panel {
+  .average-score-badge:hover .average-score-panel,
+  .average-score-badge:focus-visible .average-score-panel,
+  .average-score-badge:focus-within .average-score-panel {
     transform: translate(0, 0);
   }
 
-  .review-scores-strip-panel::before {
+  .average-score-panel::before {
     right: 1.25rem;
   }
 }

@@ -48,6 +48,15 @@ func (tc *TrackController) GetTracks(c *gin.Context) {
 		return
 	}
 
+	for i := range tracks {
+		if err := tc.CalculateAverageRating(tracks[i].ID); err != nil {
+			log.Printf("Warning: failed to calculate average rating for track %d: %v", tracks[i].ID, err)
+		}
+		if err := tc.AttachAverageScoreBreakdown(&tracks[i]); err != nil {
+			log.Printf("Warning: failed to attach average score breakdown for track %d: %v", tracks[i].ID, err)
+		}
+	}
+
 	c.JSON(http.StatusOK, tracks)
 }
 
@@ -68,8 +77,8 @@ func (tc *TrackController) GetAllTracks(c *gin.Context) {
 			// Use subquery to find tracks that have ALL selected genres
 			// For each genre, we check if track has it, then count matches
 			query = query.Where(`
-				(SELECT COUNT(DISTINCT genre_id) 
-				 FROM track_genres 
+				(SELECT COUNT(DISTINCT genre_id)
+				 FROM track_genres
 				 WHERE track_id = tracks.id AND genre_id IN (?)
 				) = ?`, genreIDs, len(genreIDs))
 		}
@@ -122,7 +131,7 @@ func (tc *TrackController) GetAllTracks(c *gin.Context) {
 	// Count total with same filters (before pagination)
 	var total int64
 	countQuery := tc.DB.Model(&models.Track{})
-	
+
 	// Apply same filters to count query
 	if genreIDsParam := c.QueryArray("genre_ids[]"); len(genreIDsParam) > 0 {
 		genreIDs := make([]uint, 0)
@@ -133,8 +142,8 @@ func (tc *TrackController) GetAllTracks(c *gin.Context) {
 		}
 		if len(genreIDs) > 0 {
 			countQuery = countQuery.Where(`
-				(SELECT COUNT(DISTINCT genre_id) 
-				 FROM track_genres 
+				(SELECT COUNT(DISTINCT genre_id)
+				 FROM track_genres
 				 WHERE track_id = tracks.id AND genre_id IN (?)
 				) = ?`, genreIDs, len(genreIDs))
 		}
@@ -166,6 +175,9 @@ func (tc *TrackController) GetAllTracks(c *gin.Context) {
 		// Reload track to get updated rating
 		var updatedTrack models.Track
 		if err := tc.DB.Preload("Album").Preload("Album.Genre").Preload("Genres").Preload("Likes").First(&updatedTrack, tracks[i].ID).Error; err == nil {
+			if err := tc.AttachAverageScoreBreakdown(&updatedTrack); err != nil {
+				log.Printf("Warning: failed to attach average score breakdown for track %d: %v", updatedTrack.ID, err)
+			}
 			tracks[i] = updatedTrack
 		}
 	}
@@ -197,7 +209,10 @@ func (tc *TrackController) GetTrack(c *gin.Context) {
 		log.Printf("Warning: failed to calculate average rating for track %d: %v", track.ID, err)
 	}
 	// Reload track to get updated rating
-	tc.DB.First(&track, id)
+	tc.DB.Preload("Album").Preload("Album.Genre").Preload("Likes").Preload("Genres").First(&track, id)
+	if err := tc.AttachAverageScoreBreakdown(&track); err != nil {
+		log.Printf("Warning: failed to attach average score breakdown for track %d: %v", track.ID, err)
+	}
 
 	c.JSON(http.StatusOK, track)
 }
@@ -378,6 +393,9 @@ func (tc *TrackController) GetPopularTracks(c *gin.Context) {
 		// Reload track to get updated rating with all relationships
 		var updatedTrack models.Track
 		if err := tc.DB.Preload("Album").Preload("Album.Genre").Preload("Genres").Preload("Likes").First(&updatedTrack, tracks[i].ID).Error; err == nil {
+			if err := tc.AttachAverageScoreBreakdown(&updatedTrack); err != nil {
+				log.Printf("Warning: failed to attach average score breakdown for track %d: %v", updatedTrack.ID, err)
+			}
 			// Remove duplicate genres by ID
 			genreMap := make(map[uint]models.Genre)
 			for _, genre := range updatedTrack.Genres {
@@ -503,4 +521,45 @@ func (tc *TrackController) CalculateAverageRating(trackID uint) error {
 	// Round to nearest integer
 	roundedAverage := float64(int(averageRating + 0.5))
 	return tc.DB.Model(&models.Track{}).Where("id = ?", trackID).Update("average_rating", roundedAverage).Error
+}
+
+// AttachAverageScoreBreakdown adds transient average criterion values to a track response.
+func (tc *TrackController) AttachAverageScoreBreakdown(track *models.Track) error {
+	var avg struct {
+		Count          int64
+		Rhymes         float64
+		Structure      float64
+		Implementation float64
+		Individuality  float64
+		AtmosphereMult float64
+		FinalScore     float64
+	}
+
+	if err := tc.DB.Model(&models.Review{}).
+		Select(`
+			COUNT(*) AS count,
+			COALESCE(AVG(rating_rhymes), 0) AS rhymes,
+			COALESCE(AVG(rating_structure), 0) AS structure,
+			COALESCE(AVG(rating_implementation), 0) AS implementation,
+			COALESCE(AVG(rating_individuality), 0) AS individuality,
+			COALESCE(AVG(atmosphere_multiplier), 0) AS atmosphere_mult,
+			COALESCE(AVG(final_score), 0) AS final_score
+		`).
+		Where("track_id = ? AND status = ?", track.ID, models.ReviewStatusApproved).
+		Scan(&avg).Error; err != nil {
+		return err
+	}
+
+	if avg.Count == 0 {
+		return nil
+	}
+
+	track.ApprovedReviewsCount = avg.Count
+	track.AverageRating = float64(int(avg.FinalScore + 0.5))
+	track.AverageRatingRhymes = avg.Rhymes
+	track.AverageRatingStructure = avg.Structure
+	track.AverageRatingImplementation = avg.Implementation
+	track.AverageRatingIndividuality = avg.Individuality
+	track.AverageAtmosphereRating = 1 + (avg.AtmosphereMult-1.0)/(0.6072/9.0)
+	return nil
 }
