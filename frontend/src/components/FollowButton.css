@@ -1,0 +1,46 @@
+.follow-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1.15rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  border: 2px solid var(--border-color);
+  color: var(--text-color);
+  background: var(--card-background);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+}
+
+.follow-btn:hover:not(:disabled) {
+  border-color: var(--text-muted);
+  background: var(--hover-color);
+}
+
+.follow-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.follow-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.follow-btn--following {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  background: var(--hover-color);
+}
+
+.follow-btn--following:hover:not(:disabled) {
+  border-color: var(--accent-color);
+  background: var(--card-background);
+}
+
+.follow-btn--compact {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.75rem;
+}

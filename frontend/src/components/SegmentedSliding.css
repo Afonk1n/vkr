@@ -1,0 +1,47 @@
+/* Общий скользящий индикатор (без glass — только движение и тень) */
+.seg-sliding-track {
+  position: relative;
+}
+
+.seg-sliding-thumb {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 999px;
+  background: var(--card-background);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  opacity: 0;
+  transition:
+    transform 0.38s cubic-bezier(0.32, 0.72, 0, 1),
+    width 0.38s cubic-bezier(0.32, 0.72, 0, 1),
+    height 0.38s cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 0.18s ease;
+  will-change: transform, width, height;
+}
+
+.seg-sliding-thumb--ready {
+  opacity: 1;
+}
+
+:root[data-theme="dark"] .seg-sliding-thumb {
+  background: #2e2e2e;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Сегменты поверх «пилюли» */
+.seg-sliding-track .header-segment,
+.seg-sliding-track .feed-segment {
+  position: relative;
+  z-index: 1;
+}
+
+.seg-sliding-track .header-segment--active,
+.seg-sliding-track .feed-segment--active {
+  background: transparent !important;
+  box-shadow: none !important;
+}

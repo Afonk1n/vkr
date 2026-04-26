@@ -56,6 +56,10 @@ services:
       PORT: 3000
       REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8080/api}
       REACT_APP_USE_MOCK: ${REACT_APP_USE_MOCK:-false}
+      # Windows/macOS + bind mount: события ФС с хоста часто не доходят до inotify — без polling HMR не срабатывает
+      CHOKIDAR_USEPOLLING: "true"
+      # число = интервал polling (мс); "true" тоже ок, но чуть больше нагрузка на CPU по умолчанию
+      WATCHPACK_POLLING: "800"
     ports:
       - "3000:3000"
     depends_on:

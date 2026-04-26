@@ -1,13 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { usersAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import ReviewCard from '../components/ReviewCard';
 import BadgeList from '../components/BadgeList';
+import FavoriteAlbums from '../components/FavoriteAlbums';
+import GenreRadar from '../components/GenreRadar';
+import FollowButton from '../components/FollowButton';
 import { getImageUrl } from '../utils/imageUtils';
 import './UserProfilePage.css';
 
 const UserProfilePage = () => {
   const { id } = useParams();
+  const { user: me, isAuthenticated } = useAuth();
   const [user, setUser] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,11 +60,14 @@ const UserProfilePage = () => {
     );
   }
 
-  const socialLinks = user?.social_links 
-    ? (typeof user.social_links === 'string' 
-        ? JSON.parse(user.social_links) 
+  const socialLinks = user?.social_links
+    ? (typeof user.social_links === 'string'
+        ? JSON.parse(user.social_links)
         : user.social_links)
     : {};
+
+  const targetId = Number(id);
+  const isOwnProfile = Boolean(isAuthenticated && me && me.id === targetId);
 
   return (
     <div className="container">
@@ -67,8 +75,8 @@ const UserProfilePage = () => {
         <div className="profile-header-card">
           <div className="profile-avatar-section">
             {user?.avatar_path && getImageUrl(user.avatar_path) ? (
-              <img 
-                src={getImageUrl(user.avatar_path)} 
+              <img
+                src={getImageUrl(user.avatar_path)}
                 alt={user.username}
                 className="profile-avatar"
               />
@@ -79,15 +87,40 @@ const UserProfilePage = () => {
             )}
           </div>
           <div className="profile-info-section">
-            <h1 className="profile-username">{user?.username || 'Пользователь'}</h1>
-            {user?.email && (
+            <h1 className="profile-username">
+              {user?.username || 'Пользователь'}
+              {user?.is_verified_artist && (
+                <span className="verified-badge" title="Верифицированный артист">✓</span>
+              )}
+            </h1>
+            {isOwnProfile && user?.email && (
               <p className="profile-email">{user.email}</p>
             )}
+            <div className="profile-follow-row">
+              <div className="profile-follow-meta">
+                <span>{user.followers_count ?? 0} подписчиков</span>
+                <span className="profile-follow-dot">·</span>
+                <span>{user.following_count ?? 0} подписок</span>
+              </div>
+              {!isOwnProfile && isAuthenticated && (
+                <FollowButton
+                  userId={user.id}
+                  initialFollowing={user.is_following}
+                  onChange={(following) => {
+                    setUser((prev) => ({
+                      ...prev,
+                      is_following: following,
+                      followers_count: Math.max(0, (prev.followers_count ?? 0) + (following ? 1 : -1)),
+                    }));
+                  }}
+                />
+              )}
+            </div>
             {user?.is_admin && (
               <span className="admin-badge">Администратор</span>
             )}
             {user?.badges && user.badges.length > 0 && (
-              <BadgeList badges={user.badges} />
+              <BadgeList badges={user.badges} profileContext="other" />
             )}
             {user?.created_at && (
               <p className="profile-joined">
@@ -118,8 +151,40 @@ const UserProfilePage = () => {
                 )}
               </div>
             )}
+
+            {user?.stats && (
+              <div className="profile-stats">
+                <div className="stat-item">
+                  <span className="stat-value">{user.stats.total_reviews}</span>
+                  <span className="stat-label">рецензий</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-value">{user.stats.avg_score || '—'}</span>
+                  <span className="stat-label">ср. оценка</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-value">{user.stats.total_likes_received}</span>
+                  <span className="stat-label">лайков</span>
+                </div>
+                {user.stats.top_genre && (
+                  <div className="stat-item">
+                    <span className="stat-value stat-genre">{user.stats.top_genre}</span>
+                    <span className="stat-label">топ жанр</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
+          {user?.genre_stats && user.genre_stats.length >= 3 && (
+            <div className="profile-radar-section">
+              <h3 className="radar-title">Жанровый профиль</h3>
+              <GenreRadar genreStats={user.genre_stats} />
+            </div>
+          )}
         </div>
+
+        <FavoriteAlbums albums={user?.favorite_albums} isOwner={false} userId={user.id} />
 
         <div className="profile-reviews">
           <h2>Рецензии пользователя ({reviews.length})</h2>

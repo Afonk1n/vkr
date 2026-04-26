@@ -2,7 +2,7 @@ import React from 'react';
 import Badge from './Badge';
 import './Badge.css';
 
-const BadgeList = ({ badges }) => {
+const BadgeList = ({ badges, profileContext = 'self' }) => {
   if (!badges || badges.length === 0) {
     return null;
   }
@@ -10,7 +10,7 @@ const BadgeList = ({ badges }) => {
   return (
     <div className="badge-list">
       {badges.map((badge, index) => (
-        <Badge key={index} badge={badge} />
+        <Badge key={index} badge={badge} badgeId={index} profileContext={profileContext} />
       ))}
     </div>
   );

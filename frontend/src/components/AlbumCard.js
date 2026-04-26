@@ -71,8 +71,8 @@ const AlbumCard = ({ album, onUpdate }) => {
     <Link to={`/albums/${album.id}`} className="album-card">
       <div className="album-cover">
         {imageUrl && !imageError ? (
-          <img 
-            src={imageUrl} 
+          <img
+            src={imageUrl}
             alt={album.title}
             onError={() => setImageError(true)}
           />
@@ -89,7 +89,10 @@ const AlbumCard = ({ album, onUpdate }) => {
               </div>
             )}
             {album.average_rating > 0 && (
-              <div className="album-stat-item">
+              <div
+                className="album-stat-item"
+                title="Средний итоговый балл по рецензиям (та же шкала, что у рецензий)"
+              >
                 <span className="stat-icon">⭐</span>
                 <span className="stat-count">{Math.round(album.average_rating)}</span>
               </div>
@@ -107,8 +110,8 @@ const AlbumCard = ({ album, onUpdate }) => {
       <div className="album-info">
         <h3 className="album-title">{album.title}</h3>
         <p className="album-artist">
-          <Link 
-            to={`/artists/${encodeURIComponent(album.artist)}`} 
+          <Link
+            to={`/artists/${encodeURIComponent(album.artist)}`}
             className="album-artist-link"
             onClick={(e) => e.stopPropagation()}
           >

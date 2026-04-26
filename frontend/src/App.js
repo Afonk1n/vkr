@@ -1,10 +1,11 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { FilterProvider } from './context/FilterContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Header from './components/Header';
-import HomePage from './pages/HomePage';
+import FeedPage from './pages/FeedPage';
+import TopsPage from './pages/TopsPage';
 import AlbumDetailPage from './pages/AlbumDetailPage';
 import TrackDetailPage from './pages/TrackDetailPage';
 import LoginPage from './pages/LoginPage';
@@ -26,7 +27,9 @@ function App() {
               <Header />
               <main className="main-content">
                 <Routes>
-                  <Route path="/" element={<HomePage />} />
+                  <Route path="/" element={<Navigate to="/feed" replace />} />
+                  <Route path="/feed" element={<FeedPage />} />
+                  <Route path="/tops" element={<TopsPage />} />
                   <Route path="/albums/:id" element={<AlbumDetailPage />} />
                   <Route path="/tracks/:id" element={<TrackDetailPage />} />
                   <Route path="/login" element={<LoginPage />} />

@@ -1,0 +1,217 @@
+.review-scores-strip {
+  border-radius: var(--radius-md, 10px);
+  border: 1px solid var(--border-color);
+  background: linear-gradient(145deg, var(--card-background) 0%, var(--card-background-light, var(--card-background)) 100%);
+  box-shadow: var(--shadow, 0 1px 3px rgba(0, 0, 0, 0.08));
+  padding: 0.35rem 0.5rem 0.35rem 0.65rem;
+  max-width: 100%;
+}
+
+.review-scores-strip-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.review-scores-strip--small {
+  padding: 0.25rem 0.4rem 0.25rem 0.5rem;
+}
+
+.review-scores-strip--small .review-scores-strip-inner {
+  gap: 0.35rem;
+}
+
+.review-scores-strip-total {
+  font-weight: 800;
+  color: var(--text-color);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  min-width: 2ch;
+  text-align: right;
+}
+
+.review-scores-strip--default .review-scores-strip-total {
+  font-size: 1.85rem;
+}
+
+.review-scores-strip--small .review-scores-strip-total {
+  font-size: 1.2rem;
+}
+
+.review-scores-strip-cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.review-scores-strip-cell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.15rem;
+  padding: 0.2rem 0.35rem;
+  border-radius: 6px;
+  background: var(--hover-color);
+  border: 1px solid var(--border-light, var(--border-color));
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  cursor: help;
+  line-height: 1.2;
+}
+
+.review-scores-strip--small .review-scores-strip-cell {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.28rem;
+}
+
+.review-scores-strip-cell-abbr {
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.review-scores-strip-cell-val {
+  font-weight: 700;
+  color: var(--text-color);
+  font-variant-numeric: tabular-nums;
+}
+
+.review-scores-strip-details {
+  position: relative;
+  list-style: none;
+}
+
+.review-scores-strip-details > summary {
+  list-style: none;
+}
+
+.review-scores-strip-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.review-scores-strip-details-btn {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--hover-color);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.review-scores-strip-details-btn:hover {
+  color: var(--text-color);
+  border-color: var(--text-secondary);
+  background: var(--card-background);
+}
+
+.review-scores-strip--small .review-scores-strip-details-btn {
+  width: 1.2rem;
+  height: 1.2rem;
+  font-size: 0.68rem;
+}
+
+.review-scores-strip-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  width: min(18rem, calc(100vw - 2rem));
+  padding: 0.75rem 0.85rem 0.85rem;
+  border-radius: var(--radius-lg, 12px);
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md, 0 8px 24px rgba(0, 0, 0, 0.15));
+}
+
+.review-scores-strip-formula {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.35rem;
+  font-family: ui-monospace, 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.78rem;
+  color: var(--text-color);
+  margin-bottom: 0.45rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 8px;
+  background: var(--hover-color);
+  border: 1px solid var(--border-light, var(--border-color));
+}
+
+.review-scores-strip-formula-nums {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.review-scores-strip-formula-k {
+  font-weight: 700;
+  color: var(--primary-color, #4a9eff);
+  padding: 0.05rem 0.25rem;
+  border-radius: 4px;
+  background: var(--info-bg, rgba(74, 158, 255, 0.1));
+}
+
+.review-scores-strip-formula-m {
+  font-weight: 700;
+  color: var(--text-color);
+  padding: 0.05rem 0.25rem;
+  border-radius: 4px;
+  border: 1px dashed var(--border-color);
+}
+
+.review-scores-strip-formula-res {
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.review-scores-strip-formula-op,
+.review-scores-strip-formula-bracket {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.review-scores-strip-formula-caption {
+  margin: 0 0 0.55rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.review-scores-strip-legend {
+  margin: 0;
+  padding-left: 1rem;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.review-scores-strip-legend li {
+  margin-bottom: 0.35rem;
+}
+
+.review-scores-strip-legend li:last-child {
+  margin-bottom: 0;
+}
+
+.review-scores-strip-legend strong {
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .review-scores-strip-panel {
+    right: auto;
+    left: 0;
+  }
+}

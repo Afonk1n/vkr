@@ -92,7 +92,10 @@ export const genresAPI = {
 export const usersAPI = {
   getById: (id) => api.get(`/users/${id}`),
   getUserReviews: (id, params) => api.get(`/users/${id}/reviews`, { params }),
+  follow: (id) => api.post(`/users/${id}/follow`),
+  unfollow: (id) => api.delete(`/users/${id}/follow`),
   update: (id, data) => api.put(`/users/${id}`, data),
+  setFavorites: (id, albumIds) => api.put(`/users/${id}/favorites`, { album_ids: albumIds }),
   uploadAvatar: (id, file) => {
     const formData = new FormData();
     formData.append('avatar', file);

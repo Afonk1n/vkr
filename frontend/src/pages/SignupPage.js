@@ -30,13 +30,13 @@ const SignupPage = () => {
     setLoading(true);
 
     const result = await register(username, email, password);
-    
+
     if (result.success) {
-      navigate('/');
+      navigate('/feed');
     } else {
       setError(result.error);
     }
-    
+
     setLoading(false);
   };
 

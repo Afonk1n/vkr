@@ -179,3 +179,102 @@
   color: var(--text-secondary);
 }
 
+
+/* Stats — трек как в меню: плашки вплотную, внешняя капсула обрезает края (без «полумесяцев») */
+.profile-stats {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 2px;
+  margin-top: 1rem;
+  padding: 0;
+  border-radius: 999px;
+  background: var(--hover-color);
+  border: 1px solid var(--border-color);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 0.5rem;
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+  border-radius: 0;
+  background: var(--card-background);
+  border: none;
+  box-shadow: none;
+}
+
+@media (max-width: 640px) {
+  .profile-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px;
+    border-radius: 14px;
+  }
+}
+
+.stat-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-color);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.stat-value.stat-genre {
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: normal;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+.stat-label {
+  font-size: 0.68rem;
+  color: var(--text-muted, #888);
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+/* Radar — та же «рамка-трек», что у статистики */
+.profile-radar-section {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  padding: 0.65rem 0.85rem 0.85rem;
+  border-radius: var(--radius-lg, 14px);
+  background: var(--hover-color);
+  border: 1px solid var(--border-color);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.radar-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Verified badge */
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent-color, #268bd2);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}

@@ -225,6 +225,7 @@ func runMigrations() error {
 
 	err := DB.AutoMigrate(
 		&models.User{},
+		&models.UserFollow{},
 		&models.Genre{},
 		&models.Album{},
 		&models.Track{},
@@ -271,18 +272,18 @@ func fixReviewsTableConstraints() error {
 	var trackIDNullable bool
 
 	if err := DB.Raw(`
-		SELECT 
+		SELECT
 			is_nullable = 'YES' as album_id_nullable
-		FROM information_schema.columns 
+		FROM information_schema.columns
 		WHERE table_name = 'reviews' AND column_name = 'album_id'
 	`).Scan(&albumIDNullable).Error; err != nil {
 		return fmt.Errorf("failed to check album_id constraint: %w", err)
 	}
 
 	if err := DB.Raw(`
-		SELECT 
+		SELECT
 			is_nullable = 'YES' as track_id_nullable
-		FROM information_schema.columns 
+		FROM information_schema.columns
 		WHERE table_name = 'reviews' AND column_name = 'track_id'
 	`).Scan(&trackIDNullable).Error; err != nil {
 		return fmt.Errorf("failed to check track_id constraint: %w", err)
@@ -489,130 +490,130 @@ func seedData() error {
 			return fmt.Errorf("Электронная genre not found or has invalid ID")
 		}
 
-	// Helper function to create time pointer
-	createDate := func(year int, month time.Month, day int) *time.Time {
-		t := time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
-		return &t
-	}
-
-	albums := []models.Album{
-		// Баста (Basta / Ноггано) - Хип-хоп
-		{Title: "Баста 1", Artist: "Баста", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/basta1.jpg", Description: "Первый студийный альбом Басты", ReleaseDate: createDate(2006, 1, 1), AverageRating: 0},
-		{Title: "Баста 2", Artist: "Баста", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/basta2.jpg", Description: "Второй студийный альбом Басты", ReleaseDate: createDate(2007, 1, 1), AverageRating: 0},
-		{Title: "Ноггано", Artist: "Баста", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/noggano.jpg", Description: "Альбом под псевдонимом Ноггано", ReleaseDate: createDate(2008, 1, 1), AverageRating: 0},
-		{Title: "Баста 3", Artist: "Баста", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/basta3.jpg", Description: "Третий студийный альбом Басты", ReleaseDate: createDate(2010, 1, 1), AverageRating: 0},
-		
-		// Скриптонит (Scriptonite) - Хип-хоп
-		{Title: "Дом с нормальными явлениями", Artist: "Скриптонит", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/domsnormyavleniyami.jpg", Description: "Дебютный альбом Скриптонита", ReleaseDate: createDate(2015, 1, 1), AverageRating: 0},
-		{Title: "Праздник на улице 36", Artist: "Скриптонит", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/prazdnikulica36.jpg", Description: "Второй альбом Скриптонита", ReleaseDate: createDate(2017, 1, 1), AverageRating: 0},
-		{Title: "2004", Artist: "Скриптонит", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/2004.jpg", Description: "Третий альбом Скриптонита", ReleaseDate: createDate(2018, 1, 1), AverageRating: 0},
-		{Title: "Уроборос: улочка и аллея", Artist: "Скриптонит & 104", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/uroboros.jpg", Description: "Альбом Скриптонита & 104", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
-		
-		// ANNA ASTI - Поп
-		{Title: "Феникс", Artist: "ANNA ASTI", GenreID: popGenre.ID, CoverImagePath: "/preview/fenix.png", Description: "Дебютный альбом ANNA ASTI", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
-		{Title: "Царица", Artist: "ANNA ASTI", GenreID: popGenre.ID, CoverImagePath: "/preview/carica.png", Description: "Второй альбом ANNA ASTI", ReleaseDate: createDate(2023, 1, 1), AverageRating: 0},
-		
-		// Zivert - Поп
-		{Title: "Vinyl #1", Artist: "Zivert", GenreID: popGenre.ID, CoverImagePath: "/preview/venil1.jpg", Description: "Дебютный альбом Zivert", ReleaseDate: createDate(2018, 1, 1), AverageRating: 0},
-		{Title: "Vinyl #2", Artist: "Zivert", GenreID: popGenre.ID, CoverImagePath: "/preview/venil2.jpg", Description: "Второй альбом Zivert", ReleaseDate: createDate(2019, 1, 1), AverageRating: 0},
-		{Title: "Сияй", Artist: "Zivert", GenreID: popGenre.ID, CoverImagePath: "/preview/siyai.jpg", Description: "Третий альбом Zivert", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
-		
-		// IOWA - Поп
-		{Title: "Import", Artist: "IOWA", GenreID: popGenre.ID, CoverImagePath: "/preview/import.jpg", Description: "Первый альбом IOWA", ReleaseDate: createDate(2012, 1, 1), AverageRating: 0},
-		{Title: "Export", Artist: "IOWA", GenreID: popGenre.ID, CoverImagePath: "/preview/export.jpg", Description: "Второй альбом IOWA", ReleaseDate: createDate(2015, 1, 1), AverageRating: 0},
-		{Title: "Французский альбом", Artist: "IOWA", GenreID: popGenre.ID, CoverImagePath: "/preview/french.jpg", Description: "Третий альбом IOWA", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
-		
-		// Клава Кока (Klava Koka) - Поп
-		{Title: "Неприлично о личном", Artist: "Клава Кока", GenreID: popGenre.ID, CoverImagePath: "/preview/neprelichnoolicnom.jpg", Description: "Дебютный альбом Клавы Коки", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
-		{Title: "Красное вино", Artist: "Клава Кока", GenreID: popGenre.ID, CoverImagePath: "/preview/krasnoevino.jpg", Description: "Второй альбом Клавы Коки", ReleaseDate: createDate(2024, 1, 1), AverageRating: 0},
-		
-		// ЛСП (LSP) - Хип-хоп
-		{Title: "Magic City", Artist: "ЛСП", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/magiccity.jpg", Description: "Первый альбом ЛСП", ReleaseDate: createDate(2015, 1, 1), AverageRating: 0},
-		{Title: "Tragic City", Artist: "ЛСП", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/tragiccity.jpg", Description: "Второй альбом ЛСП", ReleaseDate: createDate(2017, 1, 1), AverageRating: 0},
-		{Title: "SAD SOUNDS", Artist: "ЛСП", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/sadsounds.png", Description: "Третий альбом ЛСП", ReleaseDate: createDate(2020, 1, 1), AverageRating: 0},
-		
-		// The Hatters - Рок/Инди
-		{Title: "Безумие", Artist: "The Hatters", GenreID: rockGenre.ID, CoverImagePath: "/preview/bezumie.jpg", Description: "Первый альбом The Hatters", ReleaseDate: createDate(2016, 1, 1), AverageRating: 0},
-		{Title: "Третий", Artist: "The Hatters", GenreID: rockGenre.ID, CoverImagePath: "/preview/tretiy.jpg", Description: "Третий альбом The Hatters", ReleaseDate: createDate(2018, 1, 1), AverageRating: 0},
-		{Title: "Четвёртый", Artist: "The Hatters", GenreID: rockGenre.ID, CoverImagePath: "/preview/chetvertiy.jpg", Description: "Четвёртый альбом The Hatters", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
-		
-		// Miyagi (Miyagi & Эндшпиль / Miyagi & Andy Panda) - Хип-хоп
-		{Title: "Hajime 1", Artist: "Miyagi & Эндшпиль", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/hajime1.jpg", Description: "Первый альбом Miyagi & Эндшпиль", ReleaseDate: createDate(2016, 1, 1), AverageRating: 0},
-		{Title: "Buster Keaton", Artist: "Miyagi & Andy Panda", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/BusterKeaton.jpg", Description: "Альбом Miyagi & Andy Panda", ReleaseDate: createDate(2018, 1, 1), AverageRating: 0},
-		{Title: "Yamakasi", Artist: "Miyagi & Andy Panda", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/Yamakasi.jpg", Description: "Альбом Miyagi & Andy Panda", ReleaseDate: createDate(2020, 1, 1), AverageRating: 0},
-		{Title: "Million Dollars: Happiness", Artist: "Miyagi & Andy Panda", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/MillionDollars.jpg", Description: "Альбом Miyagi & Andy Panda", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
-	}
-
-	// Seed albums - create or update with cover images
-	albumMap := map[string]string{
-		"Баста 1": "/preview/basta1.jpg",
-		"Баста 2": "/preview/basta2.jpg",
-		"Ноггано": "/preview/noggano.jpg",
-		"Баста 3": "/preview/basta3.jpg",
-		"Дом с нормальными явлениями": "/preview/domsnormyavleniyami.jpg",
-		"Праздник на улице 36": "/preview/prazdnikulica36.jpg",
-		"2004": "/preview/2004.jpg",
-		"Уроборос: улочка и аллея": "/preview/uroboros.jpg",
-		"Феникс": "/preview/fenix.png",
-		"Царица": "/preview/carica.png",
-		"Vinyl #1": "/preview/venil1.jpg",
-		"Vinyl #2": "/preview/venil2.jpg",
-		"Сияй": "/preview/siyai.jpg",
-		"Import": "/preview/import.jpg",
-		"Export": "/preview/export.jpg",
-		"Французский альбом": "/preview/french.jpg",
-		"Неприлично о личном": "/preview/neprelichnoolicnom.jpg",
-		"Красное вино": "/preview/krasnoevino.jpg",
-		"Magic City": "/preview/magiccity.jpg",
-		"Tragic City": "/preview/tragiccity.jpg",
-		"SAD SOUNDS": "/preview/sadsounds.png",
-		"Безумие": "/preview/bezumie.jpg",
-		"Третий": "/preview/tretiy.jpg",
-		"Четвёртый": "/preview/chetvertiy.jpg",
-		"Hajime 1": "/preview/hajime1.jpg",
-		"Buster Keaton": "/preview/BusterKeaton.jpg",
-		"Yamakasi": "/preview/Yamakasi.jpg",
-		"Million Dollars: Happiness": "/preview/MillionDollars.jpg",
-	}
-
-	createdAlbums := 0
-	existingAlbums := 0
-	skippedAlbums := 0
-	for _, album := range albums {
-		// Verify genre ID is valid before creating
-		if album.GenreID == 0 {
-			log.Printf("ERROR: Album %s has invalid GenreID (0), skipping", album.Title)
-			skippedAlbums++
-			continue
+		// Helper function to create time pointer
+		createDate := func(year int, month time.Month, day int) *time.Time {
+			t := time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
+			return &t
 		}
-		
-		var existingAlbum models.Album
-		result := DB.Where("title = ? AND artist = ?", album.Title, album.Artist).FirstOrCreate(&existingAlbum, album)
-		if result.Error != nil {
-			log.Printf("ERROR: Failed to create/find album %s: %v", album.Title, result.Error)
-			skippedAlbums++
-			continue
+
+		albums := []models.Album{
+			// Баста (Basta / Ноггано) - Хип-хоп
+			{Title: "Баста 1", Artist: "Баста", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/basta1.jpg", Description: "Первый студийный альбом Басты", ReleaseDate: createDate(2006, 1, 1), AverageRating: 0},
+			{Title: "Баста 2", Artist: "Баста", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/basta2.jpg", Description: "Второй студийный альбом Басты", ReleaseDate: createDate(2007, 1, 1), AverageRating: 0},
+			{Title: "Ноггано", Artist: "Баста", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/noggano.jpg", Description: "Альбом под псевдонимом Ноггано", ReleaseDate: createDate(2008, 1, 1), AverageRating: 0},
+			{Title: "Баста 3", Artist: "Баста", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/basta3.jpg", Description: "Третий студийный альбом Басты", ReleaseDate: createDate(2010, 1, 1), AverageRating: 0},
+
+			// Скриптонит (Scriptonite) - Хип-хоп
+			{Title: "Дом с нормальными явлениями", Artist: "Скриптонит", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/domsnormyavleniyami.jpg", Description: "Дебютный альбом Скриптонита", ReleaseDate: createDate(2015, 1, 1), AverageRating: 0},
+			{Title: "Праздник на улице 36", Artist: "Скриптонит", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/prazdnikulica36.jpg", Description: "Второй альбом Скриптонита", ReleaseDate: createDate(2017, 1, 1), AverageRating: 0},
+			{Title: "2004", Artist: "Скриптонит", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/2004.jpg", Description: "Третий альбом Скриптонита", ReleaseDate: createDate(2018, 1, 1), AverageRating: 0},
+			{Title: "Уроборос: улочка и аллея", Artist: "Скриптонит & 104", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/uroboros.jpg", Description: "Альбом Скриптонита & 104", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
+
+			// ANNA ASTI - Поп
+			{Title: "Феникс", Artist: "ANNA ASTI", GenreID: popGenre.ID, CoverImagePath: "/preview/fenix.png", Description: "Дебютный альбом ANNA ASTI", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
+			{Title: "Царица", Artist: "ANNA ASTI", GenreID: popGenre.ID, CoverImagePath: "/preview/carica.png", Description: "Второй альбом ANNA ASTI", ReleaseDate: createDate(2023, 1, 1), AverageRating: 0},
+
+			// Zivert - Поп
+			{Title: "Vinyl #1", Artist: "Zivert", GenreID: popGenre.ID, CoverImagePath: "/preview/venil1.jpg", Description: "Дебютный альбом Zivert", ReleaseDate: createDate(2018, 1, 1), AverageRating: 0},
+			{Title: "Vinyl #2", Artist: "Zivert", GenreID: popGenre.ID, CoverImagePath: "/preview/venil2.jpg", Description: "Второй альбом Zivert", ReleaseDate: createDate(2019, 1, 1), AverageRating: 0},
+			{Title: "Сияй", Artist: "Zivert", GenreID: popGenre.ID, CoverImagePath: "/preview/siyai.jpg", Description: "Третий альбом Zivert", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
+
+			// IOWA - Поп
+			{Title: "Import", Artist: "IOWA", GenreID: popGenre.ID, CoverImagePath: "/preview/import.jpg", Description: "Первый альбом IOWA", ReleaseDate: createDate(2012, 1, 1), AverageRating: 0},
+			{Title: "Export", Artist: "IOWA", GenreID: popGenre.ID, CoverImagePath: "/preview/export.jpg", Description: "Второй альбом IOWA", ReleaseDate: createDate(2015, 1, 1), AverageRating: 0},
+			{Title: "Французский альбом", Artist: "IOWA", GenreID: popGenre.ID, CoverImagePath: "/preview/french.jpg", Description: "Третий альбом IOWA", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
+
+			// Клава Кока (Klava Koka) - Поп
+			{Title: "Неприлично о личном", Artist: "Клава Кока", GenreID: popGenre.ID, CoverImagePath: "/preview/neprelichnoolicnom.jpg", Description: "Дебютный альбом Клавы Коки", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
+			{Title: "Красное вино", Artist: "Клава Кока", GenreID: popGenre.ID, CoverImagePath: "/preview/krasnoevino.jpg", Description: "Второй альбом Клавы Коки", ReleaseDate: createDate(2024, 1, 1), AverageRating: 0},
+
+			// ЛСП (LSP) - Хип-хоп
+			{Title: "Magic City", Artist: "ЛСП", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/magiccity.jpg", Description: "Первый альбом ЛСП", ReleaseDate: createDate(2015, 1, 1), AverageRating: 0},
+			{Title: "Tragic City", Artist: "ЛСП", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/tragiccity.jpg", Description: "Второй альбом ЛСП", ReleaseDate: createDate(2017, 1, 1), AverageRating: 0},
+			{Title: "SAD SOUNDS", Artist: "ЛСП", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/sadsounds.png", Description: "Третий альбом ЛСП", ReleaseDate: createDate(2020, 1, 1), AverageRating: 0},
+
+			// The Hatters - Рок/Инди
+			{Title: "Безумие", Artist: "The Hatters", GenreID: rockGenre.ID, CoverImagePath: "/preview/bezumie.jpg", Description: "Первый альбом The Hatters", ReleaseDate: createDate(2016, 1, 1), AverageRating: 0},
+			{Title: "Третий", Artist: "The Hatters", GenreID: rockGenre.ID, CoverImagePath: "/preview/tretiy.jpg", Description: "Третий альбом The Hatters", ReleaseDate: createDate(2018, 1, 1), AverageRating: 0},
+			{Title: "Четвёртый", Artist: "The Hatters", GenreID: rockGenre.ID, CoverImagePath: "/preview/chetvertiy.jpg", Description: "Четвёртый альбом The Hatters", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
+
+			// Miyagi (Miyagi & Эндшпиль / Miyagi & Andy Panda) - Хип-хоп
+			{Title: "Hajime 1", Artist: "Miyagi & Эндшпиль", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/hajime1.jpg", Description: "Первый альбом Miyagi & Эндшпиль", ReleaseDate: createDate(2016, 1, 1), AverageRating: 0},
+			{Title: "Buster Keaton", Artist: "Miyagi & Andy Panda", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/BusterKeaton.jpg", Description: "Альбом Miyagi & Andy Panda", ReleaseDate: createDate(2018, 1, 1), AverageRating: 0},
+			{Title: "Yamakasi", Artist: "Miyagi & Andy Panda", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/Yamakasi.jpg", Description: "Альбом Miyagi & Andy Panda", ReleaseDate: createDate(2020, 1, 1), AverageRating: 0},
+			{Title: "Million Dollars: Happiness", Artist: "Miyagi & Andy Panda", GenreID: hiphopGenre.ID, CoverImagePath: "/preview/MillionDollars.jpg", Description: "Альбом Miyagi & Andy Panda", ReleaseDate: createDate(2021, 1, 1), AverageRating: 0},
 		}
-		
-		if result.RowsAffected > 0 {
-			// Album was created
-			createdAlbums++
-			log.Printf("✓ Created album: %s by %s (ID: %d, GenreID: %d)", album.Title, album.Artist, existingAlbum.ID, existingAlbum.GenreID)
-		} else {
-			// Album already exists, update cover_image_path if it's empty
-			existingAlbums++
-			if existingAlbum.CoverImagePath == "" && albumMap[album.Title] != "" {
-				existingAlbum.CoverImagePath = albumMap[album.Title]
-				if err := DB.Save(&existingAlbum).Error; err != nil {
-					log.Printf("ERROR: Failed to update cover_image_path for album %s: %v", album.Title, err)
-				} else {
-					log.Printf("  Updated cover_image_path for album: %s (ID: %d)", album.Title, existingAlbum.ID)
-				}
+
+		// Seed albums - create or update with cover images
+		albumMap := map[string]string{
+			"Баста 1": "/preview/basta1.jpg",
+			"Баста 2": "/preview/basta2.jpg",
+			"Ноггано": "/preview/noggano.jpg",
+			"Баста 3": "/preview/basta3.jpg",
+			"Дом с нормальными явлениями": "/preview/domsnormyavleniyami.jpg",
+			"Праздник на улице 36":        "/preview/prazdnikulica36.jpg",
+			"2004":                        "/preview/2004.jpg",
+			"Уроборос: улочка и аллея":    "/preview/uroboros.jpg",
+			"Феникс":                      "/preview/fenix.png",
+			"Царица":                      "/preview/carica.png",
+			"Vinyl #1":                    "/preview/venil1.jpg",
+			"Vinyl #2":                    "/preview/venil2.jpg",
+			"Сияй":                        "/preview/siyai.jpg",
+			"Import":                      "/preview/import.jpg",
+			"Export":                      "/preview/export.jpg",
+			"Французский альбом":          "/preview/french.jpg",
+			"Неприлично о личном":         "/preview/neprelichnoolicnom.jpg",
+			"Красное вино":                "/preview/krasnoevino.jpg",
+			"Magic City":                  "/preview/magiccity.jpg",
+			"Tragic City":                 "/preview/tragiccity.jpg",
+			"SAD SOUNDS":                  "/preview/sadsounds.png",
+			"Безумие":                     "/preview/bezumie.jpg",
+			"Третий":                      "/preview/tretiy.jpg",
+			"Четвёртый":                   "/preview/chetvertiy.jpg",
+			"Hajime 1":                    "/preview/hajime1.jpg",
+			"Buster Keaton":               "/preview/BusterKeaton.jpg",
+			"Yamakasi":                    "/preview/Yamakasi.jpg",
+			"Million Dollars: Happiness":  "/preview/MillionDollars.jpg",
+		}
+
+		createdAlbums := 0
+		existingAlbums := 0
+		skippedAlbums := 0
+		for _, album := range albums {
+			// Verify genre ID is valid before creating
+			if album.GenreID == 0 {
+				log.Printf("ERROR: Album %s has invalid GenreID (0), skipping", album.Title)
+				skippedAlbums++
+				continue
+			}
+
+			var existingAlbum models.Album
+			result := DB.Where("title = ? AND artist = ?", album.Title, album.Artist).FirstOrCreate(&existingAlbum, album)
+			if result.Error != nil {
+				log.Printf("ERROR: Failed to create/find album %s: %v", album.Title, result.Error)
+				skippedAlbums++
+				continue
+			}
+
+			if result.RowsAffected > 0 {
+				// Album was created
+				createdAlbums++
+				log.Printf("✓ Created album: %s by %s (ID: %d, GenreID: %d)", album.Title, album.Artist, existingAlbum.ID, existingAlbum.GenreID)
 			} else {
-				log.Printf("  Album already exists: %s by %s (ID: %d, GenreID: %d)", album.Title, album.Artist, existingAlbum.ID, existingAlbum.GenreID)
+				// Album already exists, update cover_image_path if it's empty
+				existingAlbums++
+				if existingAlbum.CoverImagePath == "" && albumMap[album.Title] != "" {
+					existingAlbum.CoverImagePath = albumMap[album.Title]
+					if err := DB.Save(&existingAlbum).Error; err != nil {
+						log.Printf("ERROR: Failed to update cover_image_path for album %s: %v", album.Title, err)
+					} else {
+						log.Printf("  Updated cover_image_path for album: %s (ID: %d)", album.Title, existingAlbum.ID)
+					}
+				} else {
+					log.Printf("  Album already exists: %s by %s (ID: %d, GenreID: %d)", album.Title, album.Artist, existingAlbum.ID, existingAlbum.GenreID)
+				}
 			}
 		}
-	}
 		log.Printf("Albums seeding complete: %d created, %d already existed, %d skipped", createdAlbums, existingAlbums, skippedAlbums)
 	}
 
@@ -1085,14 +1086,14 @@ func seedTracks() error {
 			TrackNumber:    &trackData.TrackNum,
 			CoverImagePath: trackData.CoverImagePath,
 		}
-		
+
 		result := DB.Where("album_id = ? AND title = ?", album.ID, trackData.Title).FirstOrCreate(&track, trackToCreate)
 		if result.Error != nil {
 			log.Printf("ERROR: Failed to create/find track %s: %v", trackData.Title, result.Error)
 			skippedTracks++
 			continue
 		}
-		
+
 		if result.RowsAffected > 0 {
 			createdTracks++
 			log.Printf("  ✓ Created track: %s (ID: %d, AlbumID: %d)", trackData.Title, track.ID, album.ID)
@@ -1124,7 +1125,7 @@ func seedTracks() error {
 			// Check current genres for this track to avoid unnecessary updates
 			var currentGenres []models.Genre
 			DB.Model(&track).Association("Genres").Find(&currentGenres)
-			
+
 			// Check if genres need to be updated (compare by ID)
 			needsUpdate := false
 			if len(currentGenres) != len(trackGenres) {
@@ -1141,7 +1142,7 @@ func seedTracks() error {
 					}
 				}
 			}
-			
+
 			if needsUpdate {
 				// Use Replace to update genres (only if needed)
 				if err := DB.Model(&track).Association("Genres").Replace(trackGenres); err != nil {
@@ -1218,7 +1219,7 @@ func seedTrackLikes() error {
 		// Distribute users cyclically to ensure variety
 		startIndex := trackIndex % len(allTestUsers)
 		likesCreated := 0
-		
+
 		for j := 0; j < numLikes && likesCreated < numLikes; j++ {
 			userIndex := (startIndex + j) % len(allTestUsers)
 			// Check if like already exists
@@ -1434,7 +1435,7 @@ func seedReviews() error {
 	failedReviews := 0
 	if !reviewsExist {
 		log.Println("No reviews found, creating new reviews...")
-		
+
 		// Find albums by title for reviews
 		var basta1, basta2, noggano, basta3 models.Album
 		var domNorm, prazdnik36, album2004, uroboros models.Album
@@ -1445,7 +1446,7 @@ func seedReviews() error {
 		var magicCity, tragicCity, sadSounds models.Album
 		var bezumie, tretiy, chetvertiy models.Album
 		var hajime1, busterKeaton, yamakasi, millionDollars models.Album
-		
+
 		DB.Where("title = ? AND artist = ?", "Баста 1", "Баста").First(&basta1)
 		DB.Where("title = ? AND artist = ?", "Баста 2", "Баста").First(&basta2)
 		DB.Where("title = ? AND artist = ?", "Ноггано", "Баста").First(&noggano)
@@ -1474,7 +1475,7 @@ func seedReviews() error {
 		DB.Where("title = ? AND artist = ?", "Buster Keaton", "Miyagi & Andy Panda").First(&busterKeaton)
 		DB.Where("title = ? AND artist = ?", "Yamakasi", "Miyagi & Andy Panda").First(&yamakasi)
 		DB.Where("title = ? AND artist = ?", "Million Dollars: Happiness", "Miyagi & Andy Panda").First(&millionDollars)
-		
+
 		// Create test reviews (using atmosphere ratings 1-10, converted to multiplier)
 		reviews := []models.Review{
 			// Баста - Баста 1 (Хип-хоп)
@@ -1612,14 +1613,14 @@ func seedReviews() error {
 		var track1, track2, track3, track4, track5 models.Track
 		DB.Where("title = ?", "Мой друг").First(&track1) // Баста 1
 		DB.Where("title = ?", "Вне игры").First(&track2) // Скриптонит
-		DB.Where("title = ?", "Феникс").First(&track3) // ANNA ASTI
-		DB.Where("title = ?", "Life").First(&track4) // Zivert
+		DB.Where("title = ?", "Феникс").First(&track3)   // ANNA ASTI
+		DB.Where("title = ?", "Life").First(&track4)     // Zivert
 		DB.Where("title = ?", "Улыбайся").First(&track5) // IOWA
-		
+
 		if track1.ID > 0 || track2.ID > 0 || track3.ID > 0 || track4.ID > 0 || track5.ID > 0 {
 			// Add some track reviews
 			trackReviews := []models.Review{}
-			
+
 			if track1.ID > 0 {
 				trackReviews = append(trackReviews, models.Review{
 					UserID:               testUser.ID,
@@ -1634,7 +1635,7 @@ func seedReviews() error {
 					ModeratedBy:          &admin.ID,
 				})
 			}
-			
+
 			if track2.ID > 0 {
 				trackReviews = append(trackReviews, models.Review{
 					UserID:               admin.ID,
@@ -1649,7 +1650,7 @@ func seedReviews() error {
 					ModeratedBy:          &admin.ID,
 				})
 			}
-			
+
 			if track3.ID > 0 {
 				trackReviews = append(trackReviews, models.Review{
 					UserID:               testUser.ID,
@@ -1664,7 +1665,7 @@ func seedReviews() error {
 					ModeratedBy:          &admin.ID,
 				})
 			}
-			
+
 			if track4.ID > 0 {
 				trackReviews = append(trackReviews, models.Review{
 					UserID:               admin.ID,
@@ -1679,7 +1680,7 @@ func seedReviews() error {
 					ModeratedBy:          &admin.ID,
 				})
 			}
-			
+
 			if track5.ID > 0 {
 				trackReviews = append(trackReviews, models.Review{
 					UserID:               testUser.ID,

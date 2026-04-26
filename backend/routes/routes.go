@@ -67,17 +67,17 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 		// Review routes
 		reviews := api.Group("/reviews")
 		{
-			reviews.GET("", reviewController.GetReviews)
+			reviews.GET("", middleware.OptionalAuthMiddleware(db), reviewController.GetReviews)
 			reviews.GET("/popular", reviewController.GetPopularReviews)
 			reviews.GET("/:id", reviewController.GetReview)
 			reviews.POST("", middleware.AuthMiddleware(db), reviewController.CreateReview)
 			reviews.PUT("/:id", middleware.AuthMiddleware(db), reviewController.UpdateReview)
 			reviews.DELETE("/:id", middleware.AuthMiddleware(db), reviewController.DeleteReview)
-			
+
 			// Like routes
 			reviews.POST("/:id/like", middleware.AuthMiddleware(db), reviewController.LikeReview)
 			reviews.DELETE("/:id/like", middleware.AuthMiddleware(db), reviewController.UnlikeReview)
-			
+
 			// Moderation routes (admin only)
 			reviews.POST("/:id/approve", middleware.AuthMiddleware(db), middleware.AdminMiddleware(), reviewController.ApproveReview)
 			reviews.POST("/:id/reject", middleware.AuthMiddleware(db), middleware.AdminMiddleware(), reviewController.RejectReview)
@@ -103,12 +103,14 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 		// User routes
 		users := api.Group("/users")
 		{
-			users.GET("/:id", userController.GetUser)
+			users.POST("/:id/follow", middleware.AuthMiddleware(db), userController.FollowUser)
+			users.DELETE("/:id/follow", middleware.AuthMiddleware(db), userController.UnfollowUser)
+			users.GET("/:id", middleware.OptionalAuthMiddleware(db), userController.GetUser)
 			users.GET("/:id/reviews", userController.GetUserReviews)
 			users.PUT("/:id", middleware.AuthMiddleware(db), userController.UpdateUser)
-			users.POST("/:id/avatar", middleware.AuthMiddleware(db), userController.UploadAvatar) // Must come before /:id
+			users.POST("/:id/avatar", middleware.AuthMiddleware(db), userController.UploadAvatar)
+			users.PUT("/:id/favorites", middleware.AuthMiddleware(db), userController.SetFavoriteAlbums)
 			users.DELETE("/:id", middleware.AuthMiddleware(db), userController.DeleteUser)
 		}
 	}
 }
-

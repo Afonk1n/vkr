@@ -68,6 +68,21 @@ func (rc *ReviewController) GetReviews(c *gin.Context) {
 		query = query.Where("user_id = ?", userID)
 	}
 
+	// Лента подписок (требует X-User-ID)
+	if following := c.Query("following"); following == "true" || following == "1" {
+		viewerID, ok := middleware.GetUserIDFromContext(c)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
+				Error:   "Unauthorized",
+				Message: "Войдите, чтобы видеть ленту подписок",
+				Code:    http.StatusUnauthorized,
+			})
+			return
+		}
+		sub := rc.DB.Model(&models.UserFollow{}).Select("following_id").Where("follower_id = ?", viewerID)
+		query = query.Where("user_id IN (?)", sub)
+	}
+
 	// Filter by status
 	if status := c.Query("status"); status != "" {
 		query = query.Where("status = ?", status)

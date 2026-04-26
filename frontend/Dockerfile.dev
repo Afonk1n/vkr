@@ -2,7 +2,8 @@ FROM node:18-bullseye-slim
 
 WORKDIR /app
 
-ENV CI=true
+# Не ставить CI=true: в dev это ломает привычный режим CRA (оверлей/интерактив) и мешает отладке.
+ENV CI=false
 ENV PORT=3000
 
 COPY package.json package-lock.json ./

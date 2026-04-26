@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { reviewsAPI } from '../services/api';
-import { formatScore, convertMultiplierToAtmosphere } from '../utils/ratingCalculator';
 import { getImageUrl } from '../utils/imageUtils';
 import LikeButton from './LikeButton';
+import ReviewScoresStrip from './ReviewScoresStrip';
 import './ReviewCard.css';
 
 const ReviewCard = ({ review, onEdit, onDelete, onUpdate, moderationActions, hideLike }) => {
@@ -81,8 +81,8 @@ const ReviewCard = ({ review, onEdit, onDelete, onUpdate, moderationActions, hid
           {review.user?.id ? (
             <Link to={`/users/${review.user.id}`} className="review-author-avatar-link">
               {(review.user?.avatar_path && getImageUrl(review.user.avatar_path) && !avatarError) ? (
-                <img 
-                  src={getImageUrl(review.user.avatar_path)} 
+                <img
+                  src={getImageUrl(review.user.avatar_path)}
                   alt={review.user?.username || 'Пользователь'}
                   className="review-author-avatar"
                   onError={() => setAvatarError(true)}
@@ -96,8 +96,8 @@ const ReviewCard = ({ review, onEdit, onDelete, onUpdate, moderationActions, hid
           ) : (
             <>
               {(review.user?.avatar_path && getImageUrl(review.user.avatar_path) && !avatarError) ? (
-                <img 
-                  src={getImageUrl(review.user.avatar_path)} 
+                <img
+                  src={getImageUrl(review.user.avatar_path)}
                   alt={review.user?.username || 'Пользователь'}
                   className="review-author-avatar"
                   onError={() => setAvatarError(true)}
@@ -125,7 +125,7 @@ const ReviewCard = ({ review, onEdit, onDelete, onUpdate, moderationActions, hid
               )}
             </div>
             <span className="review-date-compact-header">{formatDate(review.created_at)}</span>
-            
+
             {/* Информация об альбоме или треке - перемещена сюда */}
             {(review.album || review.track) && (
               <div className="review-item-info-blocks">
@@ -155,18 +155,9 @@ const ReviewCard = ({ review, onEdit, onDelete, onUpdate, moderationActions, hid
             )}
           </div>
         </div>
-        
+
         <div className="review-scores-compact">
-          <div className="review-final-score-compact">
-            {formatScore(review.final_score)}
-          </div>
-          <div className="review-ratings-compact">
-            <span className="rating-number">{review.rating_rhymes}</span>
-            <span className="rating-number">{review.rating_structure}</span>
-            <span className="rating-number">{review.rating_implementation}</span>
-            <span className="rating-number">{review.rating_individuality}</span>
-            <span className="rating-number">{convertMultiplierToAtmosphere(review.atmosphere_multiplier)}</span>
-          </div>
+          <ReviewScoresStrip review={review} size="default" />
         </div>
       </div>
 

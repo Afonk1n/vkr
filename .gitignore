@@ -4,8 +4,10 @@
 
 # Cursor / IDE
 .cursor/
+.claude/
 
 # OS / tooling
 Thumbs.db
 Desktop.ini
+.cache/
 

@@ -5,22 +5,24 @@ import { usersAPI, reviewsAPI } from '../services/api';
 import ReviewCard from '../components/ReviewCard';
 import ProfileEditForm from '../components/ProfileEditForm';
 import BadgeList from '../components/BadgeList';
+import FavoriteAlbums from '../components/FavoriteAlbums';
+import GenreRadar from '../components/GenreRadar';
 import { getImageUrl } from '../utils/imageUtils';
 import './ProfilePage.css';
 
 const ProfilePage = () => {
-  const { user, isAuthenticated, updateUser } = useAuth();
+  const { user, isAuthenticated, updateUser, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
   const [error, setError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [currentUser, setCurrentUser] = useState(user);
 
   const fetchUserReviews = useCallback(async () => {
     if (!user) return;
-    
-    setLoading(true);
+
+    setReviewsLoading(true);
     try {
       const response = await usersAPI.getUserReviews(user.id);
       setReviews(response.data.reviews);
@@ -28,7 +30,7 @@ const ProfilePage = () => {
       setError('Ошибка загрузки рецензий');
       console.error('Error fetching reviews:', err);
     } finally {
-      setLoading(false);
+      setReviewsLoading(false);
     }
   }, [user]);
 
@@ -43,13 +45,14 @@ const ProfilePage = () => {
   }, [user]);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!isAuthenticated) {
       navigate('/login');
       return;
     }
     fetchUserReviews();
     fetchCurrentUser();
-  }, [isAuthenticated, navigate, fetchUserReviews, fetchCurrentUser]);
+  }, [authLoading, isAuthenticated, navigate, fetchUserReviews, fetchCurrentUser]);
 
   const handleSaveProfile = async (profileData) => {
     try {
@@ -57,7 +60,7 @@ const ProfilePage = () => {
       const updatedUser = response.data;
       setCurrentUser(updatedUser);
       setIsEditing(false);
-      
+
       // Update auth context without re-login
       // Only re-login if password was actually changed
       if (profileData.password && profileData.password.trim() !== '') {
@@ -73,7 +76,7 @@ const ProfilePage = () => {
           updateUser(updatedUser);
         }
       }
-      
+
       alert('Профиль успешно обновлен');
     } catch (err) {
       alert('Ошибка при обновлении профиля');
@@ -101,9 +104,9 @@ const ProfilePage = () => {
     return null;
   }
 
-  const socialLinks = currentUser?.social_links 
-    ? (typeof currentUser.social_links === 'string' 
-        ? JSON.parse(currentUser.social_links) 
+  const socialLinks = currentUser?.social_links
+    ? (typeof currentUser.social_links === 'string'
+        ? JSON.parse(currentUser.social_links)
         : currentUser.social_links)
     : {};
 
@@ -122,8 +125,8 @@ const ProfilePage = () => {
             <div className="profile-header-card">
               <div className="profile-avatar-section">
                 {currentUser?.avatar_path && getImageUrl(currentUser.avatar_path) ? (
-                  <img 
-                    src={getImageUrl(currentUser.avatar_path)} 
+                  <img
+                    src={getImageUrl(currentUser.avatar_path)}
                     alt={currentUser.username}
                     className="profile-avatar"
                   />
@@ -132,7 +135,7 @@ const ProfilePage = () => {
                     {currentUser?.username?.charAt(0).toUpperCase() || 'U'}
                   </div>
                 )}
-                <button 
+                <button
                   className="btn-edit-profile"
                   onClick={() => setIsEditing(true)}
                 >
@@ -140,7 +143,10 @@ const ProfilePage = () => {
                 </button>
               </div>
               <div className="profile-info-section">
-                <h1 className="profile-username">{currentUser?.username || user?.username || 'Пользователь'}</h1>
+                <h1 className="profile-username">
+                  {currentUser?.username || user?.username || 'Пользователь'}
+                  {currentUser?.is_verified_artist && <span className="verified-badge" title="Верифицированный артист">✓</span>}
+                </h1>
                 {currentUser?.email && (
                   <p className="profile-email">{currentUser.email}</p>
                 )}
@@ -163,24 +169,60 @@ const ProfilePage = () => {
                 {(socialLinks.vk || socialLinks.telegram || socialLinks.max) && (
                   <div className="profile-social-links">
                     {socialLinks.vk && (
-                      <a href={socialLinks.vk} target="_blank" rel="noopener noreferrer" className="social-link">
-                        VK
-                      </a>
+                      <a href={socialLinks.vk} target="_blank" rel="noopener noreferrer" className="social-link">VK</a>
                     )}
                     {socialLinks.telegram && (
-                      <a href={`https://t.me/${socialLinks.telegram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="social-link">
-                        Telegram
-                      </a>
+                      <a href={`https://t.me/${socialLinks.telegram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="social-link">Telegram</a>
                     )}
                     {socialLinks.max && (
-                      <a href={socialLinks.max.startsWith('http') ? socialLinks.max : `https://max.ru/${socialLinks.max.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="social-link">
-                        MAX
-                      </a>
+                      <a href={socialLinks.max.startsWith('http') ? socialLinks.max : `https://max.ru/${socialLinks.max.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="social-link">MAX</a>
+                    )}
+                  </div>
+                )}
+
+                {/* Stats */}
+                {currentUser?.stats && (
+                  <div className="profile-stats">
+                    <div className="stat-item">
+                      <span className="stat-value">{currentUser.stats.total_reviews}</span>
+                      <span className="stat-label">рецензий</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-value">{currentUser.stats.avg_score || '—'}</span>
+                      <span className="stat-label">ср. оценка</span>
+                    </div>
+                    <div className="stat-item">
+                      <span className="stat-value">{currentUser.stats.total_likes_received}</span>
+                      <span className="stat-label">лайков</span>
+                    </div>
+                    {currentUser.stats.top_genre && (
+                      <div className="stat-item">
+                        <span className="stat-value stat-genre">{currentUser.stats.top_genre}</span>
+                        <span className="stat-label">топ жанр</span>
+                      </div>
                     )}
                   </div>
                 )}
               </div>
+
+              {/* Radar chart */}
+              {currentUser?.genre_stats && currentUser.genre_stats.length >= 3 && (
+                <div className="profile-radar-section">
+                  <h3 className="radar-title">Жанровый профиль</h3>
+                  <GenreRadar genreStats={currentUser.genre_stats} />
+                </div>
+              )}
             </div>
+
+            {/* Favorite albums */}
+            <FavoriteAlbums
+              albums={currentUser?.favorite_albums}
+              isOwner={true}
+              userId={user?.id}
+              onUpdate={(updated) =>
+                setCurrentUser((prev) => ({ ...prev, favorite_albums: updated }))
+              }
+            />
           </>
         )}
 
@@ -188,7 +230,7 @@ const ProfilePage = () => {
           <div className="profile-reviews">
             <h2>Мои рецензии ({reviews.length})</h2>
             {error && <div className="error-message">{error}</div>}
-            {loading ? (
+            {reviewsLoading ? (
               <div className="loading">Загрузка...</div>
             ) : reviews.length === 0 ? (
               <div className="empty-state">У вас пока нет рецензий</div>

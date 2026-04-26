@@ -14,7 +14,7 @@ const AdminPanel = () => {
 
   useEffect(() => {
     if (!isAuthenticated || !isAdmin) {
-      navigate('/');
+      navigate('/feed');
       return;
     }
     fetchPendingReviews();
@@ -68,7 +68,7 @@ const AdminPanel = () => {
         </div>
 
         {error && <div className="error-message">{error}</div>}
-        
+
         {loading ? (
           <div className="loading">Загрузка...</div>
         ) : pendingReviews.length === 0 ? (
@@ -76,8 +76,8 @@ const AdminPanel = () => {
         ) : (
           <div className="reviews-list">
             {pendingReviews.map((review) => (
-              <ReviewCard 
-                key={review.id} 
+              <ReviewCard
+                key={review.id}
                 review={review}
                 hideLike={true}
                 moderationActions={

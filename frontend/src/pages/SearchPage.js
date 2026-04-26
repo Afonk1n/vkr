@@ -8,20 +8,20 @@ const SearchPage = () => {
   const [genres, setGenres] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
-  
+
+
   // Filters state
   const [selectedGenres, setSelectedGenres] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('desc');
-  
+
   const [pagination, setPagination] = useState({
     total: 0,
     page: 1,
     page_size: 20,
   });
-  
+
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
 
@@ -41,7 +41,7 @@ const SearchPage = () => {
   // Fetch tracks when filters change
   useEffect(() => {
     let isCancelled = false;
-    
+
     const fetchTracks = async () => {
       setLoading(true);
       setError('');
@@ -75,7 +75,7 @@ const SearchPage = () => {
 
         // Ensure all tracks have album relationship loaded
         const validTracks = tracksData.filter(track => track && track.id);
-        
+
         setTracks(validTracks);
         setPagination({
           total: total,
@@ -101,7 +101,7 @@ const SearchPage = () => {
     };
 
     fetchTracks();
-    
+
     return () => {
       isCancelled = true;
     };
@@ -129,16 +129,18 @@ const SearchPage = () => {
       console.error('Invalid sort value:', value);
       return;
     }
-    const [newSortBy, newSortOrder] = value.split('_');
-    
+    const lastUnderscore = value.lastIndexOf('_');
+    const newSortBy = value.substring(0, lastUnderscore);
+    const newSortOrder = value.substring(lastUnderscore + 1);
+
     // Validate sortBy and sortOrder
-    const validSortBy = ['created_at', 'release_date', 'title', 'average_rating', 'likes_count'].includes(newSortBy) 
-      ? newSortBy 
+    const validSortBy = ['created_at', 'release_date', 'title', 'average_rating', 'likes_count'].includes(newSortBy)
+      ? newSortBy
       : 'created_at';
-    const validSortOrder = ['asc', 'desc'].includes(newSortOrder) 
-      ? newSortOrder 
+    const validSortOrder = ['asc', 'desc'].includes(newSortOrder)
+      ? newSortOrder
       : 'desc';
-    
+
     setSortBy(validSortBy);
     setSortOrder(validSortOrder);
     setCurrentPage(1);
@@ -161,7 +163,7 @@ const SearchPage = () => {
     <div className="container">
       <div className="search-page">
         <h1 className="search-page-title">Каталог альбомов</h1>
-        
+
         <div className="search-page-content">
           {/* Left sidebar with filters */}
           <div className="search-filters-panel">
@@ -221,7 +223,7 @@ const SearchPage = () => {
             {error && (
               <div className="error-message">{error}</div>
             )}
-            
+
             {loading ? (
               <div className="loading">Загрузка...</div>
             ) : (
@@ -232,7 +234,7 @@ const SearchPage = () => {
                     <span className="results-count-label">Найдено треков:</span>
                     <span className="results-count-value">{pagination.total}</span>
                   </div>
-                  
+
                   {pagination.total > pageSize && (
                     <div className="results-pagination">
                       <button

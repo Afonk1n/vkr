@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"music-review-site/backend/middleware"
 	"music-review-site/backend/models"
 	"music-review-site/backend/utils"
@@ -36,23 +37,243 @@ func (uc *UserController) GetUser(c *gin.Context) {
 	}
 
 	user.Password = ""
-	
-	// Calculate badges
+
 	badges := uc.CalculateUserBadges(user.ID)
+	stats := uc.CalculateUserStats(user.ID)
+	genreStats := uc.CalculateGenreStats(user.ID)
+	favoriteAlbums := uc.GetFavoriteAlbums(user.FavoriteAlbumIDs)
+
+	var followersCount, followingCount int64
+	uc.DB.Model(&models.UserFollow{}).Where("following_id = ?", user.ID).Count(&followersCount)
+	uc.DB.Model(&models.UserFollow{}).Where("follower_id = ?", user.ID).Count(&followingCount)
+
 	userResponse := gin.H{
-		"id":           user.ID,
-		"username":     user.Username,
-		"email":        user.Email,
-		"avatar_path":  user.AvatarPath,
-		"bio":          user.Bio,
-		"social_links": user.SocialLinks,
-		"is_admin":     user.IsAdmin,
-		"created_at":   user.CreatedAt,
-		"updated_at":   user.UpdatedAt,
-		"badges":       badges,
+		"id":                 user.ID,
+		"username":           user.Username,
+		"email":              user.Email,
+		"avatar_path":        user.AvatarPath,
+		"bio":                user.Bio,
+		"social_links":       user.SocialLinks,
+		"is_admin":           user.IsAdmin,
+		"is_verified_artist": user.IsVerifiedArtist,
+		"favorite_album_ids": user.FavoriteAlbumIDs,
+		"created_at":         user.CreatedAt,
+		"updated_at":         user.UpdatedAt,
+		"badges":             badges,
+		"stats":              stats,
+		"genre_stats":        genreStats,
+		"favorite_albums":    favoriteAlbums,
+		"followers_count":    followersCount,
+		"following_count":    followingCount,
 	}
-	
+
+	isFollowing := false
+	if viewerID, ok := middleware.GetUserIDFromContext(c); ok && viewerID != user.ID {
+		var fc int64
+		uc.DB.Model(&models.UserFollow{}).Where("follower_id = ? AND following_id = ?", viewerID, user.ID).Count(&fc)
+		isFollowing = fc > 0
+	}
+	userResponse["is_following"] = isFollowing
+
 	c.JSON(http.StatusOK, userResponse)
+}
+
+// FollowUser subscribes the current user to another user.
+func (uc *UserController) FollowUser(c *gin.Context) {
+	targetID64, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse{Error: "Bad Request", Message: "Некорректный id", Code: http.StatusBadRequest})
+		return
+	}
+	targetID := uint(targetID64)
+	followerID, exists := middleware.GetUserIDFromContext(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse{Error: "Unauthorized", Message: "Нужна авторизация", Code: http.StatusUnauthorized})
+		return
+	}
+	if targetID == followerID {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse{Error: "Bad Request", Message: "Нельзя подписаться на себя", Code: http.StatusBadRequest})
+		return
+	}
+	var target models.User
+	if err := uc.DB.First(&target, targetID).Error; err != nil {
+		c.JSON(http.StatusNotFound, utils.ErrorResponse{Error: "Not Found", Message: "Пользователь не найден", Code: http.StatusNotFound})
+		return
+	}
+	var existing models.UserFollow
+	if err := uc.DB.Where("follower_id = ? AND following_id = ?", followerID, targetID).First(&existing).Error; err == nil {
+		c.JSON(http.StatusOK, gin.H{"following": true})
+		return
+	}
+	uf := models.UserFollow{FollowerID: followerID, FollowingID: targetID}
+	if err := uc.DB.Create(&uf).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{Error: "Internal Server Error", Message: "Не удалось подписаться", Code: http.StatusInternalServerError})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"following": true})
+}
+
+// UnfollowUser removes subscription to another user.
+func (uc *UserController) UnfollowUser(c *gin.Context) {
+	targetID64, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse{Error: "Bad Request", Message: "Некорректный id", Code: http.StatusBadRequest})
+		return
+	}
+	targetID := uint(targetID64)
+	followerID, exists := middleware.GetUserIDFromContext(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, utils.ErrorResponse{Error: "Unauthorized", Message: "Нужна авторизация", Code: http.StatusUnauthorized})
+		return
+	}
+	res := uc.DB.Where("follower_id = ? AND following_id = ?", followerID, targetID).Delete(&models.UserFollow{})
+	if res.Error != nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{Error: "Internal Server Error", Message: "Не удалось отписаться", Code: http.StatusInternalServerError})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"following": false})
+}
+
+// SetFavoriteAlbums sets up to 3 favorite albums for a user
+func (uc *UserController) SetFavoriteAlbums(c *gin.Context) {
+	id := c.Param("id")
+	var user models.User
+	if err := uc.DB.First(&user, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, utils.ErrorResponse{Error: "Not Found", Message: "User not found", Code: http.StatusNotFound})
+		return
+	}
+
+	userID, exists := middleware.GetUserIDFromContext(c)
+	if !exists || user.ID != userID {
+		c.JSON(http.StatusForbidden, utils.ErrorResponse{Error: "Forbidden", Message: "Not allowed", Code: http.StatusForbidden})
+		return
+	}
+
+	var req struct {
+		AlbumIDs []uint `json:"album_ids"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse{Error: "Bad Request", Message: err.Error(), Code: http.StatusBadRequest})
+		return
+	}
+	if len(req.AlbumIDs) > 3 {
+		req.AlbumIDs = req.AlbumIDs[:3]
+	}
+
+	idsJSON, _ := json.Marshal(req.AlbumIDs)
+	user.FavoriteAlbumIDs = string(idsJSON)
+	uc.DB.Save(&user)
+
+	c.JSON(http.StatusOK, gin.H{"favorite_albums": uc.GetFavoriteAlbums(user.FavoriteAlbumIDs)})
+}
+
+// GetFavoriteAlbums loads album objects from a JSON IDs string
+func (uc *UserController) GetFavoriteAlbums(idsJSON string) []models.Album {
+	if idsJSON == "" || idsJSON == "[]" || idsJSON == "null" {
+		return []models.Album{}
+	}
+	var ids []uint
+	if err := json.Unmarshal([]byte(idsJSON), &ids); err != nil || len(ids) == 0 {
+		return []models.Album{}
+	}
+	var albums []models.Album
+	uc.DB.Preload("Genre").Where("id IN ?", ids).Find(&albums)
+	// Preserve order
+	ordered := make([]models.Album, 0, len(ids))
+	albumMap := make(map[uint]models.Album)
+	for _, a := range albums {
+		albumMap[a.ID] = a
+	}
+	for _, id := range ids {
+		if a, ok := albumMap[id]; ok {
+			ordered = append(ordered, a)
+		}
+	}
+	return ordered
+}
+
+type UserStats struct {
+	TotalReviews       int     `json:"total_reviews"`
+	AvgScore           float64 `json:"avg_score"`
+	TotalLikesReceived int64   `json:"total_likes_received"`
+	TopGenre           string  `json:"top_genre"`
+}
+
+// CalculateUserStats returns profile statistics for a user
+func (uc *UserController) CalculateUserStats(userID uint) UserStats {
+	var stats UserStats
+
+	var reviews []models.Review
+	uc.DB.Where("user_id = ? AND status = ?", userID, models.ReviewStatusApproved).Find(&reviews)
+	stats.TotalReviews = len(reviews)
+
+	if stats.TotalReviews > 0 {
+		var totalScore float64
+		for _, r := range reviews {
+			totalScore += r.FinalScore
+		}
+		stats.AvgScore = math.Round(totalScore/float64(stats.TotalReviews)*10) / 10
+	}
+
+	var reviewIDs []uint
+	for _, r := range reviews {
+		reviewIDs = append(reviewIDs, r.ID)
+	}
+	if len(reviewIDs) > 0 {
+		uc.DB.Model(&models.ReviewLike{}).Where("review_id IN ?", reviewIDs).Count(&stats.TotalLikesReceived)
+	}
+
+	genreStats := uc.CalculateGenreStats(userID)
+	if len(genreStats) > 0 {
+		stats.TopGenre = genreStats[0].Name
+	}
+
+	return stats
+}
+
+type GenreStat struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
+// CalculateGenreStats returns review counts per genre for radar chart
+func (uc *UserController) CalculateGenreStats(userID uint) []GenreStat {
+	var reviews []models.Review
+	uc.DB.Preload("Album").Preload("Album.Genre").Preload("Track").Preload("Track.Genres").
+		Where("user_id = ? AND status = ?", userID, models.ReviewStatusApproved).
+		Find(&reviews)
+
+	counts := make(map[string]int)
+	for _, r := range reviews {
+		if r.AlbumID != nil && r.Album != nil && r.Album.Genre.ID > 0 {
+			counts[r.Album.Genre.Name]++
+		}
+		if r.TrackID != nil && r.Track != nil {
+			for _, g := range r.Track.Genres {
+				if g.ID > 0 {
+					counts[g.Name]++
+				}
+			}
+		}
+	}
+
+	result := make([]GenreStat, 0, len(counts))
+	for name, count := range counts {
+		result = append(result, GenreStat{Name: name, Count: count})
+	}
+	// Sort descending by count
+	for i := 0; i < len(result)-1; i++ {
+		for j := i + 1; j < len(result); j++ {
+			if result[j].Count > result[i].Count {
+				result[i], result[j] = result[j], result[i]
+			}
+		}
+	}
+	// Return top 8 genres max
+	if len(result) > 8 {
+		result = result[:8]
+	}
+	return result
 }
 
 // GetUserReviews retrieves reviews by user ID
@@ -224,22 +445,30 @@ func (uc *UserController) UpdateUser(c *gin.Context) {
 	}
 
 	user.Password = ""
-	
-	// Calculate badges
+
 	badges := uc.CalculateUserBadges(user.ID)
+	stats := uc.CalculateUserStats(user.ID)
+	genreStats := uc.CalculateGenreStats(user.ID)
+	favoriteAlbums := uc.GetFavoriteAlbums(user.FavoriteAlbumIDs)
+
 	userResponse := gin.H{
-		"id":           user.ID,
-		"username":     user.Username,
-		"email":        user.Email,
-		"avatar_path":  user.AvatarPath,
-		"bio":          user.Bio,
-		"social_links": user.SocialLinks,
-		"is_admin":     user.IsAdmin,
-		"created_at":   user.CreatedAt,
-		"updated_at":   user.UpdatedAt,
-		"badges":       badges,
+		"id":                 user.ID,
+		"username":           user.Username,
+		"email":              user.Email,
+		"avatar_path":        user.AvatarPath,
+		"bio":                user.Bio,
+		"social_links":       user.SocialLinks,
+		"is_admin":           user.IsAdmin,
+		"is_verified_artist": user.IsVerifiedArtist,
+		"favorite_album_ids": user.FavoriteAlbumIDs,
+		"created_at":         user.CreatedAt,
+		"updated_at":         user.UpdatedAt,
+		"badges":             badges,
+		"stats":              stats,
+		"genre_stats":        genreStats,
+		"favorite_albums":    favoriteAlbums,
 	}
-	
+
 	c.JSON(http.StatusOK, userResponse)
 }
 
@@ -296,6 +525,7 @@ func (uc *UserController) DeleteUser(c *gin.Context) {
 type Badge struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
+	Criteria    string `json:"criteria"` // как получить звание (для подсказки в UI)
 	Icon        string `json:"icon"`
 	Priority    int    `json:"priority"`
 }
@@ -321,7 +551,7 @@ func (uc *UserController) CalculateUserBadges(userID uint) []Badge {
 
 	for _, review := range reviews {
 		var genres []string
-		
+
 		// Get genres from album or track
 		if review.AlbumID != nil && review.Album != nil && review.Album.Genre.ID > 0 {
 			genres = append(genres, review.Album.Genre.Name)
@@ -349,6 +579,7 @@ func (uc *UserController) CalculateUserBadges(userID uint) []Badge {
 		badges = append(badges, Badge{
 			Name:        "Легенда критики",
 			Description: fmt.Sprintf("%d рецензий", totalReviews),
+			Criteria:    "Учитываются только одобренные рецензии. Звание при 51 и более таких рецензиях.",
 			Icon:        "👑",
 			Priority:    1,
 		})
@@ -356,6 +587,7 @@ func (uc *UserController) CalculateUserBadges(userID uint) []Badge {
 		badges = append(badges, Badge{
 			Name:        "Мастер рецензий",
 			Description: fmt.Sprintf("%d рецензий", totalReviews),
+			Criteria:    "Учитываются только одобренные рецензии. Звание при 21–50 рецензиях включительно.",
 			Icon:        "⭐",
 			Priority:    2,
 		})
@@ -363,6 +595,7 @@ func (uc *UserController) CalculateUserBadges(userID uint) []Badge {
 		badges = append(badges, Badge{
 			Name:        "Опытный критик",
 			Description: fmt.Sprintf("%d рецензий", totalReviews),
+			Criteria:    "Учитываются только одобренные рецензии. Звание при 6–20 рецензиях включительно.",
 			Icon:        "📝",
 			Priority:    3,
 		})
@@ -370,6 +603,7 @@ func (uc *UserController) CalculateUserBadges(userID uint) []Badge {
 		badges = append(badges, Badge{
 			Name:        "Начинающий критик",
 			Description: fmt.Sprintf("%d рецензий", totalReviews),
+			Criteria:    "Учитываются только одобренные рецензии. Звание с первой опубликованной и одобренной рецензии.",
 			Icon:        "🌱",
 			Priority:    4,
 		})
@@ -407,6 +641,7 @@ func (uc *UserController) CalculateUserBadges(userID uint) []Badge {
 			badges = append(badges, Badge{
 				Name:        badgeName,
 				Description: fmt.Sprintf("%d рецензий на %s", count, genreName),
+				Criteria:    fmt.Sprintf("Не менее 5 одобренных рецензий, в которых указан жанр «%s» (альбом или трек).", genreName),
 				Icon:        icon,
 				Priority:    2, // Genre badges have higher priority than count badges
 			})
@@ -418,6 +653,7 @@ func (uc *UserController) CalculateUserBadges(userID uint) []Badge {
 		badges = append(badges, Badge{
 			Name:        "Универсал",
 			Description: fmt.Sprintf("Рецензии на %d разных жанров", len(uniqueGenres)),
+			Criteria:    "В одобренных рецензиях встречается не менее 5 разных жанров (по данным альбомов и треков).",
 			Icon:        "🌈",
 			Priority:    3,
 		})
@@ -439,6 +675,7 @@ func (uc *UserController) CalculateUserBadges(userID uint) []Badge {
 				badges = append(badges, Badge{
 					Name:        badgeName + " (Специалист)",
 					Description: fmt.Sprintf("%.0f%% рецензий на %s", percentage, genreName),
+					Criteria:    fmt.Sprintf("Не менее 80%% одобренных рецензий относятся к жанру «%s».", genreName),
 					Icon:        icon,
 					Priority:    1, // Specialization has highest priority
 				})

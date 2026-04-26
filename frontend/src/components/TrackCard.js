@@ -97,7 +97,10 @@ const TrackCard = ({ track, onUpdate }) => {
               </div>
             )}
             {track.average_rating > 0 && (
-              <div className="track-card-stat-item">
+              <div
+                className="track-card-stat-item"
+                title="Средний итоговый балл по рецензиям (та же шкала, что у рецензий)"
+              >
                 <span className="stat-icon">⭐</span>
                 <span className="stat-count">{Math.round(track.average_rating)}</span>
               </div>
@@ -119,8 +122,8 @@ const TrackCard = ({ track, onUpdate }) => {
           <span className="track-album-title">{track.album?.title || 'Без альбома'}</span>
           {' • '}
           {track.album?.artist ? (
-            <Link 
-              to={`/artists/${encodeURIComponent(track.album.artist)}`} 
+            <Link
+              to={`/artists/${encodeURIComponent(track.album.artist)}`}
               className="track-artist-link"
               onClick={(e) => e.stopPropagation()}
             >
