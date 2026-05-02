@@ -4,12 +4,10 @@
   max-width: 100%;
   border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
   border-radius: 12px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 52%),
-    var(--card-background);
+  background: var(--surface-control, color-mix(in srgb, var(--card-background) 92%, var(--hover-color)));
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.08) inset,
-    0 8px 22px rgba(0, 0, 0, 0.08);
+    0 1px 0 color-mix(in srgb, var(--border-light, var(--border-color)) 70%, transparent) inset,
+    0 8px 18px rgba(0, 0, 0, 0.08);
   padding: 0.5rem 0.65rem 0.55rem;
   cursor: help;
   outline: none;
@@ -27,8 +25,8 @@
   transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--accent-color, var(--text-secondary)) 54%, var(--border-color));
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.1) inset,
-    0 12px 28px rgba(0, 0, 0, 0.14);
+    0 1px 0 color-mix(in srgb, var(--border-light, var(--border-color)) 80%, transparent) inset,
+    0 12px 24px rgba(0, 0, 0, 0.12);
 }
 
 .review-scores-strip-inner {
@@ -77,13 +75,20 @@
   min-width: 1.05rem;
   padding: 0.08rem 0.12rem;
   border-radius: 5px;
-  background: color-mix(in srgb, var(--hover-color) 78%, transparent);
+  background: color-mix(in srgb, var(--background-color) 52%, transparent);
   color: var(--text-secondary);
   font-size: 0.68rem;
   font-weight: 750;
   line-height: 1.15;
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+
+:root[data-theme="light"] .review-scores-strip {
+  border-color: rgba(112, 91, 70, 0.22);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.72) inset,
+    0 10px 24px rgba(78, 60, 43, 0.08);
 }
 
 .review-scores-strip--small .review-scores-strip-cell {

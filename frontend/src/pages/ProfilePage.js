@@ -4,17 +4,16 @@ import { useAuth } from '../context/AuthContext';
 import { usersAPI, reviewsAPI } from '../services/api';
 import ReviewCard from '../components/ReviewCard';
 import ProfileEditForm from '../components/ProfileEditForm';
-import BadgeList from '../components/BadgeList';
-import FavoriteAlbums from '../components/FavoriteAlbums';
-import GenreRadar from '../components/GenreRadar';
-import { getImageUrl } from '../utils/imageUtils';
+import ProfileDashboard from '../components/ProfileDashboard';
 import './ProfilePage.css';
 
 const ProfilePage = () => {
   const { user, isAuthenticated, updateUser, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [reviews, setReviews] = useState([]);
+  const [likedReviews, setLikedReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [likedReviewsLoading, setLikedReviewsLoading] = useState(true);
   const [error, setError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [currentUser, setCurrentUser] = useState(user);
@@ -25,7 +24,7 @@ const ProfilePage = () => {
     setReviewsLoading(true);
     try {
       const response = await usersAPI.getUserReviews(user.id);
-      setReviews(response.data.reviews);
+      setReviews(response.data.reviews || []);
     } catch (err) {
       setError('Ошибка загрузки рецензий');
       console.error('Error fetching reviews:', err);
@@ -44,6 +43,20 @@ const ProfilePage = () => {
     }
   }, [user]);
 
+  const fetchLikedReviews = useCallback(async () => {
+    if (!user) return;
+
+    setLikedReviewsLoading(true);
+    try {
+      const response = await usersAPI.getLikedReviews(user.id);
+      setLikedReviews(response.data.reviews || []);
+    } catch (err) {
+      console.error('Error fetching liked reviews:', err);
+    } finally {
+      setLikedReviewsLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated) {
@@ -52,7 +65,8 @@ const ProfilePage = () => {
     }
     fetchUserReviews();
     fetchCurrentUser();
-  }, [authLoading, isAuthenticated, navigate, fetchUserReviews, fetchCurrentUser]);
+    fetchLikedReviews();
+  }, [authLoading, isAuthenticated, navigate, fetchUserReviews, fetchCurrentUser, fetchLikedReviews]);
 
   const handleSaveProfile = async (profileData) => {
     try {
@@ -61,20 +75,8 @@ const ProfilePage = () => {
       setCurrentUser(updatedUser);
       setIsEditing(false);
 
-      // Update auth context without re-login
-      // Only re-login if password was actually changed
-      if (profileData.password && profileData.password.trim() !== '') {
-        // If password was changed, we need to re-login with new password
-        // But we don't have the new password here, so we'll just update user data
-        // The user will need to log in again on next session if password changed
-        if (updateUser) {
-          updateUser(updatedUser);
-        }
-      } else {
-        // No password change, just update user data
-        if (updateUser) {
-          updateUser(updatedUser);
-        }
+      if (updateUser) {
+        updateUser(updatedUser);
       }
 
       alert('Профиль успешно обновлен');
@@ -104,12 +106,6 @@ const ProfilePage = () => {
     return null;
   }
 
-  const socialLinks = currentUser?.social_links
-    ? (typeof currentUser.social_links === 'string'
-        ? JSON.parse(currentUser.social_links)
-        : currentUser.social_links)
-    : {};
-
   return (
     <div className="container">
       <div className="profile-page">
@@ -121,120 +117,17 @@ const ProfilePage = () => {
             updateUser={updateUser}
           />
         ) : (
-          <>
-            <div className="profile-header-card">
-              <div className="profile-avatar-section">
-                {currentUser?.avatar_path && getImageUrl(currentUser.avatar_path) ? (
-                  <img
-                    src={getImageUrl(currentUser.avatar_path)}
-                    alt={currentUser.username}
-                    className="profile-avatar"
-                  />
-                ) : (
-                  <div className="profile-avatar-placeholder">
-                    {currentUser?.username?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                )}
-                <button
-                  className="btn-edit-profile"
-                  onClick={() => setIsEditing(true)}
-                >
-                  Редактировать профиль
-                </button>
-              </div>
-              <div className="profile-info-section">
-                <h1 className="profile-username">
-                  {currentUser?.username || user?.username || 'Пользователь'}
-                  {currentUser?.is_verified_artist && <span className="verified-badge" title="Верифицированный артист">✓</span>}
-                </h1>
-                {currentUser?.email && (
-                  <p className="profile-email">{currentUser.email}</p>
-                )}
-                {currentUser?.is_admin && (
-                  <span className="admin-badge">Администратор</span>
-                )}
-                {currentUser?.badges && currentUser.badges.length > 0 && (
-                  <BadgeList badges={currentUser.badges} />
-                )}
-                {currentUser?.created_at && (
-                  <p className="profile-joined">
-                    Присоединился: {new Date(currentUser.created_at).toLocaleDateString('ru-RU')}
-                  </p>
-                )}
-                {currentUser?.bio && (
-                  <div className="profile-bio">
-                    <p>{currentUser.bio}</p>
-                  </div>
-                )}
-                {(socialLinks.vk || socialLinks.telegram || socialLinks.max) && (
-                  <div className="profile-social-links">
-                    {socialLinks.vk && (
-                      <a href={socialLinks.vk} target="_blank" rel="noopener noreferrer" className="social-link">VK</a>
-                    )}
-                    {socialLinks.telegram && (
-                      <a href={`https://t.me/${socialLinks.telegram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="social-link">Telegram</a>
-                    )}
-                    {socialLinks.max && (
-                      <a href={socialLinks.max.startsWith('http') ? socialLinks.max : `https://max.ru/${socialLinks.max.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="social-link">MAX</a>
-                    )}
-                  </div>
-                )}
-
-                {/* Stats */}
-                {currentUser?.stats && (
-                  <div className="profile-stats">
-                    <div className="stat-item">
-                      <span className="stat-value">{currentUser.stats.total_reviews}</span>
-                      <span className="stat-label">рецензий</span>
-                    </div>
-                    <div className="stat-item">
-                      <span className="stat-value">{currentUser.stats.avg_score || '—'}</span>
-                      <span className="stat-label">ср. оценка</span>
-                    </div>
-                    <div className="stat-item">
-                      <span className="stat-value">{currentUser.stats.total_likes_received}</span>
-                      <span className="stat-label">лайков</span>
-                    </div>
-                    {currentUser.stats.top_genre && (
-                      <div className="stat-item">
-                        <span className="stat-value stat-genre">{currentUser.stats.top_genre}</span>
-                        <span className="stat-label">топ жанр</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Radar chart */}
-              {currentUser?.genre_stats && currentUser.genre_stats.length >= 3 && (
-                <div className="profile-radar-section">
-                  <h3 className="radar-title">Жанровый профиль</h3>
-                  <GenreRadar genreStats={currentUser.genre_stats} />
-                </div>
-              )}
-            </div>
-
-            {/* Favorite albums */}
-            <FavoriteAlbums
-              albums={currentUser?.favorite_albums}
-              isOwner={true}
-              userId={user?.id}
-              onUpdate={(updated) =>
-                setCurrentUser((prev) => ({ ...prev, favorite_albums: updated }))
-              }
-            />
-          </>
-        )}
-
-        {!isEditing && (
-          <div className="profile-reviews">
-            <h2>Мои рецензии ({reviews.length})</h2>
-            {error && <div className="error-message">{error}</div>}
-            {reviewsLoading ? (
-              <div className="loading">Загрузка...</div>
-            ) : reviews.length === 0 ? (
-              <div className="empty-state">У вас пока нет рецензий</div>
-            ) : (
+          <ProfileDashboard
+            profileUser={currentUser}
+            reviews={reviews}
+            reviewsLoading={reviewsLoading}
+            reviewsError={error}
+            likedReviews={likedReviews}
+            likedReviewsLoading={likedReviewsLoading}
+            isOwner
+            onEditProfile={() => setIsEditing(true)}
+            emptyReviewsText="У вас пока нет рецензий"
+            renderReviews={() => (
               <div className="reviews-list">
                 {reviews.map((review) => (
                   <ReviewCard
@@ -246,7 +139,18 @@ const ProfilePage = () => {
                 ))}
               </div>
             )}
-          </div>
+            renderLikedReviews={() => (
+              <div className="reviews-list">
+                {likedReviews.map((review) => (
+                  <ReviewCard
+                    key={review.id}
+                    review={review}
+                    hideLike={false}
+                  />
+                ))}
+              </div>
+            )}
+          />
         )}
       </div>
     </div>
@@ -254,4 +158,3 @@ const ProfilePage = () => {
 };
 
 export default ProfilePage;
-

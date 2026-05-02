@@ -92,6 +92,7 @@ export const genresAPI = {
 export const usersAPI = {
   getById: (id) => api.get(`/users/${id}`),
   getUserReviews: (id, params) => api.get(`/users/${id}/reviews`, { params }),
+  getLikedReviews: (id, params) => api.get(`/users/${id}/liked-reviews`, { params }),
   follow: (id) => api.post(`/users/${id}/follow`),
   unfollow: (id) => api.delete(`/users/${id}/follow`),
   update: (id, data) => api.put(`/users/${id}`, data),
@@ -146,4 +147,3 @@ reviewsAPI.unlike = (id) => api.delete(`/reviews/${id}/like`);
 reviewsAPI.getPopular = (params) => api.get('/reviews/popular', { params });
 
 export default api;
-

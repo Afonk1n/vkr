@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Link } from 'react-router-dom';
 import ReviewCardSmall from '../components/ReviewCardSmall';
 import { SegmentedSlidingThumb } from '../components/SegmentedSlidingThumb';
 import { reviewsAPI } from '../services/api';
@@ -100,11 +99,6 @@ const FeedPage = () => {
                 Подписки
               </button>
             </div>
-            {!isAuthenticated && (
-              <Link className="feed-login-hint" to="/login">
-                Войти
-              </Link>
-            )}
           </div>
 
           {feedReviews.length === 0 ? (

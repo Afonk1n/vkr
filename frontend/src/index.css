@@ -9,6 +9,7 @@
   --primary-color: #4A9EFF;  /* Modern bright blue */
   --primary-hover: #6BB0FF;  /* Lighter blue on hover */
   --secondary-color: #7C8AFF; /* Modern violet-blue */
+  --accent-color: #4A9EFF;
 }
 
 /* Common variables - одинаковые для всех тем */
@@ -58,8 +59,12 @@
   /* Background colors - Modern dark grays */
   --background-color: #0F0F0F;  /* Deep dark gray, almost black */
   --card-background: #1A1A1A;    /* Dark gray for cards */
-  --card-background-light: rgba(26, 26, 26, 0.5);
-  --hover-color: rgba(45, 45, 45, 0.3);  /* Medium gray with opacity */
+  --card-background-light: rgba(32, 32, 32, 0.68);
+  --surface-section: #141414;
+  --surface-elevated: #1D1D1D;
+  --surface-control: #242424;
+  --hover-color: rgba(54, 54, 54, 0.32);  /* Medium gray with opacity */
+  --accent-color: #7BA7D7;
   
   /* Text colors - Light grays */
   --text-color: #E5E5E5;  /* Almost white for primary text */
@@ -67,8 +72,8 @@
   --text-muted: #A0A0A0;  /* Medium gray for muted text */
   
   /* Border and dividers */
-  --border-color: rgba(60, 60, 60, 0.5);  /* Medium gray borders */
-  --border-light: rgba(40, 40, 40, 0.6);  /* Darker gray for subtle borders */
+  --border-color: rgba(84, 84, 84, 0.42);  /* Medium gray borders */
+  --border-light: rgba(255, 255, 255, 0.08);  /* Subtle highlight borders */
   
   /* Overlay colors */
   --overlay-dark: rgba(15, 15, 15, 0.95);  /* Deep dark overlay */
@@ -76,10 +81,10 @@
   --overlay-light: rgba(160, 160, 160, 0.1);  /* Light gray overlay */
   
   /* Shadows - Dark gray shadows */
-  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.6), 0 1px 2px 0 rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.6), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.8), 0 10px 10px -5px rgba(0, 0, 0, 0.6);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.42), 0 12px 34px rgba(0, 0, 0, 0.24);
+  --shadow-md: 0 18px 42px rgba(0, 0, 0, 0.32);
+  --shadow-lg: 0 24px 58px rgba(0, 0, 0, 0.38);
+  --shadow-xl: 0 30px 72px rgba(0, 0, 0, 0.48);
   
   /* Status badge colors */
   --status-pending-bg: rgba(255, 184, 77, 0.15);  /* Orange-yellow with opacity */
@@ -93,19 +98,26 @@
 /* Light theme - Solarized Light with "топлёное молоко" palette */
 :root[data-theme="light"] {
   /* Background colors - Warm cream/beige tones */
-  --background-color: #FAF8F3;  /* Warm cream */
-  --card-background: #F0EBE0;   /* Light beige */
-  --card-background-light: rgba(240, 235, 224, 0.5);
-  --hover-color: rgba(200, 190, 175, 0.2);  /* Warm beige with opacity */
+  --background-color: #F7F3EA;  /* Warm ivory */
+  --card-background: #F3EBDD;   /* Soft warm surface */
+  --card-background-light: rgba(255, 252, 246, 0.74);
+  --surface-section: #E8DCC9;
+  --surface-elevated: #FFF9EF;
+  --surface-control: #F3EADF;
+  --hover-color: rgba(127, 107, 85, 0.08);  /* Warm neutral with opacity */
+  --primary-color: #6E8FAE;
+  --primary-hover: #557A9D;
+  --secondary-color: #8A806D;
+  --accent-color: #7E6651;
   
   /* Text colors - Warm browns */
-  --text-color: #5C4A3A;  /* Warm dark brown */
-  --text-secondary: #6B5A4A;  /* Medium warm brown */
-  --text-muted: #8B7A6A;  /* Light warm brown */
+  --text-color: #4F3F31;  /* Warm dark brown */
+  --text-secondary: #675645;  /* Medium warm brown */
+  --text-muted: #8B7A66;  /* Light warm brown */
   
   /* Border and dividers */
-  --border-color: rgba(140, 125, 110, 0.25);  /* Warm brown */
-  --border-light: rgba(240, 235, 224, 0.8);  /* Light beige */
+  --border-color: rgba(112, 91, 70, 0.22);  /* Warm brown */
+  --border-light: rgba(255, 255, 255, 0.72);  /* Light highlight */
   
   /* Overlay colors */
   --overlay-dark: rgba(60, 50, 40, 0.2);  /* Warm dark */
@@ -113,10 +125,10 @@
   --overlay-light: rgba(140, 125, 110, 0.1);  /* Warm light */
   
   /* Shadows - Warm brown shadows */
-  --shadow: 0 1px 3px 0 rgba(60, 50, 40, 0.12), 0 1px 2px 0 rgba(60, 50, 40, 0.08);
-  --shadow-md: 0 4px 6px -1px rgba(60, 50, 40, 0.12), 0 2px 4px -1px rgba(60, 50, 40, 0.08);
-  --shadow-lg: 0 10px 15px -3px rgba(60, 50, 40, 0.15), 0 4px 6px -2px rgba(60, 50, 40, 0.1);
-  --shadow-xl: 0 20px 25px -5px rgba(60, 50, 40, 0.18), 0 10px 10px -5px rgba(60, 50, 40, 0.12);
+  --shadow: 0 1px 2px rgba(76, 59, 43, 0.08), 0 10px 28px rgba(76, 59, 43, 0.08);
+  --shadow-md: 0 16px 38px rgba(76, 59, 43, 0.12);
+  --shadow-lg: 0 22px 52px rgba(76, 59, 43, 0.16);
+  --shadow-xl: 0 28px 68px rgba(76, 59, 43, 0.2);
   
   /* Status badge colors */
   --status-pending-bg: #FAF8F3;  /* Warm cream */

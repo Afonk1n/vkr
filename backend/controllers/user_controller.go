@@ -193,10 +193,13 @@ func (uc *UserController) GetFavoriteAlbums(idsJSON string) []models.Album {
 }
 
 type UserStats struct {
-	TotalReviews       int     `json:"total_reviews"`
-	AvgScore           float64 `json:"avg_score"`
-	TotalLikesReceived int64   `json:"total_likes_received"`
-	TopGenre           string  `json:"top_genre"`
+	TotalReviews         int     `json:"total_reviews"`
+	RatingsWithoutReview int64   `json:"ratings_without_review"`
+	AvgScore             float64 `json:"avg_score"`
+	TotalLikesReceived   int64   `json:"total_likes_received"`
+	TotalLikesGiven      int64   `json:"total_likes_given"`
+	AuthorLikesReceived  int64   `json:"author_likes_received"`
+	TopGenre             string  `json:"top_genre"`
 }
 
 // CalculateUserStats returns profile statistics for a user
@@ -222,6 +225,10 @@ func (uc *UserController) CalculateUserStats(userID uint) UserStats {
 	if len(reviewIDs) > 0 {
 		uc.DB.Model(&models.ReviewLike{}).Where("review_id IN ?", reviewIDs).Count(&stats.TotalLikesReceived)
 	}
+	uc.DB.Model(&models.Review{}).
+		Where("user_id = ? AND status = ? AND btrim(coalesce(text, '')) = ''", userID, models.ReviewStatusApproved).
+		Count(&stats.RatingsWithoutReview)
+	uc.DB.Model(&models.ReviewLike{}).Where("user_id = ?", userID).Count(&stats.TotalLikesGiven)
 
 	genreStats := uc.CalculateGenreStats(userID)
 	if len(genreStats) > 0 {
@@ -274,6 +281,52 @@ func (uc *UserController) CalculateGenreStats(userID uint) []GenreStat {
 		result = result[:8]
 	}
 	return result
+}
+
+// GetUserLikedReviews retrieves reviews liked by a user.
+func (uc *UserController) GetUserLikedReviews(c *gin.Context) {
+	id := c.Param("id")
+	var likes []models.ReviewLike
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	offset := (page - 1) * pageSize
+
+	query := uc.DB.
+		Preload("Review.User").
+		Preload("Review.Album").
+		Preload("Review.Album.Genre").
+		Preload("Review.Track").
+		Preload("Review.Track.Album").
+		Preload("Review.Likes").
+		Where("user_id = ?", id).
+		Order("created_at desc")
+
+	var total int64
+	query.Model(&models.ReviewLike{}).Count(&total)
+
+	if err := query.Offset(offset).Limit(pageSize).Find(&likes).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to fetch liked reviews",
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
+	reviews := make([]models.Review, 0, len(likes))
+	for _, like := range likes {
+		if like.Review.ID != 0 {
+			reviews = append(reviews, like.Review)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"reviews":   reviews,
+		"total":     total,
+		"page":      page,
+		"page_size": pageSize,
+	})
 }
 
 // GetUserReviews retrieves reviews by user ID

@@ -17,6 +17,7 @@ const Header = () => {
   const location = useLocation();
   const navTrackRef = useRef(null);
   const themeTrackRef = useRef(null);
+  const authTrackRef = useRef(null);
 
   const { dims: navThumbDims } = useSlidingThumb(navTrackRef, [
     location.pathname,
@@ -24,6 +25,7 @@ const Header = () => {
     user?.is_admin,
   ]);
   const { dims: themeThumbDims } = useSlidingThumb(themeTrackRef, [theme]);
+  const { dims: authThumbDims } = useSlidingThumb(authTrackRef, [location.pathname, isAuthenticated]);
 
   const handleLogout = () => {
     logout();
@@ -94,7 +96,12 @@ const Header = () => {
                 </button>
               </div>
             </div>
-            <nav className="nav-auth">
+            <nav
+              ref={!isAuthenticated ? authTrackRef : undefined}
+              className={`nav-auth ${
+                !isAuthenticated ? 'header-segmented nav-auth--segmented seg-sliding-track' : ''
+              }`.trim()}
+            >
               {isAuthenticated && (
                 <>
                   <button type="button" onClick={handleLogout} className="btn-logout">
@@ -104,10 +111,21 @@ const Header = () => {
               )}
               {!isAuthenticated && (
                 <>
-                  <Link to="/login" className="nav-text-link">
+                  <SegmentedSlidingThumb dims={authThumbDims} />
+                  <Link
+                    to="/login"
+                    className={`header-segment nav-auth-segment ${
+                      location.pathname === '/login' ? 'header-segment--active segment-thumb-source' : ''
+                    }`.trim()}
+                  >
                     Вход
                   </Link>
-                  <Link to="/signup" className="btn-primary">
+                  <Link
+                    to="/signup"
+                    className={`header-segment nav-auth-segment ${
+                      location.pathname === '/signup' ? 'header-segment--active segment-thumb-source' : ''
+                    }`.trim()}
+                  >
                     Регистрация
                   </Link>
                 </>

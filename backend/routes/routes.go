@@ -107,6 +107,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 			users.DELETE("/:id/follow", middleware.AuthMiddleware(db), userController.UnfollowUser)
 			users.GET("/:id", middleware.OptionalAuthMiddleware(db), userController.GetUser)
 			users.GET("/:id/reviews", userController.GetUserReviews)
+			users.GET("/:id/liked-reviews", userController.GetUserLikedReviews)
 			users.PUT("/:id", middleware.AuthMiddleware(db), userController.UpdateUser)
 			users.POST("/:id/avatar", middleware.AuthMiddleware(db), userController.UploadAvatar)
 			users.PUT("/:id/favorites", middleware.AuthMiddleware(db), userController.SetFavoriteAlbums)

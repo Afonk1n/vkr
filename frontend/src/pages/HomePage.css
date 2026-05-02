@@ -88,19 +88,24 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 1rem 1.25rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.45rem;
 }
 
 .section-title--inline {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.65rem;
+  line-height: 1;
   margin-bottom: 0 !important;
 }
 
 .feed-segments {
   display: inline-flex;
   align-items: stretch;
+  align-self: center;
   padding: 0.28rem;
   border-radius: 999px;
-  background: var(--hover-color);
+  background: var(--surface-control, var(--hover-color));
   border: 1px solid var(--border-color);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
@@ -147,18 +152,6 @@
 :root[data-theme="dark"] .feed-segments {
   background: rgba(0, 0, 0, 0.35);
   border-color: rgba(255, 255, 255, 0.1);
-}
-
-.feed-login-hint {
-  margin-left: auto;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--accent-color);
-  text-decoration: none;
-}
-
-.feed-login-hint:hover {
-  text-decoration: underline;
 }
 
 .home-skeleton-wrap {
@@ -217,6 +210,9 @@
 
 .home-section--feed {
   margin-top: 0;
+  max-width: 1180px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .albums-grid {
@@ -283,17 +279,20 @@
   padding: var(--spacing-xl);
   padding-top: var(--spacing-xl) !important;
   padding-bottom: var(--spacing-xl);
-  background-color: rgba(20, 20, 20, 0.95);
+  background: var(--surface-section, color-mix(in srgb, var(--card-background) 94%, var(--background-color)));
   border-radius: var(--radius-xl);
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow);
+  border: 1px solid color-mix(in srgb, var(--border-color) 92%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--border-light, var(--border-color)) 46%, transparent) inset,
+    var(--shadow-md);
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
 }
 
 :root[data-theme="light"] .home-section {
-  background-color: rgba(235, 228, 210, 0.95);
+  background: var(--surface-section);
+  border-color: rgba(112, 91, 70, 0.28);
 }
 
 .home-section > * {
@@ -403,4 +402,3 @@
     grid-template-columns: 1fr;
   }
 }
-

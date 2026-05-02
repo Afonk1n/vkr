@@ -35,12 +35,14 @@
 
 /* Сегменты поверх «пилюли» */
 .seg-sliding-track .header-segment,
+.seg-sliding-track .nav-auth-segment,
 .seg-sliding-track .feed-segment {
   position: relative;
   z-index: 1;
 }
 
 .seg-sliding-track .header-segment--active,
+.seg-sliding-track .nav-auth-segment.header-segment--active,
 .seg-sliding-track .feed-segment--active {
   background: transparent !important;
   box-shadow: none !important;
