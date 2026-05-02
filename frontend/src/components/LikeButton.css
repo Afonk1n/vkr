@@ -1,20 +1,25 @@
 .like-button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
+  min-width: 58px;
+  min-height: 38px;
   padding: 0.5rem 0.75rem;
   background: transparent;
   border: 1px solid var(--border-color);
   border-radius: 0.5rem;
   cursor: pointer;
   font-size: 0.875rem;
-  transition: all 0.2s;
+  transition: background-color var(--transition-base), border-color var(--transition-base), color var(--transition-base), box-shadow var(--transition-base), transform var(--transition-base);
   color: var(--text-color);
 }
 
 .like-button:hover:not(:disabled) {
   background-color: var(--hover-color);
   border-color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
 }
 
 .like-button:disabled {
@@ -46,7 +51,6 @@
 }
 
 .like-button.loading {
-  opacity: 0.7;
-  cursor: wait;
+  cursor: progress;
 }
 

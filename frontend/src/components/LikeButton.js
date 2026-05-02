@@ -26,25 +26,24 @@ const LikeButton = ({ item, itemType, onLike, onUnlike }) => {
   const handleLike = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (loading) return;
 
+    const nextLiked = !liked;
+    const nextCount = nextLiked ? likeCount + 1 : Math.max(0, likeCount - 1);
+    setLiked(nextLiked);
+    setLikeCount(nextCount);
     setLoading(true);
     try {
       if (liked) {
         await onUnlike();
-        setLiked(false);
-        setLikeCount(prev => Math.max(0, prev - 1));
       } else {
         await onLike();
-        setLiked(true);
-        setLikeCount(prev => prev + 1);
       }
     } catch (err) {
       console.error('Error toggling like:', err);
-      // Revert on error
-      setLiked(!liked);
-      setLikeCount(prev => liked ? prev + 1 : Math.max(0, prev - 1));
+      setLiked(liked);
+      setLikeCount(likeCount);
     } finally {
       setLoading(false);
     }
@@ -55,6 +54,7 @@ const LikeButton = ({ item, itemType, onLike, onUnlike }) => {
       className={`like-button ${liked ? 'liked' : ''} ${loading ? 'loading' : ''}`}
       onClick={handleLike}
       disabled={loading || !isAuthenticated}
+      aria-pressed={liked}
       title={isAuthenticated ? (liked ? 'Убрать лайк' : 'Поставить лайк') : 'Войдите, чтобы ставить лайки'}
     >
       <span className="like-icon">{liked ? '❤' : '♡'}</span>

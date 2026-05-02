@@ -73,15 +73,13 @@ const TrackDetailPage = () => {
   };
 
   const handleDeleteReview = async (reviewId) => {
-    if (window.confirm('Вы уверены, что хотите удалить эту рецензию?')) {
-      try {
-        await reviewsAPI.delete(reviewId);
-        fetchReviews();
-        fetchTrack();
-      } catch (err) {
-        setError('Ошибка при удалении рецензии');
-        console.error('Error deleting review:', err);
-      }
+    try {
+      await reviewsAPI.delete(reviewId);
+      fetchReviews();
+      fetchTrack();
+    } catch (err) {
+      setError('Ошибка при удалении рецензии');
+      console.error('Error deleting review:', err);
     }
   };
 

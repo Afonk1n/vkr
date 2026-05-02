@@ -426,21 +426,21 @@ func seedData() error {
 	// Seed additional test users for more likes
 	emptySocialLinks := "{}" // Valid JSON for jsonb field
 	testUsers := []models.User{
-		{Username: "musiclover1", Email: "music1@example.com", Password: testPassword, SocialLinks: emptySocialLinks, IsAdmin: false},
-		{Username: "musiclover2", Email: "music2@example.com", Password: testPassword, SocialLinks: emptySocialLinks, IsAdmin: false},
-		{Username: "musiclover3", Email: "music3@example.com", Password: testPassword, SocialLinks: emptySocialLinks, IsAdmin: false},
-		{Username: "musiclover4", Email: "music4@example.com", Password: testPassword, SocialLinks: emptySocialLinks, IsAdmin: false},
-		{Username: "musiclover5", Email: "music5@example.com", Password: testPassword, SocialLinks: emptySocialLinks, IsAdmin: false},
-		{Username: "musiclover6", Email: "music6@example.com", Password: testPassword, SocialLinks: emptySocialLinks, IsAdmin: false},
-		{Username: "musiclover7", Email: "music7@example.com", Password: testPassword, SocialLinks: emptySocialLinks, IsAdmin: false},
-		{Username: "musiclover8", Email: "music8@example.com", Password: testPassword, SocialLinks: emptySocialLinks, IsAdmin: false},
-		{Username: "musiclover9", Email: "music9@example.com", Password: testPassword, SocialLinks: emptySocialLinks, IsAdmin: false},
-		{Username: "musiclover10", Email: "music10@example.com", Password: testPassword, SocialLinks: emptySocialLinks, IsAdmin: false},
-		{Username: "musiclover11", Email: "music11@example.com", Password: testPassword, SocialLinks: emptySocialLinks, IsAdmin: false},
-		{Username: "musiclover12", Email: "music12@example.com", Password: testPassword, SocialLinks: emptySocialLinks, IsAdmin: false},
-		{Username: "musiclover13", Email: "music13@example.com", Password: testPassword, SocialLinks: emptySocialLinks, IsAdmin: false},
-		{Username: "musiclover14", Email: "music14@example.com", Password: testPassword, SocialLinks: emptySocialLinks, IsAdmin: false},
-		{Username: "musiclover15", Email: "music15@example.com", Password: testPassword, SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "musiclover1", Email: "music1@example.com", Password: testPassword, Bio: "Слушаю альбомы целиком и спорю только по делу.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "musiclover2", Email: "music2@example.com", Password: testPassword, Bio: "Люблю поп-музыку, но не прощаю слабые припевы.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "beatnik", Email: "beatnik@example.com", Password: testPassword, Bio: "Смотрю на релизы через ритм, биты и настроение.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "northlistener", Email: "north@example.com", Password: testPassword, Bio: "Холодный взгляд на горячие релизы.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "vinylcat", Email: "vinyl@example.com", Password: testPassword, Bio: "Коллекционирую сильные обложки и честные тексты.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "rapradar", Email: "rapradar@example.com", Password: testPassword, Bio: "Хип-хоп, панчи, структура куплетов.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "popfilter", Email: "popfilter@example.com", Password: testPassword, Bio: "Проверяю, где хит, а где просто громкий припев.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "indievoice", Email: "indie@example.com", Password: testPassword, Bio: "Ищу характер в инди и рок-звучании.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "electromood", Email: "electro@example.com", Password: testPassword, Bio: "Синтезаторы, грув и ночная электроника.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "albumhunter", Email: "hunter@example.com", Password: testPassword, Bio: "Оцениваю альбом как маршрут, а не набор синглов.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "textura", Email: "textura@example.com", Password: testPassword, Bio: "Образы, рифмы и драматургия текста.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "soundpilot", Email: "pilot@example.com", Password: testPassword, Bio: "Слышу аранжировки раньше слов.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "basta_official", Email: "basta.artist@example.com", Password: testPassword, Bio: "Официальный аккаунт артиста в демо-стенде.", SocialLinks: emptySocialLinks, IsAdmin: false, IsVerifiedArtist: true},
+		{Username: "skriptonit_official", Email: "skrip.artist@example.com", Password: testPassword, Bio: "Артистский аккаунт для демонстрации авторских лайков.", SocialLinks: emptySocialLinks, IsAdmin: false, IsVerifiedArtist: true},
+		{Username: "annaasti_official", Email: "asti.artist@example.com", Password: testPassword, Bio: "Верифицированный аккаунт артиста.", SocialLinks: emptySocialLinks, IsAdmin: false, IsVerifiedArtist: true},
 	}
 
 	var allTestUsers []models.User
@@ -459,6 +459,24 @@ func seedData() error {
 			}
 		} else {
 			existingTestUsers++
+			needsUpdate := false
+			if existingUser.Bio == "" && user.Bio != "" {
+				existingUser.Bio = user.Bio
+				needsUpdate = true
+			}
+			if !existingUser.IsVerifiedArtist && user.IsVerifiedArtist {
+				existingUser.IsVerifiedArtist = true
+				needsUpdate = true
+			}
+			if existingUser.SocialLinks == "" {
+				existingUser.SocialLinks = emptySocialLinks
+				needsUpdate = true
+			}
+			if needsUpdate {
+				if err := DB.Save(&existingUser).Error; err != nil {
+					log.Printf("Warning: failed to update demo user %s: %v", existingUser.Username, err)
+				}
+			}
 			allTestUsers = append(allTestUsers, existingUser)
 		}
 	}
@@ -1814,6 +1832,93 @@ func seedReviews() error {
 	} else {
 		log.Println("Reviews already exist, skipping creation")
 	} // End of if !reviewsExist
+
+	// Keep demo content rich even when the database already has old seed data.
+	// These reviews are idempotent: the same user will not receive the same review twice.
+	ensureDemoReview := func(username string, albumTitle string, trackTitle string, status models.ReviewStatus, text string, ratings [5]int) {
+		var author models.User
+		if err := DB.Where("username = ?", username).First(&author).Error; err != nil {
+			log.Printf("Warning: demo review user %s not found: %v", username, err)
+			return
+		}
+
+		review := models.Review{
+			UserID:               author.ID,
+			Text:                 text,
+			RatingRhymes:         ratings[0],
+			RatingStructure:      ratings[1],
+			RatingImplementation: ratings[2],
+			RatingIndividuality:  ratings[3],
+			AtmosphereMultiplier: convertAtmosphereToMultiplier(ratings[4]),
+			Status:               status,
+		}
+
+		if trackTitle != "" {
+			var track models.Track
+			if err := DB.Preload("Album").Where("title = ?", trackTitle).First(&track).Error; err != nil {
+				log.Printf("Warning: demo track %s not found: %v", trackTitle, err)
+				return
+			}
+			review.TrackID = &track.ID
+		} else {
+			var album models.Album
+			if err := DB.Where("title = ?", albumTitle).First(&album).Error; err != nil {
+				log.Printf("Warning: demo album %s not found: %v", albumTitle, err)
+				return
+			}
+			review.AlbumID = &album.ID
+		}
+
+		var existing int64
+		query := DB.Model(&models.Review{}).Where("user_id = ? AND text = ?", review.UserID, review.Text)
+		if review.AlbumID != nil {
+			query = query.Where("album_id = ?", *review.AlbumID)
+		}
+		if review.TrackID != nil {
+			query = query.Where("track_id = ?", *review.TrackID)
+		}
+		query.Count(&existing)
+		if existing > 0 {
+			return
+		}
+
+		if status == models.ReviewStatusApproved {
+			review.ModeratedBy = &admin.ID
+			moderatedAt := time.Now().Add(-2 * time.Hour)
+			review.ModeratedAt = &moderatedAt
+		}
+		review.CalculateFinalScore()
+		if err := DB.Create(&review).Error; err != nil {
+			log.Printf("Warning: failed to create demo review for %s: %v", username, err)
+		} else {
+			createdReviews++
+			log.Printf("  ✓ Ensured demo review by %s (ID: %d, Status: %s)", username, review.ID, review.Status)
+		}
+	}
+
+	extraReviews := []struct {
+		user    string
+		album   string
+		track   string
+		status  models.ReviewStatus
+		text    string
+		ratings [5]int
+	}{
+		{"beatnik", "Баста 3", "", models.ReviewStatusApproved, "Баста 3 ощущается как уверенная точка взросления: меньше демонстративной бравады, больше точных наблюдений и плотного саунда. Альбом хорошо держит темп, а отдельные треки работают как сцены из одного большого городского рассказа.", [5]int{9, 9, 9, 9, 8}},
+		{"northlistener", "Праздник на улице 36", "", models.ReviewStatusApproved, "У этого релиза сильная атмосфера района и ночного воздуха. Скриптонит не всегда идет самым прямым путем, зато именно из этих неровностей собирается живой характер альбома.", [5]int{9, 8, 10, 10, 9}},
+		{"vinylcat", "Царица", "", models.ReviewStatusApproved, "Царица работает как большой поп-релиз с понятной драматургией. Не все песни одинаково цепкие, но вокал и продакшн держат планку, а главные хуки остаются в голове.", [5]int{8, 8, 10, 9, 8}},
+		{"rapradar", "Magic City", "", models.ReviewStatusApproved, "Magic City до сих пор звучит нервно и свежо. ЛСП уверенно держит баланс между романтикой, иронией и мрачной сказкой, поэтому альбом не разваливается на отдельные треки.", [5]int{9, 9, 9, 10, 9}},
+		{"popfilter", "Import", "", models.ReviewStatusApproved, "Import прост в хорошем смысле: песни быстро раскрываются, не прячутся за лишней сложностью и дают тот самый легкий поп-эффект. Слабые места есть, но материал звучит честно.", [5]int{7, 8, 9, 8, 7}},
+		{"indievoice", "Безумие", "", models.ReviewStatusApproved, "Безумие берет не идеальной вылизанностью, а живым театральным напором. У The Hatters получается сделать рок-песни яркими, шумными и при этом довольно человечными.", [5]int{8, 9, 8, 9, 8}},
+		{"electromood", "Vinyl #2", "", models.ReviewStatusApproved, "Vinyl #2 сильнее всего раскрывается в деталях продакшна: синтезаторы мягкие, ритм не давит, а голос Zivert остается главным ориентиром. Это не революция, но аккуратная поп-система.", [5]int{8, 9, 9, 8, 8}},
+		{"albumhunter", "Yamakasi", "", models.ReviewStatusApproved, "Yamakasi собран как длинное путешествие: местами медитативное, местами очень плотное по эмоции. Дуэт держит собственный язык и почти не расплескивает настроение.", [5]int{9, 9, 10, 10, 9}},
+		{"textura", "Французский альбом", "", models.ReviewStatusPending, "Хочу отдельно отметить, как IOWA работает с легкой мелодикой: релиз может казаться простым, но в нем есть приятная цельность. Нужно еще раз переслушать, чтобы точнее поймать слабые места.", [5]int{7, 8, 8, 8, 7}},
+		{"soundpilot", "Красное вино", "", models.ReviewStatusPending, "Материал у Клавы Коки звучит бодро и современно, но пока спорю сам с собой, насколько хорошо песни выдерживают повторное прослушивание. Вокал яркий, аранжировки плотные.", [5]int{8, 8, 9, 8, 8}},
+	}
+
+	for _, review := range extraReviews {
+		ensureDemoReview(review.user, review.album, review.track, review.status, review.text, review.ratings)
+	}
 
 	// Reload all reviews from DB to get correct IDs (including newly created ones)
 	// This is done regardless of whether reviews existed before

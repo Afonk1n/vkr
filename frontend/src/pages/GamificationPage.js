@@ -20,15 +20,21 @@ const XP_RULES = [
 ];
 
 const ACHIEVEMENTS = [
-  { name: 'Начинающий критик', icon: 'I', criteria: 'Опубликовать первую одобренную рецензию.' },
-  { name: 'Опытный критик', icon: 'II', criteria: 'Опубликовать от 6 до 20 одобренных рецензий.' },
-  { name: 'Мастер рецензий', icon: 'III', criteria: 'Опубликовать от 21 до 50 одобренных рецензий.' },
-  { name: 'Легенда критики', icon: 'IV', criteria: 'Опубликовать 51 и более одобренных рецензий.' },
-  { name: 'Универсал', icon: 'U', criteria: 'Писать о музыке так, чтобы в рецензиях встретилось 5 разных жанров.' },
-  { name: 'Хип-хоп критик', icon: 'HH', criteria: 'Собрать не менее 5 одобренных рецензий в жанре хип-хоп.' },
-  { name: 'Рок-ценитель', icon: 'R', criteria: 'Собрать не менее 5 одобренных рецензий в жанре рок.' },
-  { name: 'Поп-эксперт', icon: 'P', criteria: 'Собрать не менее 5 одобренных рецензий в жанре поп.' },
-  { name: 'Электронный знаток', icon: 'E', criteria: 'Собрать не менее 5 одобренных рецензий в электронной музыке.' },
+  { name: 'Начинающий критик', icon: 'I', emoji: '✦', criteria: 'Опубликовать первую одобренную рецензию.' },
+  { name: 'Опытный критик', icon: 'II', emoji: '✦', criteria: 'Опубликовать от 6 до 20 одобренных рецензий.' },
+  { name: 'Мастер рецензий', icon: 'III', emoji: '✦', criteria: 'Опубликовать от 21 до 50 одобренных рецензий.' },
+  { name: 'Легенда критики', icon: 'IV', emoji: '✦', criteria: 'Опубликовать 51 и более одобренных рецензий.' },
+  { name: 'Универсал', icon: 'U', emoji: '◆', criteria: 'Писать о музыке так, чтобы в рецензиях встретилось 5 разных жанров.' },
+  { name: 'Хип-хоп критик', icon: 'HH', emoji: '♬', criteria: 'Собрать не менее 5 одобренных рецензий в жанре хип-хоп.' },
+  { name: 'Хип-хоп критик (Специалист)', icon: 'HH+', emoji: '♬', criteria: 'Сделать хип-хоп главным направлением своих рецензий.' },
+  { name: 'Рок-ценитель', icon: 'R', emoji: '◇', criteria: 'Собрать не менее 5 одобренных рецензий в жанре рок.' },
+  { name: 'Поп-эксперт', icon: 'P', emoji: '●', criteria: 'Собрать не менее 5 одобренных рецензий в жанре поп.' },
+  { name: 'Электронный знаток', icon: 'E', emoji: '◈', criteria: 'Собрать не менее 5 одобренных рецензий в электронной музыке.' },
+  { name: 'Джазовый критик', icon: 'J', emoji: '♪', criteria: 'Собрать не менее 5 одобренных рецензий в жанре джаз.' },
+  { name: 'Классический знаток', icon: 'C', emoji: '○', criteria: 'Собрать не менее 5 одобренных рецензий в классической музыке.' },
+  { name: 'Любимец ленты', icon: 'L', emoji: '♥', criteria: 'Получить заметную реакцию сообщества на свои рецензии.' },
+  { name: 'Щедрый слушатель', icon: 'S', emoji: '＋', criteria: 'Поддерживать чужие рецензии лайками и активностью.' },
+  { name: 'Голос автора', icon: 'A', emoji: '★', criteria: 'Получить авторский лайк от артиста или отмеченного аккаунта.' },
 ];
 
 const GamificationPage = () => {
@@ -101,7 +107,10 @@ const GamificationPage = () => {
               const unlocked = earned.has(achievement.name);
               return (
                 <article className={`achievement-page ${unlocked ? 'achievement-page--unlocked' : ''}`} key={achievement.name}>
-                  <div className="achievement-seal">{achievement.icon}</div>
+                  <div className="achievement-seal">
+                    <span className="achievement-seal-icon">{achievement.icon}</span>
+                    <span className="achievement-seal-emoji">{achievement.emoji}</span>
+                  </div>
                   <strong>{achievement.name}</strong>
                   <span>{unlocked ? 'Получено' : 'Не открыто'}</span>
                   <p>{achievement.criteria}</p>

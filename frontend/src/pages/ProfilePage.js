@@ -89,14 +89,12 @@ const ProfilePage = () => {
   };
 
   const handleDeleteReview = async (reviewId) => {
-    if (window.confirm('Вы уверены, что хотите удалить эту рецензию?')) {
-      try {
-        await reviewsAPI.delete(reviewId);
-        fetchUserReviews();
-      } catch (err) {
-        setError('Ошибка при удалении рецензии');
-        console.error('Error deleting review:', err);
-      }
+    try {
+      await reviewsAPI.delete(reviewId);
+      fetchUserReviews();
+    } catch (err) {
+      setError('Ошибка при удалении рецензии');
+      console.error('Error deleting review:', err);
     }
   };
 
