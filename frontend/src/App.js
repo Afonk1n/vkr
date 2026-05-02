@@ -15,6 +15,7 @@ import UserProfilePage from './pages/UserProfilePage';
 import ArtistPage from './pages/ArtistPage';
 import SearchPage from './pages/SearchPage';
 import AdminPanel from './pages/AdminPanel';
+import GamificationPage from './pages/GamificationPage';
 import './App.css';
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
                   <Route path="/artists/:name" element={<ArtistPage />} />
                   <Route path="/search" element={<SearchPage />} />
                   <Route path="/admin" element={<AdminPanel />} />
+                  <Route path="/gamification" element={<GamificationPage />} />
                 </Routes>
               </main>
             </div>
@@ -50,4 +52,3 @@ function App() {
 }
 
 export default App;
-

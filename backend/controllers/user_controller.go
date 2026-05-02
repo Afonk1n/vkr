@@ -40,6 +40,7 @@ func (uc *UserController) GetUser(c *gin.Context) {
 
 	badges := uc.CalculateUserBadges(user.ID)
 	stats := uc.CalculateUserStats(user.ID)
+	profileRank := uc.CalculateProfileRank(user.ID, stats)
 	genreStats := uc.CalculateGenreStats(user.ID)
 	favoriteAlbums := uc.GetFavoriteAlbums(user.FavoriteAlbumIDs)
 	favoriteArtists := uc.GetFavoriteArtists(user.FavoriteArtists)
@@ -65,6 +66,7 @@ func (uc *UserController) GetUser(c *gin.Context) {
 		"updated_at":         user.UpdatedAt,
 		"badges":             badges,
 		"stats":              stats,
+		"profile_rank":       profileRank,
 		"genre_stats":        genreStats,
 		"favorite_albums":    favoriteAlbums,
 		"favorite_tracks":    favoriteTracks,
@@ -301,6 +303,36 @@ type UserStats struct {
 	TotalLikesGiven      int64   `json:"total_likes_given"`
 	AuthorLikesReceived  int64   `json:"author_likes_received"`
 	TopGenre             string  `json:"top_genre"`
+}
+
+func calculateProfilePoints(stats UserStats) int {
+	return int(math.Round(
+		float64(stats.TotalReviews)*320 +
+			float64(stats.TotalLikesReceived)*55 +
+			float64(stats.TotalLikesGiven)*12 +
+			float64(stats.AuthorLikesReceived)*240,
+	))
+}
+
+// CalculateProfileRank returns the user's position by profile experience.
+func (uc *UserController) CalculateProfileRank(userID uint, userStats UserStats) int {
+	userPoints := calculateProfilePoints(userStats)
+	var users []models.User
+	if err := uc.DB.Select("id").Find(&users).Error; err != nil {
+		return 0
+	}
+
+	rank := 1
+	for _, candidate := range users {
+		if candidate.ID == userID {
+			continue
+		}
+		if calculateProfilePoints(uc.CalculateUserStats(candidate.ID)) > userPoints {
+			rank++
+		}
+	}
+
+	return rank
 }
 
 // CalculateUserStats returns profile statistics for a user
@@ -602,6 +634,7 @@ func (uc *UserController) UpdateUser(c *gin.Context) {
 
 	badges := uc.CalculateUserBadges(user.ID)
 	stats := uc.CalculateUserStats(user.ID)
+	profileRank := uc.CalculateProfileRank(user.ID, stats)
 	genreStats := uc.CalculateGenreStats(user.ID)
 	favoriteAlbums := uc.GetFavoriteAlbums(user.FavoriteAlbumIDs)
 	favoriteArtists := uc.GetFavoriteArtists(user.FavoriteArtists)
@@ -623,6 +656,7 @@ func (uc *UserController) UpdateUser(c *gin.Context) {
 		"updated_at":         user.UpdatedAt,
 		"badges":             badges,
 		"stats":              stats,
+		"profile_rank":       profileRank,
 		"genre_stats":        genreStats,
 		"favorite_albums":    favoriteAlbums,
 		"favorite_tracks":    favoriteTracks,

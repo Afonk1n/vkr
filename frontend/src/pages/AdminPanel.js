@@ -38,7 +38,7 @@ const AdminPanel = () => {
       await reviewsAPI.approve(reviewId);
       fetchPendingReviews();
     } catch (err) {
-      alert('Ошибка при одобрении рецензии');
+      setError('Ошибка при одобрении рецензии');
       console.error('Error approving review:', err);
     }
   };
@@ -49,7 +49,7 @@ const AdminPanel = () => {
         await reviewsAPI.reject(reviewId);
         fetchPendingReviews();
       } catch (err) {
-        alert('Ошибка при отклонении рецензии');
+        setError('Ошибка при отклонении рецензии');
         console.error('Error rejecting review:', err);
       }
     }
@@ -108,4 +108,3 @@ const AdminPanel = () => {
 };
 
 export default AdminPanel;
-

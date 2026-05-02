@@ -27,11 +27,6 @@ const LikeButton = ({ item, itemType, onLike, onUnlike }) => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (!isAuthenticated) {
-      alert('Войдите, чтобы ставить лайки');
-      return;
-    }
-
     if (loading) return;
 
     setLoading(true);

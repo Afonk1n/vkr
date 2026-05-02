@@ -149,6 +149,37 @@ const EmptyPanel = ({ children }) => (
   <div className="profile-empty-panel">{children}</div>
 );
 
+const SocialIcon = ({ type }) => {
+  if (type === 'telegram') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M21.7 4.3 18.5 19c-.2 1-.9 1.2-1.7.7l-4.7-3.5-2.3 2.2c-.3.3-.5.5-1 .5l.4-4.9 8.8-8c.4-.3-.1-.5-.6-.2L6.5 12.7 1.8 11.2c-1-.3-1-1 .2-1.5l18.2-7c.9-.3 1.7.2 1.5 1.6Z" />
+      </svg>
+    );
+  }
+
+  if (type === 'max') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 6.2A3.2 3.2 0 0 1 8.2 3h7.6A3.2 3.2 0 0 1 19 6.2v11.6a3.2 3.2 0 0 1-3.2 3.2H8.2A3.2 3.2 0 0 1 5 17.8V6.2Zm3.5 2.1v7.4h1.8v-4l2 3h.2l2-3v4h1.8V8.3h-1.7l-2.2 3.4-2.2-3.4H8.5Z" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3.2 7.4c.1 5.7 3 9.1 8.2 9.1h.3v-3.3c1.9.2 3.3 1.6 3.9 3.3h2.9c-.7-2.6-2.6-4-3.8-4.6 1.2-.8 2.8-2.4 3.2-4.5h-2.6c-.6 1.8-2.2 3.4-3.6 3.5V7.4H9.1v6.1c-1.5-.4-3.3-2.1-3.4-6.1H3.2Z" />
+    </svg>
+  );
+};
+
+const getSocialHref = (type, value) => {
+  if (!value) return '';
+  if (type === 'telegram') return `https://t.me/${value.replace('@', '')}`;
+  if (type === 'max') return value.startsWith('http') ? value : `https://max.ru/${value.replace('@', '')}`;
+  return value;
+};
+
 const toAlbumItem = (album) => ({
   id: album.id,
   title: album.title,
@@ -385,6 +416,7 @@ const ProfileDashboard = ({
 
   const avgScore = Number.isFinite(Number(stats.avg_score)) ? Math.round(Number(stats.avg_score)) : '—';
   const ratingsWithoutReview = stats.ratings_without_review ?? 0;
+  const profileRank = Number(profileUser?.profile_rank || 0);
 
   return (
     <div className="profile-dashboard">
@@ -409,6 +441,25 @@ const ProfileDashboard = ({
               <span className="verified-badge" title="Верифицированный артист">✓</span>
             )}
           </h1>
+          {(socialLinks.vk || socialLinks.telegram || socialLinks.max) && (
+            <div className="profile-social-links" aria-label="Социальные сети">
+              {socialLinks.vk && (
+                <a href={getSocialHref('vk', socialLinks.vk)} target="_blank" rel="noopener noreferrer" className="social-link social-link--vk" aria-label="VK" title="VK">
+                  <SocialIcon type="vk" />
+                </a>
+              )}
+              {socialLinks.telegram && (
+                <a href={getSocialHref('telegram', socialLinks.telegram)} target="_blank" rel="noopener noreferrer" className="social-link social-link--telegram" aria-label="Telegram" title="Telegram">
+                  <SocialIcon type="telegram" />
+                </a>
+              )}
+              {socialLinks.max && (
+                <a href={getSocialHref('max', socialLinks.max)} target="_blank" rel="noopener noreferrer" className="social-link social-link--max" aria-label="MAX" title="MAX">
+                  <SocialIcon type="max" />
+                </a>
+              )}
+            </div>
+          )}
           {profileUser?.email && isOwner && <p className="profile-email">{profileUser.email}</p>}
           {profileUser?.created_at && (
             <p className="profile-joined">
@@ -418,17 +469,6 @@ const ProfileDashboard = ({
           {profileUser?.bio && <p className="profile-bio-text">{profileUser.bio}</p>}
           {profileUser?.is_admin && <span className="admin-badge">Администратор</span>}
           {followSlot}
-          {(socialLinks.vk || socialLinks.telegram || socialLinks.max) && (
-            <div className="profile-social-links">
-              {socialLinks.vk && <a href={socialLinks.vk} target="_blank" rel="noopener noreferrer" className="social-link">VK</a>}
-              {socialLinks.telegram && (
-                <a href={`https://t.me/${socialLinks.telegram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="social-link">Telegram</a>
-              )}
-              {socialLinks.max && (
-                <a href={socialLinks.max.startsWith('http') ? socialLinks.max : `https://max.ru/${socialLinks.max.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="social-link">MAX</a>
-              )}
-            </div>
-          )}
           {isOwner && onEditProfile && (
             <button className="btn-edit-profile" type="button" onClick={onEditProfile}>
               Редактировать профиль
@@ -439,6 +479,7 @@ const ProfileDashboard = ({
         <section className="profile-card profile-level-card">
           <div className="profile-card-title-row">
             <h2>Уровень профиля</h2>
+            {profileRank > 0 && <span className="profile-rank-pill">Топ {profileRank}</span>}
             <div className="profile-info-tooltip">
               <button type="button" className="profile-info-button" aria-label="Как начисляется опыт">
                 i
@@ -467,6 +508,9 @@ const ProfileDashboard = ({
           <p className="profile-level-next">
             {level.next ? `До ${level.next.name}: ${(level.next.min - level.points).toLocaleString('ru-RU')} баллов` : 'Максимальный уровень'}
           </p>
+          <a className="profile-level-glossary-link" href="/gamification">
+            Глоссарий уровней и достижений
+          </a>
         </section>
 
         <section className="profile-card profile-stat-panel">

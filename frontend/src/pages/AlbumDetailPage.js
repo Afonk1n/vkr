@@ -92,7 +92,7 @@ const AlbumDetailPage = () => {
         fetchAlbum();
         fetchTracks();
       } catch (err) {
-        alert('Ошибка при удалении рецензии');
+        setError('Ошибка при удалении рецензии');
         console.error('Error deleting review:', err);
       }
     }

@@ -115,19 +115,31 @@
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.45rem;
+  margin-top: -0.2rem;
 }
 
 .social-link {
-  padding: 0.45rem 0.75rem;
-  font-size: 0.85rem;
-  font-weight: 700;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
   cursor: pointer;
-  transition: background-color var(--transition-base), transform var(--transition-base), border-color var(--transition-base);
+  transition: background-color var(--transition-base), color var(--transition-base), transform var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.social-link svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
 }
 
 .social-link:hover {
-  background: var(--hover-color);
+  border-color: color-mix(in srgb, var(--text-color) 34%, var(--border-color));
+  background: var(--text-color);
+  color: var(--background-color);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
   transform: translateY(-1px);
   text-decoration: none;
 }
@@ -168,6 +180,21 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+.profile-rank-pill {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 0.62rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+  background: var(--surface-control, var(--hover-color));
+  color: var(--text-color);
+  font-size: 0.78rem;
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 .profile-info-tooltip {
@@ -338,6 +365,28 @@
   height: 100%;
   border-radius: inherit;
   background: color-mix(in srgb, var(--text-color) 80%, transparent);
+}
+
+.profile-level-glossary-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+  background: var(--surface-control, var(--hover-color));
+  color: var(--text-color);
+  font-size: 0.84rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition: background-color var(--transition-base), border-color var(--transition-base), transform var(--transition-base);
+}
+
+.profile-level-glossary-link:hover {
+  border-color: color-mix(in srgb, var(--text-color) 28%, var(--border-color));
+  background: var(--hover-color);
+  transform: translateY(-1px);
+  text-decoration: none;
 }
 
 .profile-stat-list {

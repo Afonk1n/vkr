@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import ReviewCardSmall from '../components/ReviewCardSmall';
 import { SegmentedSlidingThumb } from '../components/SegmentedSlidingThumb';
 import { reviewsAPI } from '../services/api';
@@ -21,15 +22,41 @@ const FeedPage = () => {
       .map((review) => Number(review.final_score))
       .filter((score) => Number.isFinite(score) && score > 0);
     const authorMap = feedReviews.reduce((acc, review) => {
+      const userId = review.user?.id || review.user_id;
       const username = review.user?.username || 'Автор';
-      acc.set(username, (acc.get(username) || 0) + 1);
+      const key = userId || username;
+      const current = acc.get(key) || { id: userId, username, count: 0 };
+      acc.set(key, { ...current, count: current.count + 1 });
       return acc;
     }, new Map());
-    const activeAuthors = Array.from(authorMap.entries())
-      .sort((a, b) => b[1] - a[1])
+    const activeAuthors = Array.from(authorMap.values())
+      .sort((a, b) => b.count - a.count)
       .slice(0, 3);
     const topReviews = [...feedReviews]
       .sort((a, b) => Number(b.final_score || 0) - Number(a.final_score || 0))
+      .slice(0, 3)
+      .map((review) => ({
+        id: review.id,
+        title: review.album?.title || review.track?.title || 'Релиз',
+        score: Math.round(Number(review.final_score || 0)) || null,
+        href: review.album?.id || review.album_id
+          ? `/albums/${review.album?.id || review.album_id}`
+          : `/tracks/${review.track?.id || review.track_id}`,
+      }));
+    const hotDiscussions = Array.from(feedReviews
+      .filter((review) => review.album?.id || review.album_id)
+      .reduce((acc, review) => {
+        const id = review.album?.id || review.album_id;
+        const current = acc.get(id) || {
+          id,
+          title: review.album?.title || 'Альбом',
+          count: 0,
+        };
+        acc.set(id, { ...current, count: current.count + 1 });
+        return acc;
+      }, new Map())
+      .values())
+      .sort((a, b) => b.count - a.count)
       .slice(0, 3);
 
     return {
@@ -39,6 +66,7 @@ const FeedPage = () => {
         : null,
       activeAuthors,
       topReviews,
+      hotDiscussions,
     };
   }, [feedReviews]);
 
@@ -154,15 +182,38 @@ const FeedPage = () => {
                   </div>
                 </section>
 
+                <section className="feed-side-card">
+                  <h3>Быстрые переходы</h3>
+                  <div className="feed-quick-links">
+                    <Link to="/tops">Топы релизов</Link>
+                    <Link to="/search">Поиск музыки</Link>
+                    {isAuthenticated && <button type="button" onClick={() => setFeedSource('following')}>Мои подписки</button>}
+                  </div>
+                </section>
+
                 {feedInsights.activeAuthors.length > 0 && (
                   <section className="feed-side-card">
                     <h3>Активные авторы</h3>
                     <div className="feed-side-list">
-                      {feedInsights.activeAuthors.map(([name, count]) => (
-                        <div className="feed-side-row" key={name}>
-                          <span>{name}</span>
-                          <strong>{count}</strong>
-                        </div>
+                      {feedInsights.activeAuthors.map((author) => (
+                        <Link className="feed-side-row" to={author.id ? `/users/${author.id}` : '/feed'} key={author.id || author.username}>
+                          <span>{author.username}</span>
+                          <strong>{author.count}</strong>
+                        </Link>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {feedInsights.hotDiscussions.length > 0 && (
+                  <section className="feed-side-card">
+                    <h3>Обсуждают чаще</h3>
+                    <div className="feed-side-list">
+                      {feedInsights.hotDiscussions.map((album) => (
+                        <Link className="feed-side-release" to={`/albums/${album.id}`} key={album.id}>
+                          <span>{album.title}</span>
+                          <strong>{album.count}</strong>
+                        </Link>
                       ))}
                     </div>
                   </section>
@@ -173,10 +224,10 @@ const FeedPage = () => {
                     <h3>Высокие оценки</h3>
                     <div className="feed-side-list">
                       {feedInsights.topReviews.map((review) => (
-                        <div className="feed-side-release" key={review.id}>
-                          <span>{review.album?.title || review.track?.title || 'Релиз'}</span>
-                          <strong>{Math.round(Number(review.final_score || 0)) || '—'}</strong>
-                        </div>
+                        <Link className="feed-side-release" to={review.href} key={review.id}>
+                          <span>{review.title}</span>
+                          <strong>{review.score || '—'}</strong>
+                        </Link>
                       ))}
                     </div>
                   </section>

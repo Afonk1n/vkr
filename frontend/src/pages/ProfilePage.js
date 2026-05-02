@@ -78,11 +78,9 @@ const ProfilePage = () => {
       if (updateUser) {
         updateUser(updatedUser);
       }
-
-      alert('Профиль успешно обновлен');
     } catch (err) {
-      alert('Ошибка при обновлении профиля');
       console.error('Error updating profile:', err);
+      throw new Error(err.response?.data?.message || 'Ошибка при обновлении профиля');
     }
   };
 
@@ -96,7 +94,7 @@ const ProfilePage = () => {
         await reviewsAPI.delete(reviewId);
         fetchUserReviews();
       } catch (err) {
-        alert('Ошибка при удалении рецензии');
+        setError('Ошибка при удалении рецензии');
         console.error('Error deleting review:', err);
       }
     }
