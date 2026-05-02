@@ -411,7 +411,22 @@ const ProfileDashboard = ({
         </section>
 
         <section className="profile-card profile-level-card">
-          <h2>Уровень профиля</h2>
+          <div className="profile-card-title-row">
+            <h2>Уровень профиля</h2>
+            <div className="profile-info-tooltip">
+              <button type="button" className="profile-info-button" aria-label="Как начисляется опыт">
+                i
+              </button>
+              <div className="profile-info-popover" role="tooltip">
+                <strong>Как растёт уровень</strong>
+                <div><span>Рецензия</span><b>+320</b></div>
+                <div><span>Лайк к вашей рецензии</span><b>+55</b></div>
+                <div><span>Поставленный лайк</span><b>+12</b></div>
+                <div><span>Авторский лайк</span><b>+240</b></div>
+                <div><span>Средняя оценка</span><b>×8</b></div>
+              </div>
+            </div>
+          </div>
           <div className="profile-level-content">
             <div className={`profile-level-gem profile-level-gem--${level.current.tone}`}>
               <span>{level.current.name.charAt(0)}</span>
