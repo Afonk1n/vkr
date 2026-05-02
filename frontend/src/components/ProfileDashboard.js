@@ -52,7 +52,7 @@ const buildPreferenceSections = (profileUser, reviews) => {
   const reviewAlbums = reviews.map(getAlbumFromReview).filter(Boolean);
   const albums = uniqueByName([...favoriteAlbums, ...reviewAlbums].map((album) => ({
     title: album.title,
-    subtitle: album.artist?.name || album.artist_name || 'Артист',
+    subtitle: album.artist?.name || album.artist || album.artist_name || 'Артист',
     image: normalizeImage(album.cover_image_path),
   }))).slice(0, 3);
 
@@ -60,7 +60,7 @@ const buildPreferenceSections = (profileUser, reviews) => {
     ...favoriteAlbums,
     ...reviewAlbums,
   ].map((album) => ({
-    title: album.artist?.name || album.artist_name,
+    title: album.artist?.name || album.artist || album.artist_name,
     subtitle: 'Артист',
     image: normalizeImage(album.artist?.avatar_path || album.cover_image_path),
   }))).slice(0, 3);
@@ -69,7 +69,7 @@ const buildPreferenceSections = (profileUser, reviews) => {
     .filter((review) => review.track)
     .map((review) => ({
       title: review.track.title,
-      subtitle: review.track.album?.artist?.name || review.track.album?.artist_name || 'Трек',
+      subtitle: review.track.album?.artist?.name || review.track.album?.artist || review.track.album?.artist_name || 'Трек',
       image: normalizeImage(review.track.album?.cover_image_path),
     }))).slice(0, 3);
 
@@ -145,7 +145,7 @@ const ProfileDashboard = ({
   const preferenceSections = useMemo(() => buildPreferenceSections(profileUser, reviews), [profileUser, reviews]);
   const stats = profileUser?.stats || {};
 
-  const avgScore = stats.avg_score || '—';
+  const avgScore = Number.isFinite(Number(stats.avg_score)) ? Math.round(Number(stats.avg_score)) : '—';
   const ratingsWithoutReview = stats.ratings_without_review ?? 0;
 
   return (

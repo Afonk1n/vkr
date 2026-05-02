@@ -44,6 +44,12 @@
 .seg-sliding-track .header-segment--active,
 .seg-sliding-track .nav-auth-segment.header-segment--active,
 .seg-sliding-track .feed-segment--active {
-  background: transparent !important;
+  background: var(--card-background) !important;
   box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .seg-sliding-track .header-segment--active,
+:root[data-theme="dark"] .seg-sliding-track .nav-auth-segment.header-segment--active,
+:root[data-theme="dark"] .seg-sliding-track .feed-segment--active {
+  background: #2e2e2e !important;
 }
