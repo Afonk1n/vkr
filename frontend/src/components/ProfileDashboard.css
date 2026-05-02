@@ -122,6 +122,14 @@
   padding: 0.45rem 0.75rem;
   font-size: 0.85rem;
   font-weight: 700;
+  cursor: pointer;
+  transition: background-color var(--transition-base), transform var(--transition-base), border-color var(--transition-base);
+}
+
+.social-link:hover {
+  background: var(--hover-color);
+  transform: translateY(-1px);
+  text-decoration: none;
 }
 
 .admin-badge {
@@ -329,7 +337,7 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--accent-color);
+  background: color-mix(in srgb, var(--text-color) 80%, transparent);
 }
 
 .profile-stat-list {
@@ -376,16 +384,14 @@
   padding: 1.25rem;
   overflow: hidden;
   border-radius: var(--radius-lg);
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--accent-color) 20%, transparent), transparent 46%),
-    var(--surface-section, var(--card-background));
+  background: var(--surface-section, var(--card-background));
   border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
 }
 
 .profile-showcase-kicker {
   display: block;
   margin-bottom: 0.35rem;
-  color: var(--accent-color);
+  color: var(--text-secondary);
   font-size: 0.78rem;
   font-weight: 800;
   text-transform: uppercase;

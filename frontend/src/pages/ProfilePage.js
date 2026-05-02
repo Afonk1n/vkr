@@ -102,6 +102,10 @@ const ProfilePage = () => {
     }
   };
 
+  const handleLikedReviewRemoved = useCallback((reviewId) => {
+    setLikedReviews((current) => current.filter((review) => review.id !== reviewId));
+  }, []);
+
   if (!isAuthenticated || !user) {
     return null;
   }
@@ -147,6 +151,7 @@ const ProfilePage = () => {
                     key={review.id}
                     review={review}
                     hideLike={false}
+                    onUnlikeComplete={handleLikedReviewRemoved}
                   />
                 ))}
               </div>

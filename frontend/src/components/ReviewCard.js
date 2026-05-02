@@ -7,7 +7,7 @@ import LikeButton from './LikeButton';
 import ReviewScoresStrip from './ReviewScoresStrip';
 import './ReviewCard.css';
 
-const ReviewCard = ({ review, onEdit, onDelete, onUpdate, moderationActions, hideLike }) => {
+const ReviewCard = ({ review, onEdit, onDelete, onUpdate, onUnlikeComplete, moderationActions, hideLike }) => {
   const { user, isAdmin } = useAuth();
   const canEdit = user && (user.id === review.user_id || isAdmin);
   const [avatarError, setAvatarError] = useState(false);
@@ -24,6 +24,7 @@ const ReviewCard = ({ review, onEdit, onDelete, onUpdate, moderationActions, hid
   const handleUnlike = async () => {
     try {
       await reviewsAPI.unlike(review.id);
+      if (onUnlikeComplete) onUnlikeComplete(review.id);
       if (onUpdate) onUpdate();
     } catch (err) {
       throw err;

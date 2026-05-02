@@ -54,6 +54,7 @@ const buildPreferenceSections = (profileUser, reviews) => {
   const favoriteTracks = profileUser?.favorite_tracks || [];
   const reviewAlbums = reviews.map(getAlbumFromReview).filter(Boolean);
   const albums = uniqueByName([...(favoriteAlbums.length ? favoriteAlbums : []), ...reviewAlbums].map((album) => ({
+    id: album.id,
     title: album.title,
     subtitle: album.artist?.name || album.artist || album.artist_name || 'Артист',
     image: normalizeImage(album.cover_image_path),
@@ -61,23 +62,30 @@ const buildPreferenceSections = (profileUser, reviews) => {
 
   const artists = uniqueByName([
     ...favoriteArtists.map((artist) => ({
+      id: artist.id,
+      name: artist.name,
       title: artist.name,
       subtitle: 'Артист',
       image: normalizeImage(artist.cover_image_path),
     })),
     ...(favoriteArtists.length ? [] : favoriteAlbums.map((album) => ({
+      id: album.artist?.id,
+      name: album.artist?.name || album.artist || album.artist_name,
       title: album.artist?.name || album.artist || album.artist_name,
       subtitle: 'Артист',
       image: normalizeImage(album.artist?.avatar_path || album.cover_image_path),
     }))),
     ...reviewAlbums,
   ].map((album) => album.subtitle ? album : ({
+    id: album.artist?.id,
+    name: album.artist?.name || album.artist || album.artist_name,
     title: album.artist?.name || album.artist || album.artist_name,
     subtitle: 'Артист',
     image: normalizeImage(album.artist?.avatar_path || album.cover_image_path),
   }))).slice(0, 3);
 
   const manualTracks = favoriteTracks.map((track) => ({
+    id: track.id,
     title: track.title,
     subtitle: track.artist || track.album?.artist || 'Трек',
     image: normalizeImage(track.cover_image_path || track.album?.cover_image_path),
@@ -85,6 +93,7 @@ const buildPreferenceSections = (profileUser, reviews) => {
   const tracks = uniqueByName([...(manualTracks.length ? manualTracks : []), ...reviews
     .filter((review) => review.track)
     .map((review) => ({
+      id: review.track.id,
       title: review.track.title,
       subtitle: review.track.album?.artist?.name || review.track.album?.artist || review.track.album?.artist_name || 'Трек',
       image: normalizeImage(review.track.album?.cover_image_path),
@@ -171,7 +180,14 @@ const uniqueSelected = (items, keyFn) => {
   }).slice(0, 3);
 };
 
-const PreferenceEditor = ({ profileUser, onSaved }) => {
+const normalizeDraftItems = (items, type) => items
+  .filter((item) => type === 'artists' ? (item.name || item.title) : item.id)
+  .map((item) => ({
+    ...item,
+    name: item.name || item.title,
+  }));
+
+const PreferenceEditor = ({ profileUser, reviews = [], onSaved }) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState({ artists: [], albums: [], tracks: [] });
@@ -180,12 +196,20 @@ const PreferenceEditor = ({ profileUser, onSaved }) => {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    const fallbackSections = buildPreferenceSections(profileUser, reviews);
+    const fallbackArtists = fallbackSections[0]?.items || [];
+    const fallbackAlbums = fallbackSections[1]?.items || [];
+    const fallbackTracks = fallbackSections[2]?.items || [];
+    const savedArtists = (profileUser?.favorite_artists || []).map(toArtistItem);
+    const savedAlbums = (profileUser?.favorite_albums || []).map(toAlbumItem);
+    const savedTracks = (profileUser?.favorite_tracks || []).map(toTrackItem);
+
     setDraft({
-      artists: (profileUser?.favorite_artists || []).map(toArtistItem),
-      albums: (profileUser?.favorite_albums || []).map(toAlbumItem),
-      tracks: (profileUser?.favorite_tracks || []).map(toTrackItem),
+      artists: savedArtists.length ? savedArtists : normalizeDraftItems(fallbackArtists, 'artists'),
+      albums: savedAlbums.length ? savedAlbums : normalizeDraftItems(fallbackAlbums, 'albums'),
+      tracks: savedTracks.length ? savedTracks : normalizeDraftItems(fallbackTracks, 'tracks'),
     });
-  }, [profileUser]);
+  }, [profileUser, reviews]);
 
   useEffect(() => {
     if (!open || query.trim().length < 2) {
@@ -490,7 +514,7 @@ const ProfileDashboard = ({
 
         {activeTab === 'preferences' && (
           <>
-            {isOwner && <PreferenceEditor profileUser={profileUser} onSaved={onPreferencesUpdate} />}
+            {isOwner && <PreferenceEditor profileUser={profileUser} reviews={reviews} onSaved={onPreferencesUpdate} />}
             <div className="profile-preferences-grid">
               {preferenceSections.map((section) => (
                 <section className="profile-preference-section" key={section.title}>

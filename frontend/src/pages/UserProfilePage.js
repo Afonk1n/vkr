@@ -61,6 +61,10 @@ const UserProfilePage = () => {
     fetchLikedReviews();
   }, [fetchUserData, fetchUserReviews, fetchLikedReviews]);
 
+  const handleLikedReviewRemoved = useCallback((reviewId) => {
+    setLikedReviews((current) => current.filter((review) => review.id !== reviewId));
+  }, []);
+
   if (loading) {
     return (
       <div className="container">
@@ -118,6 +122,7 @@ const UserProfilePage = () => {
                   key={review.id}
                   review={review}
                   hideLike={false}
+                  onUnlikeComplete={handleLikedReviewRemoved}
                 />
               ))}
             </div>
