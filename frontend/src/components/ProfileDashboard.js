@@ -65,9 +65,13 @@ const buildPreferenceSections = (profileUser, reviews) => {
       subtitle: 'Артист',
       image: normalizeImage(artist.cover_image_path),
     })),
-    ...(favoriteArtists.length ? [] : favoriteAlbums),
+    ...(favoriteArtists.length ? [] : favoriteAlbums.map((album) => ({
+      title: album.artist?.name || album.artist || album.artist_name,
+      subtitle: 'Артист',
+      image: normalizeImage(album.artist?.avatar_path || album.cover_image_path),
+    }))),
     ...reviewAlbums,
-  ].map((album) => album.title ? album : ({
+  ].map((album) => album.subtitle ? album : ({
     title: album.artist?.name || album.artist || album.artist_name,
     subtitle: 'Артист',
     image: normalizeImage(album.artist?.avatar_path || album.cover_image_path),
@@ -99,13 +103,11 @@ const getLevelInfo = (profileUser, reviews) => {
   const receivedLikes = Number(stats.total_likes_received ?? 0);
   const likedGiven = Number(stats.total_likes_given ?? 0);
   const authorLikes = Number(stats.author_likes_received ?? 0);
-  const avgScore = Number(stats.avg_score ?? 0);
   const points = Math.round(
     reviewsCount * 320
     + receivedLikes * 55
     + likedGiven * 12
     + authorLikes * 240
-    + avgScore * 8
   );
 
   const current = [...LEVELS].reverse().find((level) => points >= level.min) || LEVELS[0];
@@ -423,7 +425,6 @@ const ProfileDashboard = ({
                 <div><span>Лайк к вашей рецензии</span><b>+55</b></div>
                 <div><span>Поставленный лайк</span><b>+12</b></div>
                 <div><span>Авторский лайк</span><b>+240</b></div>
-                <div><span>Средняя оценка</span><b>×8</b></div>
               </div>
             </div>
           </div>
