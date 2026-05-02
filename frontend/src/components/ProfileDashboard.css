@@ -376,6 +376,215 @@
   gap: 1rem;
 }
 
+.preference-editor {
+  border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
+  border-radius: var(--radius-lg);
+  background: var(--surface-section, var(--card-background));
+  overflow: hidden;
+}
+
+.preference-editor-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+}
+
+.preference-editor-topline div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.preference-editor-topline strong {
+  color: var(--text-color);
+  font-size: 0.98rem;
+}
+
+.preference-editor-topline span {
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.profile-edit-preferences-btn,
+.preference-editor-save,
+.preference-editor-cancel {
+  min-height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  padding: 0 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.profile-edit-preferences-btn,
+.preference-editor-cancel {
+  background: var(--surface-control, var(--card-background));
+  color: var(--text-color);
+}
+
+.preference-editor-save {
+  background: var(--text-color);
+  color: var(--background-color);
+  border-color: var(--text-color);
+}
+
+.preference-editor-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 0 1rem 1rem;
+}
+
+.preference-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.preference-editor-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.preference-editor-column h3,
+.preference-search-group h4 {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 0.9rem;
+}
+
+.preference-editor-slots,
+.preference-search-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.preference-editor-chip,
+.preference-search-item,
+.preference-editor-empty-slot {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 54px;
+  padding: 0.35rem;
+  border-radius: var(--radius-md);
+  border: 1px solid color-mix(in srgb, var(--border-color) 66%, transparent);
+  background: var(--surface-elevated, var(--card-background));
+  text-align: left;
+}
+
+.preference-editor-chip,
+.preference-search-item {
+  cursor: pointer;
+}
+
+.preference-editor-chip:hover,
+.preference-search-item:hover {
+  border-color: color-mix(in srgb, var(--accent-color) 46%, var(--border-color));
+  background: var(--surface-control, var(--hover-color));
+}
+
+.preference-editor-empty-slot {
+  display: grid;
+  place-items: center;
+  grid-template-columns: 1fr;
+  color: var(--text-muted);
+  border-style: dashed;
+  font-size: 0.82rem;
+}
+
+.preference-editor-chip-cover,
+.preference-search-cover {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 9px;
+  background: var(--surface-control, var(--hover-color));
+  color: var(--text-color);
+  font-weight: 900;
+}
+
+.preference-editor-chip-cover img,
+.preference-search-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.preference-editor-chip span:last-child,
+.preference-search-item span:last-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.preference-editor-chip strong,
+.preference-editor-chip small,
+.preference-search-item strong,
+.preference-search-item small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preference-editor-chip strong,
+.preference-search-item strong {
+  color: var(--text-color);
+  font-size: 0.86rem;
+}
+
+.preference-editor-chip small,
+.preference-search-item small {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.preference-editor-search {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated, var(--card-background));
+  color: var(--text-color);
+  padding: 0 0.85rem;
+  font: inherit;
+}
+
+.preference-search-results {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.preference-search-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.preference-editor-error {
+  color: var(--error-color);
+  background: var(--error-bg-solid);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 0.85rem;
+}
+
+.preference-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
 .profile-preference-section,
 .profile-panel-card,
 .profile-reviews {
@@ -507,6 +716,11 @@
   .profile-preferences-grid {
     grid-template-columns: 1fr;
   }
+
+  .preference-editor-grid,
+  .preference-search-results {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {
@@ -536,5 +750,11 @@
 
   .profile-showcase-pick:first-child {
     margin-left: 0;
+  }
+
+  .preference-editor-topline,
+  .preference-editor-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

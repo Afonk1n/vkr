@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import BadgeList from './BadgeList';
+import { searchAPI, usersAPI } from '../services/api';
 import { getImageUrl } from '../utils/imageUtils';
 import './ProfileDashboard.css';
 
@@ -49,29 +50,41 @@ const uniqueByName = (items) => {
 
 const buildPreferenceSections = (profileUser, reviews) => {
   const favoriteAlbums = profileUser?.favorite_albums || [];
+  const favoriteArtists = profileUser?.favorite_artists || [];
+  const favoriteTracks = profileUser?.favorite_tracks || [];
   const reviewAlbums = reviews.map(getAlbumFromReview).filter(Boolean);
-  const albums = uniqueByName([...favoriteAlbums, ...reviewAlbums].map((album) => ({
+  const albums = uniqueByName([...(favoriteAlbums.length ? favoriteAlbums : []), ...reviewAlbums].map((album) => ({
     title: album.title,
     subtitle: album.artist?.name || album.artist || album.artist_name || 'Артист',
     image: normalizeImage(album.cover_image_path),
   }))).slice(0, 3);
 
   const artists = uniqueByName([
-    ...favoriteAlbums,
+    ...favoriteArtists.map((artist) => ({
+      title: artist.name,
+      subtitle: 'Артист',
+      image: normalizeImage(artist.cover_image_path),
+    })),
+    ...(favoriteArtists.length ? [] : favoriteAlbums),
     ...reviewAlbums,
-  ].map((album) => ({
+  ].map((album) => album.title ? album : ({
     title: album.artist?.name || album.artist || album.artist_name,
     subtitle: 'Артист',
     image: normalizeImage(album.artist?.avatar_path || album.cover_image_path),
   }))).slice(0, 3);
 
-  const tracks = uniqueByName(reviews
+  const manualTracks = favoriteTracks.map((track) => ({
+    title: track.title,
+    subtitle: track.artist || track.album?.artist || 'Трек',
+    image: normalizeImage(track.cover_image_path || track.album?.cover_image_path),
+  }));
+  const tracks = uniqueByName([...(manualTracks.length ? manualTracks : []), ...reviews
     .filter((review) => review.track)
     .map((review) => ({
       title: review.track.title,
       subtitle: review.track.album?.artist?.name || review.track.album?.artist || review.track.album?.artist_name || 'Трек',
       image: normalizeImage(review.track.album?.cover_image_path),
-    }))).slice(0, 3);
+    }))]).slice(0, 3);
 
   return [
     { title: 'Артисты', items: artists },
@@ -125,6 +138,204 @@ const EmptyPanel = ({ children }) => (
   <div className="profile-empty-panel">{children}</div>
 );
 
+const toAlbumItem = (album) => ({
+  id: album.id,
+  title: album.title,
+  subtitle: album.artist,
+  image: normalizeImage(album.cover_image_path),
+});
+
+const toArtistItem = (artist) => ({
+  name: artist.name,
+  title: artist.name,
+  subtitle: `${artist.count || 0} релизов`,
+  image: normalizeImage(artist.cover_image_path),
+});
+
+const toTrackItem = (track) => ({
+  id: track.id,
+  title: track.title,
+  subtitle: track.artist || track.album_title,
+  image: normalizeImage(track.cover_image_path),
+});
+
+const uniqueSelected = (items, keyFn) => {
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = keyFn(item);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 3);
+};
+
+const PreferenceEditor = ({ profileUser, onSaved }) => {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState({ artists: [], albums: [], tracks: [] });
+  const [draft, setDraft] = useState({ artists: [], albums: [], tracks: [] });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    setDraft({
+      artists: (profileUser?.favorite_artists || []).map(toArtistItem),
+      albums: (profileUser?.favorite_albums || []).map(toAlbumItem),
+      tracks: (profileUser?.favorite_tracks || []).map(toTrackItem),
+    });
+  }, [profileUser]);
+
+  useEffect(() => {
+    if (!open || query.trim().length < 2) {
+      setResults({ artists: [], albums: [], tracks: [] });
+      return undefined;
+    }
+    const timer = window.setTimeout(async () => {
+      try {
+        const { data } = await searchAPI.search(query.trim());
+        setResults({
+          artists: (data?.artists || []).map(toArtistItem),
+          albums: (data?.albums || []).map(toAlbumItem),
+          tracks: (data?.tracks || []).map(toTrackItem),
+        });
+      } catch (e) {
+        setResults({ artists: [], albums: [], tracks: [] });
+      }
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, [open, query]);
+
+  const addItem = (type, item) => {
+    setDraft((current) => {
+      const keyFn = type === 'artists' ? (value) => value.name || value.title : (value) => value.id;
+      return {
+        ...current,
+        [type]: uniqueSelected([...current[type], item], keyFn),
+      };
+    });
+  };
+
+  const removeItem = (type, item) => {
+    setDraft((current) => {
+      const keyFn = type === 'artists' ? (value) => value.name || value.title : (value) => value.id;
+      const target = keyFn(item);
+      return {
+        ...current,
+        [type]: current[type].filter((value) => keyFn(value) !== target),
+      };
+    });
+  };
+
+  const save = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      const { data } = await usersAPI.setFavorites(profileUser.id, {
+        artist_names: draft.artists.map((artist) => artist.name || artist.title),
+        album_ids: draft.albums.map((album) => album.id),
+        track_ids: draft.tracks.map((track) => track.id),
+      });
+      onSaved?.({
+        favorite_artists: data.favorite_artists || [],
+        favorite_albums: data.favorite_albums || [],
+        favorite_tracks: data.favorite_tracks || [],
+      });
+      setOpen(false);
+      setQuery('');
+    } catch (e) {
+      setError('Не удалось сохранить предпочтения');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const renderSelected = (type, title) => (
+    <div className="preference-editor-column">
+      <h3>{title}</h3>
+      <div className="preference-editor-slots">
+        {Array.from({ length: 3 }).map((_, index) => {
+          const item = draft[type][index];
+          return item ? (
+            <button key={`${type}-${item.id || item.name}`} type="button" className="preference-editor-chip" onClick={() => removeItem(type, item)}>
+              <span className="preference-editor-chip-cover">
+                {item.image ? <img src={item.image} alt="" /> : item.title.charAt(0).toUpperCase()}
+              </span>
+              <span>
+                <strong>{item.title}</strong>
+                <small>{item.subtitle}</small>
+              </span>
+            </button>
+          ) : (
+            <div key={`${type}-empty-${index}`} className="preference-editor-empty-slot">Свободно</div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const renderResults = (type, title, items) => items.length > 0 && (
+    <div className="preference-search-group">
+      <h4>{title}</h4>
+      <div className="preference-search-list">
+        {items.map((item) => (
+          <button key={`${type}-${item.id || item.name}`} type="button" className="preference-search-item" onClick={() => addItem(type, item)}>
+            <span className="preference-search-cover">
+              {item.image ? <img src={item.image} alt="" /> : item.title.charAt(0).toUpperCase()}
+            </span>
+            <span>
+              <strong>{item.title}</strong>
+              <small>{item.subtitle}</small>
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className={`preference-editor ${open ? 'preference-editor--open' : ''}`}>
+      <div className="preference-editor-topline">
+        <div>
+          <strong>Личные предпочтения</strong>
+          <span>До 3 артистов, альбомов и треков. Если ничего не выбрать, профиль соберёт блоки автоматически.</span>
+        </div>
+        <button type="button" className="profile-edit-preferences-btn" onClick={() => setOpen((value) => !value)}>
+          {open ? 'Свернуть' : 'Настроить'}
+        </button>
+      </div>
+      {open && (
+        <div className="preference-editor-body">
+          <div className="preference-editor-grid">
+            {renderSelected('artists', 'Артисты')}
+            {renderSelected('albums', 'Альбомы')}
+            {renderSelected('tracks', 'Треки')}
+          </div>
+          <input
+            className="preference-editor-search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Найти артиста, альбом или трек..."
+          />
+          <div className="preference-search-results">
+            {renderResults('artists', 'Артисты', results.artists)}
+            {renderResults('albums', 'Альбомы', results.albums)}
+            {renderResults('tracks', 'Треки', results.tracks)}
+          </div>
+          {error && <div className="preference-editor-error">{error}</div>}
+          <div className="preference-editor-actions">
+            <button type="button" className="preference-editor-save" onClick={save} disabled={saving}>
+              {saving ? 'Сохраняем...' : 'Сохранить'}
+            </button>
+            <button type="button" className="preference-editor-cancel" onClick={() => setOpen(false)}>
+              Отмена
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ProfileDashboard = ({
   profileUser,
   reviews = [],
@@ -136,6 +347,7 @@ const ProfileDashboard = ({
   onEditProfile,
   renderReviews,
   renderLikedReviews,
+  onPreferencesUpdate,
   followSlot,
   emptyReviewsText = 'Пока нет рецензий',
 }) => {
@@ -261,20 +473,23 @@ const ProfileDashboard = ({
         </div>
 
         {activeTab === 'preferences' && (
-          <div className="profile-preferences-grid">
-            {preferenceSections.map((section) => (
-              <section className="profile-preference-section" key={section.title}>
-                <h2>{section.title}</h2>
-                {section.items.length > 0 ? (
-                  <div className="profile-preference-list">
-                    {section.items.map((item) => <PreferenceItem item={item} key={`${section.title}-${item.title}`} />)}
-                  </div>
-                ) : (
-                  <EmptyPanel>Нет данных для этого блока</EmptyPanel>
-                )}
-              </section>
-            ))}
-          </div>
+          <>
+            {isOwner && <PreferenceEditor profileUser={profileUser} onSaved={onPreferencesUpdate} />}
+            <div className="profile-preferences-grid">
+              {preferenceSections.map((section) => (
+                <section className="profile-preference-section" key={section.title}>
+                  <h2>{section.title}</h2>
+                  {section.items.length > 0 ? (
+                    <div className="profile-preference-list">
+                      {section.items.map((item) => <PreferenceItem item={item} key={`${section.title}-${item.title}`} />)}
+                    </div>
+                  ) : (
+                    <EmptyPanel>Нет данных для этого блока</EmptyPanel>
+                  )}
+                </section>
+              ))}
+            </div>
+          </>
         )}
 
         {activeTab === 'reviews' && (

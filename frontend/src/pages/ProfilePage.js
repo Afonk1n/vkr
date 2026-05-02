@@ -126,6 +126,7 @@ const ProfilePage = () => {
             likedReviewsLoading={likedReviewsLoading}
             isOwner
             onEditProfile={() => setIsEditing(true)}
+            onPreferencesUpdate={(favorites) => setCurrentUser((prev) => ({ ...prev, ...favorites }))}
             emptyReviewsText="У вас пока нет рецензий"
             renderReviews={() => (
               <div className="reviews-list">

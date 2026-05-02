@@ -17,6 +17,8 @@ type User struct {
 	SocialLinks      string         `json:"social_links" gorm:"type:jsonb"` // JSON: {"vk": "", "telegram": "", "instagram": ""}
 	IsAdmin          bool           `json:"is_admin" gorm:"default:false"`
 	FavoriteAlbumIDs string         `json:"favorite_album_ids" gorm:"type:text;default:'[]'"`
+	FavoriteArtists  string         `json:"favorite_artists" gorm:"type:text;default:'[]'"`
+	FavoriteTrackIDs string         `json:"favorite_track_ids" gorm:"type:text;default:'[]'"`
 	IsVerifiedArtist bool           `json:"is_verified_artist" gorm:"default:false"`
 	CreatedAt        time.Time      `json:"created_at"`
 	UpdatedAt        time.Time      `json:"updated_at"`

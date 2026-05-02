@@ -42,6 +42,8 @@ func (uc *UserController) GetUser(c *gin.Context) {
 	stats := uc.CalculateUserStats(user.ID)
 	genreStats := uc.CalculateGenreStats(user.ID)
 	favoriteAlbums := uc.GetFavoriteAlbums(user.FavoriteAlbumIDs)
+	favoriteArtists := uc.GetFavoriteArtists(user.FavoriteArtists)
+	favoriteTracks := uc.GetFavoriteTracks(user.FavoriteTrackIDs)
 
 	var followersCount, followingCount int64
 	uc.DB.Model(&models.UserFollow{}).Where("following_id = ?", user.ID).Count(&followersCount)
@@ -57,12 +59,15 @@ func (uc *UserController) GetUser(c *gin.Context) {
 		"is_admin":           user.IsAdmin,
 		"is_verified_artist": user.IsVerifiedArtist,
 		"favorite_album_ids": user.FavoriteAlbumIDs,
+		"favorite_artists":   favoriteArtists,
+		"favorite_track_ids": user.FavoriteTrackIDs,
 		"created_at":         user.CreatedAt,
 		"updated_at":         user.UpdatedAt,
 		"badges":             badges,
 		"stats":              stats,
 		"genre_stats":        genreStats,
 		"favorite_albums":    favoriteAlbums,
+		"favorite_tracks":    favoriteTracks,
 		"followers_count":    followersCount,
 		"following_count":    followingCount,
 	}
@@ -134,7 +139,7 @@ func (uc *UserController) UnfollowUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"following": false})
 }
 
-// SetFavoriteAlbums sets up to 3 favorite albums for a user
+// SetFavoriteAlbums sets up to 3 favorite albums, artists and tracks for a user.
 func (uc *UserController) SetFavoriteAlbums(c *gin.Context) {
 	id := c.Param("id")
 	var user models.User
@@ -150,7 +155,9 @@ func (uc *UserController) SetFavoriteAlbums(c *gin.Context) {
 	}
 
 	var req struct {
-		AlbumIDs []uint `json:"album_ids"`
+		AlbumIDs    []uint   `json:"album_ids"`
+		ArtistNames []string `json:"artist_names"`
+		TrackIDs    []uint   `json:"track_ids"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, utils.ErrorResponse{Error: "Bad Request", Message: err.Error(), Code: http.StatusBadRequest})
@@ -159,12 +166,47 @@ func (uc *UserController) SetFavoriteAlbums(c *gin.Context) {
 	if len(req.AlbumIDs) > 3 {
 		req.AlbumIDs = req.AlbumIDs[:3]
 	}
+	if len(req.ArtistNames) > 3 {
+		req.ArtistNames = req.ArtistNames[:3]
+	}
+	if len(req.TrackIDs) > 3 {
+		req.TrackIDs = req.TrackIDs[:3]
+	}
 
 	idsJSON, _ := json.Marshal(req.AlbumIDs)
 	user.FavoriteAlbumIDs = string(idsJSON)
+	artistsJSON, _ := json.Marshal(cleanArtistNames(req.ArtistNames))
+	user.FavoriteArtists = string(artistsJSON)
+	trackIDsJSON, _ := json.Marshal(req.TrackIDs)
+	user.FavoriteTrackIDs = string(trackIDsJSON)
 	uc.DB.Save(&user)
 
-	c.JSON(http.StatusOK, gin.H{"favorite_albums": uc.GetFavoriteAlbums(user.FavoriteAlbumIDs)})
+	c.JSON(http.StatusOK, gin.H{
+		"favorite_albums":  uc.GetFavoriteAlbums(user.FavoriteAlbumIDs),
+		"favorite_artists": uc.GetFavoriteArtists(user.FavoriteArtists),
+		"favorite_tracks":  uc.GetFavoriteTracks(user.FavoriteTrackIDs),
+	})
+}
+
+func cleanArtistNames(names []string) []string {
+	cleaned := make([]string, 0, len(names))
+	seen := make(map[string]bool)
+	for _, name := range names {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			continue
+		}
+		key := strings.ToLower(name)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		cleaned = append(cleaned, name)
+	}
+	if len(cleaned) > 3 {
+		return cleaned[:3]
+	}
+	return cleaned
 }
 
 // GetFavoriteAlbums loads album objects from a JSON IDs string
@@ -187,6 +229,65 @@ func (uc *UserController) GetFavoriteAlbums(idsJSON string) []models.Album {
 	for _, id := range ids {
 		if a, ok := albumMap[id]; ok {
 			ordered = append(ordered, a)
+		}
+	}
+	return ordered
+}
+
+func (uc *UserController) GetFavoriteArtists(namesJSON string) []ArtistSearchResult {
+	if namesJSON == "" || namesJSON == "[]" || namesJSON == "null" {
+		return []ArtistSearchResult{}
+	}
+	var names []string
+	if err := json.Unmarshal([]byte(namesJSON), &names); err != nil || len(names) == 0 {
+		return []ArtistSearchResult{}
+	}
+
+	result := make([]ArtistSearchResult, 0, len(names))
+	for _, name := range cleanArtistNames(names) {
+		var count int64
+		var firstAlbum models.Album
+		uc.DB.Model(&models.Album{}).Where("artist = ?", name).Count(&count)
+		uc.DB.Where("artist = ?", name).Order("created_at ASC").First(&firstAlbum)
+		result = append(result, ArtistSearchResult{
+			Name:           name,
+			Count:          int(count),
+			CoverImagePath: firstAlbum.CoverImagePath,
+		})
+	}
+	return result
+}
+
+func (uc *UserController) GetFavoriteTracks(idsJSON string) []TrackSearchResult {
+	if idsJSON == "" || idsJSON == "[]" || idsJSON == "null" {
+		return []TrackSearchResult{}
+	}
+	var ids []uint
+	if err := json.Unmarshal([]byte(idsJSON), &ids); err != nil || len(ids) == 0 {
+		return []TrackSearchResult{}
+	}
+	var tracks []models.Track
+	uc.DB.Preload("Album").Where("id IN ?", ids).Find(&tracks)
+	trackMap := make(map[uint]models.Track)
+	for _, track := range tracks {
+		trackMap[track.ID] = track
+	}
+
+	ordered := make([]TrackSearchResult, 0, len(ids))
+	for _, id := range ids {
+		if track, ok := trackMap[id]; ok {
+			cover := track.CoverImagePath
+			if cover == "" {
+				cover = track.Album.CoverImagePath
+			}
+			ordered = append(ordered, TrackSearchResult{
+				ID:             track.ID,
+				Title:          track.Title,
+				AlbumID:        track.AlbumID,
+				AlbumTitle:     track.Album.Title,
+				Artist:         track.Album.Artist,
+				CoverImagePath: cover,
+			})
 		}
 	}
 	return ordered
@@ -503,6 +604,8 @@ func (uc *UserController) UpdateUser(c *gin.Context) {
 	stats := uc.CalculateUserStats(user.ID)
 	genreStats := uc.CalculateGenreStats(user.ID)
 	favoriteAlbums := uc.GetFavoriteAlbums(user.FavoriteAlbumIDs)
+	favoriteArtists := uc.GetFavoriteArtists(user.FavoriteArtists)
+	favoriteTracks := uc.GetFavoriteTracks(user.FavoriteTrackIDs)
 
 	userResponse := gin.H{
 		"id":                 user.ID,
@@ -514,12 +617,15 @@ func (uc *UserController) UpdateUser(c *gin.Context) {
 		"is_admin":           user.IsAdmin,
 		"is_verified_artist": user.IsVerifiedArtist,
 		"favorite_album_ids": user.FavoriteAlbumIDs,
+		"favorite_artists":   favoriteArtists,
+		"favorite_track_ids": user.FavoriteTrackIDs,
 		"created_at":         user.CreatedAt,
 		"updated_at":         user.UpdatedAt,
 		"badges":             badges,
 		"stats":              stats,
 		"genre_stats":        genreStats,
 		"favorite_albums":    favoriteAlbums,
+		"favorite_tracks":    favoriteTracks,
 	}
 
 	c.JSON(http.StatusOK, userResponse)

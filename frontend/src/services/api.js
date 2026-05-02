@@ -96,7 +96,7 @@ export const usersAPI = {
   follow: (id) => api.post(`/users/${id}/follow`),
   unfollow: (id) => api.delete(`/users/${id}/follow`),
   update: (id, data) => api.put(`/users/${id}`, data),
-  setFavorites: (id, albumIds) => api.put(`/users/${id}/favorites`, { album_ids: albumIds }),
+  setFavorites: (id, favorites) => api.put(`/users/${id}/favorites`, Array.isArray(favorites) ? { album_ids: favorites } : favorites),
   uploadAvatar: (id, file) => {
     const formData = new FormData();
     formData.append('avatar', file);

@@ -90,6 +90,7 @@ const UserProfilePage = () => {
           likedReviews={likedReviews}
           likedReviewsLoading={likedReviewsLoading}
           isOwner={isOwnProfile}
+          onPreferencesUpdate={(favorites) => setUser((prev) => ({ ...prev, ...favorites }))}
           emptyReviewsText="У пользователя пока нет рецензий"
           followSlot={!isOwnProfile && isAuthenticated ? (
             <FollowButton
