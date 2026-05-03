@@ -30,6 +30,34 @@ const parseSocialLinks = (value) => {
   }
 };
 
+const parseJsonArray = (value) => {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  if (typeof value !== 'string') return [];
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
+};
+
+const normalizeFavoriteArtists = (value) => parseJsonArray(value)
+  .map((artist) => {
+    if (typeof artist === 'string') {
+      return { name: artist, title: artist };
+    }
+    return artist || null;
+  })
+  .filter(Boolean);
+
+const normalizeFavoriteAlbums = (value) => parseJsonArray(value)
+  .filter((album) => album && typeof album === 'object' && album.title);
+
+const normalizeFavoriteTracks = (value) => parseJsonArray(value)
+  .filter((track) => track && typeof track === 'object' && track.title);
+
 const normalizeImage = (path) => {
   const imageUrl = getImageUrl(path);
   return imageUrl || null;
@@ -49,9 +77,9 @@ const uniqueByName = (items) => {
 };
 
 const buildPreferenceSections = (profileUser, reviews) => {
-  const favoriteAlbums = profileUser?.favorite_albums || [];
-  const favoriteArtists = profileUser?.favorite_artists || [];
-  const favoriteTracks = profileUser?.favorite_tracks || [];
+  const favoriteAlbums = normalizeFavoriteAlbums(profileUser?.favorite_albums);
+  const favoriteArtists = normalizeFavoriteArtists(profileUser?.favorite_artists);
+  const favoriteTracks = normalizeFavoriteTracks(profileUser?.favorite_tracks);
   const reviewAlbums = reviews.map(getAlbumFromReview).filter(Boolean);
   const albums = uniqueByName([...(favoriteAlbums.length ? favoriteAlbums : []), ...reviewAlbums].map((album) => ({
     id: album.id,
@@ -231,9 +259,9 @@ const PreferenceEditor = ({ profileUser, reviews = [], onSaved }) => {
     const fallbackArtists = fallbackSections[0]?.items || [];
     const fallbackAlbums = fallbackSections[1]?.items || [];
     const fallbackTracks = fallbackSections[2]?.items || [];
-    const savedArtists = (profileUser?.favorite_artists || []).map(toArtistItem);
-    const savedAlbums = (profileUser?.favorite_albums || []).map(toAlbumItem);
-    const savedTracks = (profileUser?.favorite_tracks || []).map(toTrackItem);
+    const savedArtists = normalizeFavoriteArtists(profileUser?.favorite_artists).map(toArtistItem);
+    const savedAlbums = normalizeFavoriteAlbums(profileUser?.favorite_albums).map(toAlbumItem);
+    const savedTracks = normalizeFavoriteTracks(profileUser?.favorite_tracks).map(toTrackItem);
 
     setDraft({
       artists: savedArtists.length ? savedArtists : normalizeDraftItems(fallbackArtists, 'artists'),
