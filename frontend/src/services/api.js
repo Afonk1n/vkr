@@ -63,6 +63,15 @@ export const albumsAPI = {
   getById: (id) => api.get(`/albums/${id}`),
   getByArtist: (artistName) => api.get(`/albums/artist/${encodeURIComponent(artistName)}`),
   create: (data) => api.post('/albums', data),
+  uploadCover: (file) => {
+    const formData = new FormData();
+    formData.append('cover', file);
+    return api.post('/albums/cover', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
   update: (id, data) => api.put(`/albums/${id}`, data),
   delete: (id) => api.delete(`/albums/${id}`),
   like: (id) => api.post(`/albums/${id}/like`),

@@ -28,7 +28,9 @@ CMD ["go", "run", "./main.go"]
 
 FROM alpine:3.20
 
-RUN addgroup -S app && adduser -S -G app app && apk add --no-cache ca-certificates
+RUN addgroup -S app && adduser -S -G app app && apk add --no-cache ca-certificates \
+    && mkdir -p /frontend/public/preview/uploads \
+    && chown -R app:app /frontend
 
 WORKDIR /app
 

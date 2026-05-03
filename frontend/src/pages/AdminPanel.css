@@ -14,10 +14,11 @@
   border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
   border-radius: var(--radius-xl);
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--surface-section, var(--card-background)) 88%, transparent), transparent),
+    linear-gradient(135deg, color-mix(in srgb, var(--surface-section, var(--card-background)) 90%, transparent), transparent),
     var(--surface-elevated, var(--card-background));
   box-shadow: var(--shadow-sm);
   padding: 1.5rem;
+  gap: 1rem;
 }
 
 .admin-header h1 {
@@ -44,45 +45,336 @@
   text-transform: uppercase;
 }
 
-.admin-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.85rem;
+.admin-page-switch,
+.admin-status-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--surface-control, var(--card-background));
+  padding: 0.25rem;
 }
 
-.admin-stat-card {
-  min-height: 92px;
+.admin-page-segment,
+.admin-status-segment {
+  position: relative;
+  z-index: 1;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 900;
+  transition: color var(--transition-base), transform var(--transition-base);
+}
+
+.admin-page-segment {
+  min-width: 9rem;
+  height: 2.75rem;
+  padding: 0 1.15rem;
+}
+
+.admin-page-segment:hover,
+.admin-page-segment:focus-visible,
+.admin-page-segment--active,
+.admin-status-segment:hover,
+.admin-status-segment:focus-visible,
+.admin-status-segment--active {
+  color: var(--text-color);
+}
+
+.admin-moderation-top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.admin-status-switch {
+  width: min(100%, 680px);
+}
+
+.admin-status-segment {
+  min-width: 0;
+  flex: 1;
+  min-height: 3.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0 0.9rem;
+}
+
+.admin-status-segment strong {
+  min-width: 1.85rem;
+  height: 1.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-elevated, var(--card-background)) 78%, transparent);
+  color: var(--text-color);
+  font-size: 0.86rem;
+}
+
+.admin-release-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
+  border-radius: var(--radius-xl);
+  background: var(--surface-section, var(--card-background));
+  box-shadow: var(--shadow-sm);
+  padding: 1.2rem;
+}
+
+.admin-release-heading,
+.admin-track-builder-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
-  border-radius: var(--radius-lg);
-  background: var(--card-background);
-  color: var(--text-color);
-  box-shadow: var(--shadow-sm);
-  padding: 1rem;
-  cursor: pointer;
-  transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base), background-color var(--transition-base);
 }
 
-.admin-stat-card:hover,
-.admin-stat-card:focus-visible,
-.admin-stat-card--active {
-  border-color: color-mix(in srgb, var(--text-color) 32%, var(--border-color));
-  background: var(--surface-elevated, var(--card-background));
+.admin-release-heading h2,
+.admin-track-builder-head h3 {
+  color: var(--text-color);
+  margin: 0 0 0.3rem;
+}
+
+.admin-release-heading p,
+.admin-track-builder-head p {
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.admin-save-release,
+.admin-soft-button,
+.admin-success-message a {
+  min-height: 2.55rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--surface-control, var(--hover-color));
+  color: var(--text-color);
+  cursor: pointer;
+  font-weight: 900;
+  text-decoration: none;
+  padding: 0 1.1rem;
+  transition: transform var(--transition-base), box-shadow var(--transition-base), background-color var(--transition-base), border-color var(--transition-base);
+}
+
+.admin-save-release {
+  background: var(--button-primary-bg, var(--text-color));
+  border-color: color-mix(in srgb, var(--text-color) 28%, var(--border-color));
+  color: var(--button-primary-text, var(--background-color));
+}
+
+.admin-save-release:hover,
+.admin-save-release:focus-visible,
+.admin-soft-button:hover,
+.admin-soft-button:focus-visible,
+.admin-success-message a:hover,
+.admin-success-message a:focus-visible {
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
 
-.admin-stat-card span {
-  color: var(--text-secondary);
-  font-weight: 800;
+.admin-save-release:disabled {
+  cursor: wait;
+  opacity: 0.7;
+  transform: none;
 }
 
-.admin-stat-card strong {
-  font-size: 2rem;
-  line-height: 1;
+.admin-success-message {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--success-color) 30%, var(--border-color));
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--success-color) 11%, var(--card-background));
+  color: var(--text-color);
+  padding: 0.85rem;
+}
+
+.admin-success-message span {
+  color: var(--text-secondary);
+}
+
+.admin-release-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.admin-cover-uploader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  align-items: center;
+  justify-content: center;
+  min-height: 350px;
+  border: 1px dashed color-mix(in srgb, var(--border-color) 86%, var(--text-secondary));
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--card-background) 82%, transparent);
+  color: var(--text-color);
+  cursor: pointer;
+  padding: 1rem;
+  text-align: center;
+  transition: border-color var(--transition-base), box-shadow var(--transition-base), transform var(--transition-base);
+}
+
+.admin-cover-uploader:hover {
+  border-color: color-mix(in srgb, var(--text-color) 32%, var(--border-color));
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.admin-cover-uploader input {
+  display: none;
+}
+
+.admin-cover-uploader small {
+  color: var(--text-secondary);
+}
+
+.admin-cover-preview {
+  width: min(100%, 180px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--surface-elevated, var(--card-background));
+  box-shadow: var(--shadow-sm);
+  color: var(--text-secondary);
+  font-weight: 900;
+}
+
+.admin-cover-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.admin-field--wide {
+  grid-column: 1 / -1;
+}
+
+.admin-field span {
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
+.admin-field input,
+.admin-field select,
+.admin-field textarea,
+.admin-track-row input {
+  width: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--input-background, var(--card-background));
+  color: var(--text-color);
+  font: inherit;
+  padding: 0.82rem 0.9rem;
+  outline: none;
+  transition: border-color var(--transition-base), box-shadow var(--transition-base), background-color var(--transition-base);
+}
+
+.admin-field textarea {
+  resize: vertical;
+  min-height: 116px;
+}
+
+.admin-field input:focus,
+.admin-field select:focus,
+.admin-field textarea:focus,
+.admin-track-row input:focus {
+  border-color: color-mix(in srgb, var(--text-color) 34%, var(--border-color));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--text-color) 8%, transparent);
+}
+
+.admin-track-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  border-top: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+  padding-top: 1rem;
+}
+
+.admin-track-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.admin-track-row {
+  display: grid;
+  grid-template-columns: 2.35rem minmax(0, 1fr) 7.2rem 2.6rem 2.6rem;
+  gap: 0.55rem;
+  align-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--card-background);
+  padding: 0.55rem;
+}
+
+.admin-track-number {
+  width: 2.35rem;
+  height: 2.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--surface-control, var(--hover-color));
+  color: var(--text-secondary);
+  font-weight: 900;
+}
+
+.admin-track-duration {
+  text-align: center;
+}
+
+.admin-icon-button {
+  width: 2.6rem;
+  height: 2.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--surface-control, var(--hover-color));
+  color: var(--text-color);
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 900;
+  transition: transform var(--transition-base), box-shadow var(--transition-base), border-color var(--transition-base);
+}
+
+.admin-icon-button:hover,
+.admin-icon-button:focus-visible {
+  border-color: color-mix(in srgb, var(--text-color) 34%, var(--border-color));
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
 }
 
 .reviews-list {
@@ -168,6 +460,34 @@
 @media (max-width: 768px) {
   .admin-stats-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-header,
+  .admin-release-heading,
+  .admin-track-builder-head,
+  .admin-success-message {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-page-switch,
+  .admin-status-switch {
+    width: 100%;
+  }
+
+  .admin-page-segment,
+  .admin-status-segment {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .admin-release-layout,
+  .admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-cover-uploader {
+    min-height: 260px;
   }
 
   .moderation-actions {

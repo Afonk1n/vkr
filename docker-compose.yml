@@ -44,6 +44,7 @@ services:
     volumes:
       - ./backend:/app
       - ./frontend/public/avatars:/frontend/public/avatars
+      - ./frontend/public/preview:/frontend/public/preview
       - go_mod_cache:/go/pkg/mod
       - go_build_cache:/root/.cache/go-build
     healthcheck:

@@ -56,6 +56,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 			albums.GET("/artist/:name", albumController.GetAlbumsByArtist)
 			albums.GET("/:id/tracks", trackController.GetTracks)
 			albums.GET("/:id", albumController.GetAlbum)
+			albums.POST("/cover", middleware.AuthMiddleware(db), middleware.AdminMiddleware(), albumController.UploadCover)
 			albums.POST("", middleware.AuthMiddleware(db), albumController.CreateAlbum)
 			albums.PUT("/:id", middleware.AuthMiddleware(db), middleware.AdminMiddleware(), albumController.UpdateAlbum)
 			albums.DELETE("/:id", middleware.AuthMiddleware(db), middleware.AdminMiddleware(), albumController.DeleteAlbum)

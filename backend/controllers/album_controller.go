@@ -1,13 +1,18 @@
 package controllers
 
 import (
+	"fmt"
 	"log"
 	"music-review-site/backend/middleware"
 	"music-review-site/backend/models"
 	"music-review-site/backend/utils"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -35,6 +40,27 @@ type UpdateAlbumRequest struct {
 	CoverImagePath string `json:"cover_image_path"`
 	Description    string `json:"description"`
 	ReleaseDate    string `json:"release_date"`
+}
+
+func parseAlbumReleaseDate(value string) (*time.Time, error) {
+	if strings.TrimSpace(value) == "" {
+		return nil, nil
+	}
+	parsed, err := time.Parse("2006-01-02", value)
+	if err != nil {
+		return nil, err
+	}
+	return &parsed, nil
+}
+
+func albumCoverUploadDir() string {
+	if value := strings.TrimSpace(os.Getenv("COVER_UPLOAD_DIR")); value != "" {
+		return value
+	}
+	if _, err := os.Stat("/frontend/public/preview"); err == nil {
+		return "/frontend/public/preview/uploads"
+	}
+	return filepath.Clean("../frontend/public/preview/uploads")
 }
 
 // GetAlbums retrieves list of albums with filters
@@ -188,6 +214,17 @@ func (ac *AlbumController) CreateAlbum(c *gin.Context) {
 		AverageRating:  0,
 	}
 
+	releaseDate, err := parseAlbumReleaseDate(req.ReleaseDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+			Error:   "Bad Request",
+			Message: "Invalid release_date format, expected YYYY-MM-DD",
+			Code:    http.StatusBadRequest,
+		})
+		return
+	}
+	album.ReleaseDate = releaseDate
+
 	if err := ac.DB.Create(&album).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
 			Error:   "Internal Server Error",
@@ -251,6 +288,18 @@ func (ac *AlbumController) UpdateAlbum(c *gin.Context) {
 	if req.Description != "" {
 		album.Description = req.Description
 	}
+	if req.ReleaseDate != "" {
+		releaseDate, err := parseAlbumReleaseDate(req.ReleaseDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+				Error:   "Bad Request",
+				Message: "Invalid release_date format, expected YYYY-MM-DD",
+				Code:    http.StatusBadRequest,
+			})
+			return
+		}
+		album.ReleaseDate = releaseDate
+	}
 
 	if err := ac.DB.Save(&album).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
@@ -263,6 +312,76 @@ func (ac *AlbumController) UpdateAlbum(c *gin.Context) {
 
 	ac.DB.Preload("Genre").First(&album, album.ID)
 	c.JSON(http.StatusOK, album)
+}
+
+// UploadCover uploads an album cover into the public preview storage.
+func (ac *AlbumController) UploadCover(c *gin.Context) {
+	file, err := c.FormFile("cover")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+			Error:   "Bad Request",
+			Message: "Cover file is required",
+			Code:    http.StatusBadRequest,
+		})
+		return
+	}
+
+	if file.Size > 8*1024*1024 {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+			Error:   "Bad Request",
+			Message: "Cover file is too large, max size is 8 MB",
+			Code:    http.StatusBadRequest,
+		})
+		return
+	}
+
+	ext := strings.ToLower(filepath.Ext(file.Filename))
+	allowed := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".webp": true}
+	if !allowed[ext] {
+		c.JSON(http.StatusBadRequest, utils.ErrorResponse{
+			Error:   "Bad Request",
+			Message: "Only JPG, PNG and WEBP covers are supported",
+			Code:    http.StatusBadRequest,
+		})
+		return
+	}
+
+	uploadDir := albumCoverUploadDir()
+	if err := os.MkdirAll(uploadDir, 0o755); err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to prepare cover storage",
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
+	base := strings.TrimSuffix(filepath.Base(file.Filename), ext)
+	base = strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+			return r
+		}
+		return '-'
+	}, base)
+	base = strings.Trim(base, "-_")
+	if base == "" {
+		base = "cover"
+	}
+
+	filename := fmt.Sprintf("%d-%s%s", time.Now().UnixNano(), base, ext)
+	destination := filepath.Join(uploadDir, filename)
+	if err := c.SaveUploadedFile(file, destination); err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to upload cover",
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"cover_image_path": "/preview/uploads/" + filename,
+	})
 }
 
 // DeleteAlbum deletes an album

@@ -38,6 +38,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - cover_uploads:/frontend/public/preview/uploads
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/healthz >/dev/null 2>&1"]
       interval: 10s
@@ -52,6 +54,8 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    volumes:
+      - cover_uploads:/usr/share/nginx/html/preview/uploads
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null 2>&1"]
       interval: 10s
@@ -60,4 +64,5 @@ services:
 
 volumes:
   pgdata:
+  cover_uploads:
 
