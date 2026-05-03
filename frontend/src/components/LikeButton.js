@@ -53,8 +53,9 @@ const LikeButton = ({ item, itemType, onLike, onUnlike }) => {
     <button
       className={`like-button ${liked ? 'liked' : ''} ${loading ? 'loading' : ''}`}
       onClick={handleLike}
-      disabled={loading || !isAuthenticated}
+      disabled={!isAuthenticated}
       aria-pressed={liked}
+      aria-busy={loading}
       title={isAuthenticated ? (liked ? 'Убрать лайк' : 'Поставить лайк') : 'Войдите, чтобы ставить лайки'}
     >
       <span className="like-icon">{liked ? '❤' : '♡'}</span>

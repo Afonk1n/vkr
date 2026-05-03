@@ -99,9 +99,20 @@ func (ac *AuthController) Register(c *gin.Context) {
 
 	// Return user (without password)
 	user.Password = ""
+	token, err := utils.GenerateSessionToken(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to create session",
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "User created successfully",
-		"user":    user,
+		"message":       "User created successfully",
+		"user":          user,
+		"user_id":       user.ID,
+		"session_token": token,
 	})
 }
 
@@ -140,10 +151,20 @@ func (ac *AuthController) Login(c *gin.Context) {
 
 	// Return user (without password) and user ID for header
 	user.Password = ""
+	token, err := utils.GenerateSessionToken(user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
+			Error:   "Internal Server Error",
+			Message: "Failed to create session",
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Login successful",
-		"user":    user,
-		"user_id": user.ID,
+		"message":       "Login successful",
+		"user":          user,
+		"user_id":       user.ID,
+		"session_token": token,
 	})
 }
 
@@ -172,4 +193,3 @@ func (ac *AuthController) GetMe(c *gin.Context) {
 	user.Password = ""
 	c.JSON(http.StatusOK, user)
 }
-

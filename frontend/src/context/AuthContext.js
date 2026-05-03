@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
     // Check if user is logged in
     const userId = localStorage.getItem('userId');
     const savedUser = localStorage.getItem('user');
-    
+
     if (userId && savedUser) {
       try {
         setUser(JSON.parse(savedUser));
@@ -35,8 +35,11 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await authAPI.login({ email, password });
-      const { user: userData, user_id } = response.data;
-      
+      const { user: userData, user_id, session_token } = response.data;
+
+      if (session_token) {
+        localStorage.setItem('sessionToken', session_token);
+      }
       localStorage.setItem('userId', user_id.toString());
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
@@ -53,13 +56,22 @@ export const AuthProvider = ({ children }) => {
   const register = async (username, email, password) => {
     try {
       const response = await authAPI.register({ username, email, password });
-      const { user: userData } = response.data;
-      
-      // After registration, log in the user
-      const loginResponse = await authAPI.login({ email, password });
-      const { user_id } = loginResponse.data;
-      
-      localStorage.setItem('userId', user_id.toString());
+      const { user: registeredUser, session_token: registerToken, user_id: registerUserId } = response.data;
+
+      let userData = registeredUser;
+      let userId = registerUserId;
+      let sessionToken = registerToken;
+      if (!sessionToken || !userId) {
+        const loginResponse = await authAPI.login({ email, password });
+        userData = loginResponse.data.user;
+        userId = loginResponse.data.user_id;
+        sessionToken = loginResponse.data.session_token;
+      }
+
+      if (sessionToken) {
+        localStorage.setItem('sessionToken', sessionToken);
+      }
+      localStorage.setItem('userId', userId.toString());
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       
@@ -73,6 +85,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    localStorage.removeItem('sessionToken');
     localStorage.removeItem('userId');
     localStorage.removeItem('user');
     setUser(null);

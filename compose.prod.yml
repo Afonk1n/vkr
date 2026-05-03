@@ -32,6 +32,9 @@ services:
       SEED_ENABLED: ${SEED_ENABLED:-false}
       DB_CREATE_ENABLED: ${DB_CREATE_ENABLED:-false}
       MIGRATIONS_MODE: ${MIGRATIONS_MODE:-manual}
+      SESSION_SECRET: ${SESSION_SECRET:-change-me-in-prod}
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-168}
+      AUTH_ALLOW_USER_ID_HEADER: ${AUTH_ALLOW_USER_ID_HEADER:-false}
     depends_on:
       db:
         condition: service_healthy

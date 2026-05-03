@@ -14,14 +14,14 @@ const api = axios.create({
 // Add request interceptor to include auth token
 api.interceptors.request.use(
   (config) => {
-    // ВРЕМЕННО: отключаем логирование API запросов в моковом режиме
-    // (можно оставить, но не критично)
+    const sessionToken = localStorage.getItem('sessionToken');
+    if (sessionToken) {
+      config.headers.Authorization = `Bearer ${sessionToken}`;
+    }
+
     const userId = localStorage.getItem('userId');
-    if (userId) {
+    if (!sessionToken && userId) {
       config.headers['X-User-ID'] = userId;
-      // console.log('API request with X-User-ID:', userId, 'to', config.url);
-    } else {
-      // console.warn('API request without X-User-ID header to', config.url);
     }
     return config;
   },
@@ -41,6 +41,7 @@ api.interceptors.response.use(
     }
     if (error.response?.status === 401) {
       // Unauthorized - clear auth and redirect to login
+      localStorage.removeItem('sessionToken');
       localStorage.removeItem('userId');
       localStorage.removeItem('user');
       window.location.href = '/login';

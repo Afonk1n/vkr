@@ -4,7 +4,9 @@ import (
 	"music-review-site/backend/models"
 	"music-review-site/backend/utils"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -13,25 +15,11 @@ import (
 // AuthMiddleware checks if user is authenticated
 func AuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Get user ID from header or session
-		// For simplicity, we'll use a simple header-based auth
-		// In production, use JWT tokens
-		userIDStr := c.GetHeader("X-User-ID")
-		if userIDStr == "" {
+		userID, ok := resolveAuthenticatedUserID(c)
+		if !ok {
 			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
 				Error:   "Unauthorized",
-				Message: "User ID is required",
-				Code:    http.StatusUnauthorized,
-			})
-			c.Abort()
-			return
-		}
-
-		userID, err := strconv.ParseUint(userIDStr, 10, 32)
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
-				Error:   "Unauthorized",
-				Message: "Invalid user ID",
+				Message: "Session token is required",
 				Code:    http.StatusUnauthorized,
 			})
 			c.Abort()
@@ -40,7 +28,7 @@ func AuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 
 		// Get user from database
 		var user models.User
-		if err := db.First(&user, uint(userID)).Error; err != nil {
+		if err := db.First(&user, userID).Error; err != nil {
 			c.JSON(http.StatusUnauthorized, utils.ErrorResponse{
 				Error:   "Unauthorized",
 				Message: "User not found",
@@ -60,19 +48,64 @@ func AuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 // OptionalAuthMiddleware is like AuthMiddleware but doesn't require authentication
 func OptionalAuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userIDStr := c.GetHeader("X-User-ID")
-		if userIDStr != "" {
-			userID, err := strconv.ParseUint(userIDStr, 10, 32)
-			if err == nil {
-				var user models.User
-				if err := db.First(&user, uint(userID)).Error; err == nil {
-					c.Set("user", user)
-					c.Set("user_id", user.ID)
-				}
+		userID, ok := resolveAuthenticatedUserID(c)
+		if ok {
+			var user models.User
+			if err := db.First(&user, userID).Error; err == nil {
+				c.Set("user", user)
+				c.Set("user_id", user.ID)
 			}
 		}
 		c.Next()
 	}
+}
+
+func resolveAuthenticatedUserID(c *gin.Context) (uint, bool) {
+	if token := bearerToken(c.GetHeader("Authorization")); token != "" {
+		if userID, err := utils.ValidateSessionToken(token); err == nil {
+			return userID, true
+		}
+	}
+
+	if !allowUserIDHeaderFallback() {
+		return 0, false
+	}
+
+	userIDStr := c.GetHeader("X-User-ID")
+	if userIDStr == "" {
+		return 0, false
+	}
+
+	userID, err := strconv.ParseUint(userIDStr, 10, 32)
+	if err != nil {
+		return 0, false
+	}
+	return uint(userID), true
+}
+
+func bearerToken(header string) string {
+	header = strings.TrimSpace(header)
+	if header == "" {
+		return ""
+	}
+	parts := strings.SplitN(header, " ", 2)
+	if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+		return ""
+	}
+	return strings.TrimSpace(parts[1])
+}
+
+func allowUserIDHeaderFallback() bool {
+	val := strings.TrimSpace(os.Getenv("AUTH_ALLOW_USER_ID_HEADER"))
+	if val != "" {
+		switch strings.ToLower(val) {
+		case "1", "true", "yes", "y", "on":
+			return true
+		case "0", "false", "no", "n", "off":
+			return false
+		}
+	}
+	return strings.ToLower(strings.TrimSpace(os.Getenv("APP_ENV"))) != "prod"
 }
 
 // AdminMiddleware checks if user is admin

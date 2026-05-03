@@ -52,5 +52,6 @@
 
 .like-button.loading {
   cursor: progress;
+  opacity: 1;
 }
 

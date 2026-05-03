@@ -33,6 +33,9 @@ services:
       SEED_ENABLED: ${SEED_ENABLED:-true}
       DB_CREATE_ENABLED: ${DB_CREATE_ENABLED:-true}
       MIGRATIONS_MODE: ${MIGRATIONS_MODE:-auto}
+      SESSION_SECRET: ${SESSION_SECRET:-dev-session-secret}
+      SESSION_TTL_HOURS: ${SESSION_TTL_HOURS:-168}
+      AUTH_ALLOW_USER_ID_HEADER: ${AUTH_ALLOW_USER_ID_HEADER:-true}
     ports:
       - "8080:8080"
     depends_on:
@@ -70,7 +73,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000 >/dev/null 2>&1"]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
       interval: 10s
       timeout: 3s
       retries: 20
@@ -79,4 +82,3 @@ volumes:
   pgdata:
   go_mod_cache:
   go_build_cache:
-

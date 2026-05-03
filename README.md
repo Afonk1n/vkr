@@ -26,4 +26,8 @@ docker compose up --build
 
 React 18, Go + Gin, GORM, PostgreSQL, Docker Compose.
 
+## DevOps
+
+В репозитории есть GitHub Actions pipeline: Go vet/test/build, frontend build, production compose smoke-test и сборка/push Docker-образов в GHCR.
+
 Подробная техническая документация: [Documentation.md](Documentation.md).
