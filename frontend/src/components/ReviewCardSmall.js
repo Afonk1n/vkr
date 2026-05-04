@@ -11,6 +11,8 @@ const ReviewCardSmall = ({ review, onUpdate }) => {
   const { user } = useAuth();
   const [likeCount, setLikeCount] = useState(review.likes?.length || 0);
   const [isLiked, setIsLiked] = useState(false);
+  const hasArtistMark = review.has_artist_mark || (review.artist_mark_usernames || []).length > 0 ||
+    (review.likes || []).some((like) => like.user?.is_verified_artist);
 
   useEffect(() => {
     setLikeCount(review.likes?.length || 0);
@@ -114,6 +116,12 @@ const ReviewCardSmall = ({ review, onUpdate }) => {
           <div className="review-card-small-album-info">
             <div className="review-card-small-album-title">{review.album.title}</div>
             <div className="review-card-small-album-artist">{review.album.artist}</div>
+            {hasArtistMark && (
+              <div className="review-card-small-artist-mark">
+                <span>★</span>
+                Отмечено артистом
+              </div>
+            )}
           </div>
         </div>
       )}

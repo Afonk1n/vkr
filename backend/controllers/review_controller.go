@@ -51,7 +51,7 @@ type UpdateReviewRequest struct {
 // GetReviews retrieves list of reviews with filters
 func (rc *ReviewController) GetReviews(c *gin.Context) {
 	var reviews []models.Review
-	query := rc.DB.Preload("User").Preload("Album").Preload("Album.Genre").Preload("Track").Preload("Track.Album").Preload("Likes")
+	query := rc.DB.Preload("User").Preload("Album").Preload("Album.Genre").Preload("Track").Preload("Track.Album").Preload("Likes").Preload("Likes.User")
 
 	// Filter by album
 	if albumID := c.Query("album_id"); albumID != "" {
@@ -112,6 +112,7 @@ func (rc *ReviewController) GetReviews(c *gin.Context) {
 		})
 		return
 	}
+	annotateArtistMarks(rc.DB, reviews)
 
 	c.JSON(http.StatusOK, gin.H{
 		"reviews":   reviews,
@@ -126,7 +127,7 @@ func (rc *ReviewController) GetReview(c *gin.Context) {
 	id := c.Param("id")
 	var review models.Review
 
-	if err := rc.DB.Preload("User").Preload("Album").Preload("Album.Genre").Preload("Track").Preload("Track.Album").Preload("Track.Genres").Preload("Likes").First(&review, id).Error; err != nil {
+	if err := rc.DB.Preload("User").Preload("Album").Preload("Album.Genre").Preload("Track").Preload("Track.Album").Preload("Track.Genres").Preload("Likes").Preload("Likes.User").First(&review, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, utils.ErrorResponse{
 			Error:   "Not Found",
 			Message: "Review not found",
@@ -134,6 +135,7 @@ func (rc *ReviewController) GetReview(c *gin.Context) {
 		})
 		return
 	}
+	annotateArtistMark(rc.DB, &review)
 
 	c.JSON(http.StatusOK, review)
 }
@@ -309,7 +311,7 @@ func (rc *ReviewController) CreateReview(c *gin.Context) {
 	}
 
 	// Preload relationships
-	query := rc.DB.Preload("User").Preload("Likes")
+	query := rc.DB.Preload("User").Preload("Likes").Preload("Likes.User")
 	if review.AlbumID != nil {
 		query = query.Preload("Album").Preload("Album.Genre")
 	}
@@ -317,6 +319,7 @@ func (rc *ReviewController) CreateReview(c *gin.Context) {
 		query = query.Preload("Track").Preload("Track.Album").Preload("Track.Genres")
 	}
 	query.First(&review, review.ID)
+	annotateArtistMark(rc.DB, &review)
 	c.JSON(http.StatusCreated, review)
 }
 
@@ -703,6 +706,7 @@ func (rc *ReviewController) GetPopularReviews(c *gin.Context) {
 		Preload("Track.Album").
 		Preload("Track.Genres").
 		Preload("Likes").
+		Preload("Likes.User").
 		Where("status = ? AND created_at >= ?", models.ReviewStatusApproved, last24Hours).
 		Where("album_id IS NOT NULL"). // Только рецензии с альбомами
 		Order("created_at DESC").
@@ -716,6 +720,7 @@ func (rc *ReviewController) GetPopularReviews(c *gin.Context) {
 		})
 		return
 	}
+	annotateArtistMarks(rc.DB, reviews)
 
 	// Sort by likes count
 	for i := 0; i < len(reviews); i++ {

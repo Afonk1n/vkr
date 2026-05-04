@@ -62,6 +62,7 @@ func (uc *UserController) GetUser(c *gin.Context) {
 		"favorite_album_ids": user.FavoriteAlbumIDs,
 		"favorite_artists":   favoriteArtists,
 		"favorite_track_ids": user.FavoriteTrackIDs,
+		"preferences_manual": user.PreferencesManual,
 		"created_at":         user.CreatedAt,
 		"updated_at":         user.UpdatedAt,
 		"badges":             badges,
@@ -181,12 +182,14 @@ func (uc *UserController) SetFavoriteAlbums(c *gin.Context) {
 	user.FavoriteArtists = string(artistsJSON)
 	trackIDsJSON, _ := json.Marshal(req.TrackIDs)
 	user.FavoriteTrackIDs = string(trackIDsJSON)
+	user.PreferencesManual = true
 	uc.DB.Save(&user)
 
 	c.JSON(http.StatusOK, gin.H{
-		"favorite_albums":  uc.GetFavoriteAlbums(user.FavoriteAlbumIDs),
-		"favorite_artists": uc.GetFavoriteArtists(user.FavoriteArtists),
-		"favorite_tracks":  uc.GetFavoriteTracks(user.FavoriteTrackIDs),
+		"favorite_albums":    uc.GetFavoriteAlbums(user.FavoriteAlbumIDs),
+		"favorite_artists":   uc.GetFavoriteArtists(user.FavoriteArtists),
+		"favorite_tracks":    uc.GetFavoriteTracks(user.FavoriteTrackIDs),
+		"preferences_manual": user.PreferencesManual,
 	})
 }
 
@@ -357,6 +360,10 @@ func (uc *UserController) CalculateUserStats(userID uint) UserStats {
 	}
 	if len(reviewIDs) > 0 {
 		uc.DB.Model(&models.ReviewLike{}).Where("review_id IN ?", reviewIDs).Count(&stats.TotalLikesReceived)
+		uc.DB.Model(&models.ReviewLike{}).
+			Joins("JOIN users ON users.id = review_likes.user_id").
+			Where("review_likes.review_id IN ? AND users.is_verified_artist = ?", reviewIDs, true).
+			Count(&stats.AuthorLikesReceived)
 	}
 	uc.DB.Model(&models.Review{}).
 		Where("user_id = ? AND status = ? AND btrim(coalesce(text, '')) = ''", userID, models.ReviewStatusApproved).
@@ -432,6 +439,7 @@ func (uc *UserController) GetUserLikedReviews(c *gin.Context) {
 		Preload("Review.Track").
 		Preload("Review.Track.Album").
 		Preload("Review.Likes").
+		Preload("Review.Likes.User").
 		Where("user_id = ?", id).
 		Order("created_at desc")
 
@@ -453,6 +461,7 @@ func (uc *UserController) GetUserLikedReviews(c *gin.Context) {
 			reviews = append(reviews, like.Review)
 		}
 	}
+	annotateArtistMarks(uc.DB, reviews)
 
 	c.JSON(http.StatusOK, gin.H{
 		"reviews":   reviews,
@@ -467,7 +476,7 @@ func (uc *UserController) GetUserReviews(c *gin.Context) {
 	id := c.Param("id")
 	var reviews []models.Review
 
-	query := uc.DB.Preload("User").Preload("Album").Preload("Album.Genre").Preload("Track").Preload("Track.Album").Preload("Likes").Where("user_id = ?", id)
+	query := uc.DB.Preload("User").Preload("Album").Preload("Album.Genre").Preload("Track").Preload("Track.Album").Preload("Likes").Preload("Likes.User").Where("user_id = ?", id)
 
 	// Filter by status
 	if status := c.Query("status"); status != "" {
@@ -495,6 +504,7 @@ func (uc *UserController) GetUserReviews(c *gin.Context) {
 		})
 		return
 	}
+	annotateArtistMarks(uc.DB, reviews)
 
 	c.JSON(http.StatusOK, gin.H{
 		"reviews":   reviews,
@@ -652,6 +662,7 @@ func (uc *UserController) UpdateUser(c *gin.Context) {
 		"favorite_album_ids": user.FavoriteAlbumIDs,
 		"favorite_artists":   favoriteArtists,
 		"favorite_track_ids": user.FavoriteTrackIDs,
+		"preferences_manual": user.PreferencesManual,
 		"created_at":         user.CreatedAt,
 		"updated_at":         user.UpdatedAt,
 		"badges":             badges,

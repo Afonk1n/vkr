@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Схема обработки запроса создания рецензии</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="canvas">
+    <section class="sheet">
+      <div class="header">
+        <div>
+          <h1>Схема обработки запроса создания рецензии</h1>
+          <p class="subtitle">Запрос проходит путь от формы пользователя до сохранения рецензии и передачи материала на модерацию.</p>
+        </div>
+        <div class="badge">React → Go API → PostgreSQL</div>
+      </div>
+
+      <div class="request-flow">
+        <article class="request-step" data-step="1"><h2>Заполнение формы</h2><strong>текст, критерии, релиз</strong></article>
+        <article class="request-step" data-step="2"><h2>Отправка POST-запроса</h2><strong>Axios + авторизация</strong></article>
+        <article class="request-step primary" data-step="3"><h2>Проверка данных</h2><strong>middleware и binding</strong></article>
+        <article class="request-step" data-step="4"><h2>Расчёт итогового балла</h2><strong>критерии × атмосфера</strong></article>
+        <article class="request-step" data-step="5"><h2>Сохранение рецензии</h2><strong>статус pending</strong></article>
+        <article class="request-step" data-step="6"><h2>Модерация и публикация</h2><strong>approved / rejected</strong></article>
+      </div>
+
+      <div class="request-summary">
+        <div class="request-summary-item">валидация</div>
+        <div class="request-summary-item">расчёт оценки</div>
+        <div class="request-summary-item">запись в БД</div>
+        <div class="request-summary-item">модерация</div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

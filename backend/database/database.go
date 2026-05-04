@@ -2064,7 +2064,51 @@ func seedReviews() error {
 		}
 	}
 
+	// Keep several visible artist marks in the demo dataset so the interface
+	// consistently shows reviews noticed by verified artist accounts.
+	artistUsernames := []string{"basta_official", "skriptonit_official", "annaasti_official"}
+	createdArtistMarks := 0
+	updatedArtistMarks := 0
+	for i, username := range artistUsernames {
+		if len(allReviews) == 0 {
+			break
+		}
+
+		var artistUser models.User
+		if err := DB.Where("username = ? AND is_verified_artist = ?", username, true).First(&artistUser).Error; err != nil {
+			log.Printf("Warning: failed to find verified artist user %s for demo mark: %v", username, err)
+			continue
+		}
+
+		review := allReviews[i%len(allReviews)]
+		if review.UserID == artistUser.ID && len(allReviews) > 1 {
+			review = allReviews[(i+1)%len(allReviews)]
+		}
+
+		var existingLike models.ReviewLike
+		if err := DB.Where("user_id = ? AND review_id = ?", artistUser.ID, review.ID).First(&existingLike).Error; err != nil {
+			artistLike := models.ReviewLike{
+				UserID:    artistUser.ID,
+				ReviewID:  review.ID,
+				CreatedAt: nowForLikes.Add(-time.Duration(i+1) * time.Hour),
+			}
+			if err := DB.Create(&artistLike).Error; err != nil {
+				log.Printf("Warning: failed to create artist mark by %s for review %d: %v", username, review.ID, err)
+			} else {
+				createdArtistMarks++
+			}
+		} else {
+			existingLike.CreatedAt = nowForLikes.Add(-time.Duration(i+1) * time.Hour)
+			if err := DB.Save(&existingLike).Error; err != nil {
+				log.Printf("Warning: failed to update artist mark by %s for review %d: %v", username, review.ID, err)
+			} else {
+				updatedArtistMarks++
+			}
+		}
+	}
+
 	log.Printf("Review likes seeding complete: %d created, %d failed", createdReviewLikes, failedReviewLikes)
+	log.Printf("Artist review marks seeding complete: %d created, %d updated", createdArtistMarks, updatedArtistMarks)
 	log.Printf("Reviews seeding summary: %d reviews created, %d review likes created", createdReviews, createdReviewLikes)
 	return nil
 }

@@ -41,6 +41,9 @@ type Review struct {
 	Track     *Track       `json:"track,omitempty" gorm:"foreignKey:TrackID"`
 	Moderator *User        `json:"moderator,omitempty" gorm:"foreignKey:ModeratedBy"`
 	Likes     []ReviewLike `json:"likes,omitempty" gorm:"foreignKey:ReviewID"`
+
+	HasArtistMark       bool     `json:"has_artist_mark" gorm:"-"`
+	ArtistMarkUsernames []string `json:"artist_mark_usernames,omitempty" gorm:"-"`
 }
 
 // TableName specifies the table name for Review

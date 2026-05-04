@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Карта экранов пользовательского интерфейса</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="canvas">
+    <section class="sheet">
+      <div class="header">
+        <div>
+          <h1>Карта экранов пользовательского интерфейса</h1>
+          <p class="subtitle">Схема отражает основные разделы приложения «Мьюзик Рейтинг» и переходы между пользовательскими, профильными и административными экранами.</p>
+        </div>
+        <div class="badge">React Router</div>
+      </div>
+
+      <div class="screen-map">
+        <svg class="screen-map-links" viewBox="0 0 1480 500" aria-hidden="true">
+          <path d="M742 106 V150"/>
+          <path d="M620 65 H352 V150"/>
+          <path d="M865 65 H1132 V150"/>
+          <path d="M352 232 V300"/>
+          <path d="M475 191 H620"/>
+          <path d="M865 191 H1010"/>
+          <path d="M1132 232 V300"/>
+          <path d="M352 382 V420"/>
+          <path d="M742 382 V420"/>
+          <path d="M1132 382 V420"/>
+          <path d="M475 341 H620"/>
+          <path d="M865 341 H1010"/>
+        </svg>
+
+        <div class="screen-node primary screen-home">Главная навигация</div>
+        <div class="screen-node strong screen-feed">Лента рецензий</div>
+        <div class="screen-node screen-tops">Топы</div>
+        <div class="screen-node strong screen-profile">Профиль</div>
+        <div class="screen-node screen-release">Альбом / трек</div>
+        <div class="screen-node primary screen-review">Форма рецензии</div>
+        <div class="screen-node screen-edit">Редактирование профиля</div>
+        <div class="screen-node screen-admin">Админка</div>
+        <div class="screen-node strong screen-moderation">Модерация и каталог</div>
+        <div class="screen-node screen-glossary">Глоссарий уровней</div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

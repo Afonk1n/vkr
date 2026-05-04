@@ -498,6 +498,34 @@
   text-decoration: none;
 }
 
+.review-artist-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: fit-content;
+  margin-top: 0.55rem;
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-color, var(--primary-color)) 18%, var(--surface-control, var(--hover-color)));
+  border: 1px solid color-mix(in srgb, var(--accent-color, var(--primary-color)) 38%, var(--border-color));
+  color: var(--text-color);
+  font-size: 0.82rem;
+  font-weight: 800;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+}
+
+.review-artist-mark-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-color, var(--primary-color));
+  color: var(--background-color);
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
 .review-author-avatar-link {
   display: block;
   cursor: pointer;

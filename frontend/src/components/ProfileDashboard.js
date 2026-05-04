@@ -80,8 +80,12 @@ const buildPreferenceSections = (profileUser, reviews) => {
   const favoriteAlbums = normalizeFavoriteAlbums(profileUser?.favorite_albums);
   const favoriteArtists = normalizeFavoriteArtists(profileUser?.favorite_artists);
   const favoriteTracks = normalizeFavoriteTracks(profileUser?.favorite_tracks);
+  const useAutoFallback = !profileUser?.preferences_manual;
   const reviewAlbums = reviews.map(getAlbumFromReview).filter(Boolean);
-  const albums = uniqueByName([...(favoriteAlbums.length ? favoriteAlbums : []), ...reviewAlbums].map((album) => ({
+  const albums = uniqueByName([
+    ...favoriteAlbums,
+    ...(useAutoFallback && favoriteAlbums.length === 0 ? reviewAlbums : []),
+  ].map((album) => ({
     id: album.id,
     title: album.title,
     subtitle: album.artist?.name || album.artist || album.artist_name || 'Артист',
@@ -96,14 +100,14 @@ const buildPreferenceSections = (profileUser, reviews) => {
       subtitle: 'Артист',
       image: normalizeImage(artist.cover_image_path),
     })),
-    ...(favoriteArtists.length ? [] : favoriteAlbums.map((album) => ({
+    ...(useAutoFallback && favoriteArtists.length === 0 ? favoriteAlbums.map((album) => ({
       id: album.artist?.id,
       name: album.artist?.name || album.artist || album.artist_name,
       title: album.artist?.name || album.artist || album.artist_name,
       subtitle: 'Артист',
       image: normalizeImage(album.artist?.avatar_path || album.cover_image_path),
-    }))),
-    ...reviewAlbums,
+    })) : []),
+    ...(useAutoFallback && favoriteArtists.length === 0 ? reviewAlbums : []),
   ].map((album) => album.subtitle ? album : ({
     id: album.artist?.id,
     name: album.artist?.name || album.artist || album.artist_name,
@@ -118,14 +122,15 @@ const buildPreferenceSections = (profileUser, reviews) => {
     subtitle: track.artist || track.album?.artist || 'Трек',
     image: normalizeImage(track.cover_image_path || track.album?.cover_image_path),
   }));
-  const tracks = uniqueByName([...(manualTracks.length ? manualTracks : []), ...reviews
+  const autoReviewTracks = useAutoFallback && manualTracks.length === 0 ? reviews
     .filter((review) => review.track)
     .map((review) => ({
       id: review.track.id,
       title: review.track.title,
       subtitle: review.track.album?.artist?.name || review.track.album?.artist || review.track.album?.artist_name || 'Трек',
       image: normalizeImage(review.track.album?.cover_image_path),
-    }))]).slice(0, 3);
+    })) : [];
+  const tracks = uniqueByName([...manualTracks, ...autoReviewTracks]).slice(0, 3);
 
   return [
     { title: 'Артисты', items: artists },
@@ -256,6 +261,7 @@ const PreferenceEditor = ({ profileUser, reviews = [], onSaved }) => {
 
   useEffect(() => {
     const fallbackSections = buildPreferenceSections(profileUser, reviews);
+    const useAutoFallback = !profileUser?.preferences_manual;
     const fallbackArtists = fallbackSections[0]?.items || [];
     const fallbackAlbums = fallbackSections[1]?.items || [];
     const fallbackTracks = fallbackSections[2]?.items || [];
@@ -264,9 +270,9 @@ const PreferenceEditor = ({ profileUser, reviews = [], onSaved }) => {
     const savedTracks = normalizeFavoriteTracks(profileUser?.favorite_tracks).map(toTrackItem);
 
     setDraft({
-      artists: savedArtists.length ? savedArtists : normalizeDraftItems(fallbackArtists, 'artists'),
-      albums: savedAlbums.length ? savedAlbums : normalizeDraftItems(fallbackAlbums, 'albums'),
-      tracks: savedTracks.length ? savedTracks : normalizeDraftItems(fallbackTracks, 'tracks'),
+      artists: savedArtists.length ? savedArtists : (useAutoFallback ? normalizeDraftItems(fallbackArtists, 'artists') : []),
+      albums: savedAlbums.length ? savedAlbums : (useAutoFallback ? normalizeDraftItems(fallbackAlbums, 'albums') : []),
+      tracks: savedTracks.length ? savedTracks : (useAutoFallback ? normalizeDraftItems(fallbackTracks, 'tracks') : []),
     });
   }, [profileUser, reviews]);
 
@@ -324,6 +330,7 @@ const PreferenceEditor = ({ profileUser, reviews = [], onSaved }) => {
         favorite_artists: data.favorite_artists || [],
         favorite_albums: data.favorite_albums || [],
         favorite_tracks: data.favorite_tracks || [],
+        preferences_manual: data.preferences_manual ?? true,
       });
       setOpen(false);
       setQuery('');

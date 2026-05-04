@@ -74,6 +74,13 @@ const ReviewCard = ({ review, onEdit, onDelete, onUpdate, onUnlikeComplete, mode
 
   const reviewTitle = getReviewTitle(review.text);
   const reviewContent = getReviewContent(review.text);
+  const artistMarkUsernames = review.artist_mark_usernames || [];
+  const artistLikes = (review.likes || []).filter((like) => like.user?.is_verified_artist);
+  const hasArtistMark = review.has_artist_mark || artistMarkUsernames.length > 0 || artistLikes.length > 0;
+  const artistLikeNames = [
+    ...artistMarkUsernames,
+    ...artistLikes.map((like) => like.user?.username).filter(Boolean),
+  ].join(', ');
 
   return (
     <div className="review-card">
@@ -152,6 +159,16 @@ const ReviewCard = ({ review, onEdit, onDelete, onUpdate, onUnlikeComplete, mode
                     </span>
                   </>
                 ) : null}
+              </div>
+            )}
+
+            {hasArtistMark && (
+              <div
+                className="review-artist-mark"
+                title={artistLikeNames ? `Отметили: ${artistLikeNames}` : 'Рецензия отмечена аккаунтом артиста'}
+              >
+                <span className="review-artist-mark-icon">★</span>
+                <span>Отмечено артистом</span>
               </div>
             )}
           </div>

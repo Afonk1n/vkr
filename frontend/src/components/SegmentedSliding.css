@@ -50,8 +50,17 @@
     0 8px 18px rgba(0, 0, 0, 0.08) !important;
 }
 
+.seg-sliding-track:has(.seg-sliding-thumb--ready) .feed-segment--active {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
 :root[data-theme="dark"] .seg-sliding-track .header-segment--active,
 :root[data-theme="dark"] .seg-sliding-track .nav-auth-segment.header-segment--active,
 :root[data-theme="dark"] .seg-sliding-track .feed-segment--active {
   background: #2e2e2e !important;
+}
+
+:root[data-theme="dark"] .seg-sliding-track:has(.seg-sliding-thumb--ready) .feed-segment--active {
+  background: transparent !important;
 }

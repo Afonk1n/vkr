@@ -8,21 +8,22 @@ import (
 
 // User represents a user in the system
 type User struct {
-	ID               uint           `json:"id" gorm:"primaryKey"`
-	Username         string         `json:"username" gorm:"uniqueIndex;not null"`
-	Email            string         `json:"email" gorm:"uniqueIndex;not null"`
-	Password         string         `json:"-" gorm:"not null"` // Password hash, not exposed in JSON
-	AvatarPath       string         `json:"avatar_path" gorm:"type:text"`
-	Bio              string         `json:"bio" gorm:"type:text"`
-	SocialLinks      string         `json:"social_links" gorm:"type:jsonb"` // JSON: {"vk": "", "telegram": "", "instagram": ""}
-	IsAdmin          bool           `json:"is_admin" gorm:"default:false"`
-	FavoriteAlbumIDs string         `json:"favorite_album_ids" gorm:"type:text;default:'[]'"`
-	FavoriteArtists  string         `json:"favorite_artists" gorm:"type:text;default:'[]'"`
-	FavoriteTrackIDs string         `json:"favorite_track_ids" gorm:"type:text;default:'[]'"`
-	IsVerifiedArtist bool           `json:"is_verified_artist" gorm:"default:false"`
-	CreatedAt        time.Time      `json:"created_at"`
-	UpdatedAt        time.Time      `json:"updated_at"`
-	DeletedAt        gorm.DeletedAt `json:"-" gorm:"index"`
+	ID                uint           `json:"id" gorm:"primaryKey"`
+	Username          string         `json:"username" gorm:"uniqueIndex;not null"`
+	Email             string         `json:"email" gorm:"uniqueIndex;not null"`
+	Password          string         `json:"-" gorm:"not null"` // Password hash, not exposed in JSON
+	AvatarPath        string         `json:"avatar_path" gorm:"type:text"`
+	Bio               string         `json:"bio" gorm:"type:text"`
+	SocialLinks       string         `json:"social_links" gorm:"type:jsonb"` // JSON: {"vk": "", "telegram": "", "instagram": ""}
+	IsAdmin           bool           `json:"is_admin" gorm:"default:false"`
+	FavoriteAlbumIDs  string         `json:"favorite_album_ids" gorm:"type:text;default:'[]'"`
+	FavoriteArtists   string         `json:"favorite_artists" gorm:"type:text;default:'[]'"`
+	FavoriteTrackIDs  string         `json:"favorite_track_ids" gorm:"type:text;default:'[]'"`
+	PreferencesManual bool           `json:"preferences_manual" gorm:"default:false"`
+	IsVerifiedArtist  bool           `json:"is_verified_artist" gorm:"default:false"`
+	CreatedAt         time.Time      `json:"created_at"`
+	UpdatedAt         time.Time      `json:"updated_at"`
+	DeletedAt         gorm.DeletedAt `json:"-" gorm:"index"`
 
 	// Relationships
 	Reviews []Review `json:"reviews,omitempty" gorm:"foreignKey:UserID"`

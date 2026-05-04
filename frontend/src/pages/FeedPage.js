@@ -117,7 +117,7 @@ const FeedPage = () => {
 
       {error && <div className="error-message">{error}</div>}
 
-      {loading ? (
+      {loading && feedReviews.length === 0 ? (
         <div className="home-skeleton-wrap" aria-busy="true">
           <div className="home-skeleton home-skeleton--wide" />
           <div className="home-skeleton home-skeleton--wide" />

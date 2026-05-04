@@ -1,6 +1,60 @@
 import React, { useState } from 'react';
 import { calculateFinalScore, formatScore, convertMultiplierToAtmosphere, convertAtmosphereToMultiplier } from '../utils/ratingCalculator';
+import { REVIEW_CRITERIA } from '../utils/ratingMeta';
 import './ReviewForm.css';
+
+const criterionDescriptions = {
+  rhymes:
+    'Текст с учетом жанра: образность, рифмовка, смысл и точность формулировок.',
+  structure:
+    'Ритм, драматургия частей, цельность композиции и развитие материала.',
+  implementation:
+    'Исполнение, продакшн, сведение и уверенность работы внутри выбранного стиля.',
+  individuality:
+    'Узнаваемость, харизма, манера исполнения и способность увлечь слушателя.',
+  atmosphere:
+    'Общее ощущение от релиза: насколько цельно передано настроение и эмоция.',
+};
+
+const baseCriteria = [
+  { key: 'rhymes', label: 'Рифмы / образы', state: 'ratingRhymes' },
+  { key: 'structure', label: 'Структура / ритмика', state: 'ratingStructure' },
+  { key: 'implementation', label: 'Реализация стиля', state: 'ratingImplementation' },
+  { key: 'individuality', label: 'Индивидуальность / харизма', state: 'ratingIndividuality' },
+];
+
+const InfoHint = ({ text }) => (
+  <span className="review-form-info" tabIndex="0" aria-label={text}>
+    i
+    <span className="review-form-info-panel">{text}</span>
+  </span>
+);
+
+const ScoreSlider = ({ id, label, value, onChange, hint }) => (
+  <div className="review-score-control">
+    <div className="review-score-control-top">
+      <label htmlFor={id}>
+        {label}
+        <InfoHint text={hint} />
+      </label>
+      <strong>{value}</strong>
+    </div>
+    <input
+      type="range"
+      id={id}
+      min="1"
+      max="10"
+      value={value}
+      onChange={(e) => onChange(parseInt(e.target.value, 10))}
+      style={{ '--value': `${((value - 1) / 9) * 100}%` }}
+    />
+    <div className="review-score-scale" aria-hidden="true">
+      <span>1</span>
+      <span>5</span>
+      <span>10</span>
+    </div>
+  </div>
+);
 
 const ReviewForm = ({ albumId, trackId, onSubmit, initialData, onCancel }) => {
   const [ratingRhymes, setRatingRhymes] = useState(initialData?.rating_rhymes || 5);
@@ -24,6 +78,26 @@ const ReviewForm = ({ albumId, trackId, onSubmit, initialData, onCancel }) => {
     ratingIndividuality,
     atmosphereRating
   );
+  const baseSum = ratingRhymes + ratingStructure + ratingImplementation + ratingIndividuality;
+  const stateValues = {
+    ratingRhymes,
+    ratingStructure,
+    ratingImplementation,
+    ratingIndividuality,
+  };
+  const stateSetters = {
+    ratingRhymes: setRatingRhymes,
+    ratingStructure: setRatingStructure,
+    ratingImplementation: setRatingImplementation,
+    ratingIndividuality: setRatingIndividuality,
+  };
+  const scorePreviewValues = {
+    rhymes: ratingRhymes,
+    structure: ratingStructure,
+    implementation: ratingImplementation,
+    individuality: ratingIndividuality,
+    atmosphere: atmosphereRating,
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -65,7 +139,6 @@ const ReviewForm = ({ albumId, trackId, onSubmit, initialData, onCancel }) => {
         reviewData.track_id = typeof trackId === 'string' ? parseInt(trackId, 10) : trackId;
       }
       
-      console.log('Submitting review data:', reviewData);
       await onSubmit(reviewData);
     } catch (err) {
       console.error('Error submitting review:', err);
@@ -91,146 +164,90 @@ const ReviewForm = ({ albumId, trackId, onSubmit, initialData, onCancel }) => {
 
   return (
     <div className="review-form-container">
-      <h3>{initialData ? 'Редактировать рецензию' : 'Добавить рецензию'}</h3>
+      <div className="review-form-head">
+        <div>
+          <p className="review-form-eyebrow">Рецензия</p>
+          <h3>{initialData ? 'Редактировать рецензию' : 'Добавить рецензию'}</h3>
+        </div>
+        <div className="review-form-score-pill">
+          <span>Итог</span>
+          <strong>{formatScore(finalScore)}</strong>
+        </div>
+      </div>
       {error && <div className="error-message">{error}</div>}
       <form onSubmit={handleSubmit} className="review-form">
         <div className="rating-section">
-          {/* Блок базовых оценок */}
-          <div className="base-ratings-group">
+          <div className="review-form-rating-layout">
+            <div className="review-form-card base-ratings-group">
+              <div className="group-header">
+                <div>
+                  <span className="review-form-section-kicker">Критерии</span>
+                  <h4>Основная оценка</h4>
+                </div>
+                <span className="group-summary">Сумма {baseSum}</span>
+              </div>
+              <div className="base-ratings-grid">
+                {baseCriteria.map((criterion) => (
+                  <ScoreSlider
+                    key={criterion.key}
+                    id={`rating-${criterion.key}`}
+                    label={criterion.label}
+                    value={stateValues[criterion.state]}
+                    onChange={stateSetters[criterion.state]}
+                    hint={criterionDescriptions[criterion.key]}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <aside className="review-form-summary">
+              <div className="review-form-summary-score">
+                <span>Итоговый балл</span>
+                <strong>{formatScore(finalScore)}</strong>
+              </div>
+              <div className="review-form-score-grid">
+                {REVIEW_CRITERIA.map((criterion) => (
+                  <span key={criterion.key}>
+                    <small>{criterion.short}</small>
+                    <b>{scorePreviewValues[criterion.key]}</b>
+                  </span>
+                ))}
+              </div>
+              <p>
+                Итог складывается из базовых критериев и общего вайба. Детали видны в карточке после публикации.
+              </p>
+            </aside>
+          </div>
+
+          <div className="review-form-card multiplier-group">
             <div className="group-header">
-              <h4>Базовые критерии (суммируются)</h4>
-              <span className="group-summary">
-                Сумма: {ratingRhymes + ratingStructure + ratingImplementation + ratingIndividuality}
-              </span>
-            </div>
-            <div className="base-ratings-grid">
-              <div className="rating-group">
-                <label htmlFor="rating-rhymes">
-                  Рифмы / Образы: {ratingRhymes}
-                  <span className="tooltip">ℹ️
-                    <span className="tooltiptext">
-                      Оценка за текст, учитывающая жанровые особенности. Для легкой фоновой поп-музыки или электронной музыки допускаются тривиальные конструкции для максимального балла. Для текстоцентричных жанров требуется сложная рифмовка и глубокий смысл.
-                    </span>
-                  </span>
-                </label>
-                <input
-                  type="range"
-                  id="rating-rhymes"
-                  min="1"
-                  max="10"
-                  value={ratingRhymes}
-                  onChange={(e) => setRatingRhymes(parseInt(e.target.value))}
-                />
+              <div>
+                <span className="review-form-section-kicker">Общее впечатление</span>
+                <h4>Атмосфера / вайб</h4>
               </div>
-
-              <div className="rating-group">
-                <label htmlFor="rating-structure">
-                  Структура / Ритмика: {ratingStructure}
-                  <span className="tooltip">ℹ️
-                    <span className="tooltiptext">
-                      Включает оценку ритмической составляющей (стихотворный ритм — мелодичность, драматургия частей, контрасты) и гармонию структуры (целостность всех частей трека, концепция альбома и расположение песен).
-                    </span>
-                  </span>
-                </label>
-                <input
-                  type="range"
-                  id="rating-structure"
-                  min="1"
-                  max="10"
-                  value={ratingStructure}
-                  onChange={(e) => setRatingStructure(parseInt(e.target.value))}
-                />
-              </div>
-
-              <div className="rating-group">
-                <label htmlFor="rating-implementation">
-                  Реализация стиля: {ratingImplementation}
-                  <span className="tooltip">ℹ️
-                    <span className="tooltiptext">
-                      Оценивает работу исполнителя (качество вокала, речитатив, умение работать с мелодией) и работу звукорежиссера/саунд-продюсера (качество сведения, звучание инструментала).
-                    </span>
-                  </span>
-                </label>
-                <input
-                  type="range"
-                  id="rating-implementation"
-                  min="1"
-                  max="10"
-                  value={ratingImplementation}
-                  onChange={(e) => setRatingImplementation(parseInt(e.target.value))}
-                />
-              </div>
-
-              <div className="rating-group">
-                <label htmlFor="rating-individuality">
-                  Индивидуальность / Харизма: {ratingIndividuality}
-                  <span className="tooltip">ℹ️
-                    <span className="tooltiptext">
-                      Оценивает уникальность тембра голоса, стиль исполнения, узнаваемость, а также способность артиста передать и погрузить слушателя в эмоции (верю — не верю песне).
-                    </span>
-                  </span>
-                </label>
-                <input
-                  type="range"
-                  id="rating-individuality"
-                  min="1"
-                  max="10"
-                  value={ratingIndividuality}
-                  onChange={(e) => setRatingIndividuality(parseInt(e.target.value))}
-                />
-              </div>
+              <span className="group-summary">Вайб {atmosphereRating}</span>
             </div>
-          </div>
-
-          {/* Разделитель с формулой */}
-          <div className="rating-divider">
-            <span>× 1.4 ×</span>
-          </div>
-
-          {/* Блок множителя */}
-          <div className="multiplier-group">
-            <div className="group-header">
-              <h4>Атмосфера / Вайб (множитель)</h4>
-            </div>
-            <div className="rating-group">
-              <label htmlFor="atmosphere">
-                Атмосфера / Вайб: {atmosphereRating}
-                <span className="tooltip">ℹ️
-                  <span className="tooltiptext">
-                    Субъективная оценка, показывающая, насколько автор сумел передать атмосферу и палитру эмоций композиции. Диапазон: 1-10
-                  </span>
-                </span>
-              </label>
-              <input
-                type="range"
-                id="atmosphere"
-                min="1"
-                max="10"
-                value={atmosphereRating}
-                onChange={(e) => setAtmosphereRating(parseInt(e.target.value))}
-              />
-            </div>
-          </div>
-
-          {/* Итоговый балл с формулой */}
-          <div className="final-score-block">
-            <div className="formula">
-              ({ratingRhymes} + {ratingStructure} + {ratingImplementation} + {ratingIndividuality}) × 1.4 × {atmosphereRating} = {formatScore(finalScore)}
-            </div>
-            <div className="final-score-value">
-              Итоговый балл: {formatScore(finalScore)}
-            </div>
+            <ScoreSlider
+              id="atmosphere"
+              label="Атмосфера / вайб"
+              value={atmosphereRating}
+              onChange={setAtmosphereRating}
+              hint={criterionDescriptions.atmosphere}
+            />
           </div>
         </div>
 
-        <div className="text-section">
+        <div className="text-section review-form-card">
           <label className="checkbox-label">
             <input
               type="checkbox"
               checked={hasText}
               onChange={(e) => setHasText(e.target.checked)}
             />
-            Добавить текстовую рецензию (будет отправлена на модерацию)
+            <span>
+              Добавить текстовую рецензию
+              <small>Текстовая рецензия отправляется на модерацию.</small>
+            </span>
           </label>
           
           {hasText && (

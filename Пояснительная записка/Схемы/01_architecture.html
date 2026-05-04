@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Архитектура Мьюзик Рейтинг</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="canvas">
+    <section class="sheet">
+      <div class="header">
+        <div>
+          <h1>Архитектура информационной системы «Мьюзик Рейтинг»</h1>
+          <p class="subtitle">Веб-приложение разделено на клиентскую часть, серверное API и уровень хранения данных. Отдельный контур отвечает за автоматизированную проверку и сборку.</p>
+        </div>
+        <div class="badge">React + Go + PostgreSQL</div>
+      </div>
+
+      <div class="flow">
+        <article class="card strong">
+          <h2>Клиентская часть</h2>
+          <div class="pill-row">
+            <span class="pill">React</span>
+            <span class="pill">Axios</span>
+            <span class="pill">CSS-переменные</span>
+          </div>
+        </article>
+        <div class="arrow">→</div>
+        <article class="card dark">
+          <h2>Backend API</h2>
+          <div class="pill-row">
+            <span class="pill">Go</span>
+            <span class="pill">Gin</span>
+            <span class="pill">GORM</span>
+          </div>
+        </article>
+        <div class="arrow">→</div>
+        <article class="card strong">
+          <h2>База данных</h2>
+          <div class="pill-row">
+            <span class="pill">PostgreSQL</span>
+            <span class="pill">миграции</span>
+            <span class="pill">сидер</span>
+          </div>
+        </article>
+      </div>
+
+      <div class="grid grid-3" style="margin-top: 24px;">
+        <article class="card"><h3>Публичные сценарии</h3></article>
+        <article class="card"><h3>Авторизованные сценарии</h3></article>
+        <article class="card"><h3>Администрирование</h3></article>
+      </div>
+
+      <div class="grid grid-4" style="margin-top: 24px;">
+        <div class="metric"><strong>CI</strong></div>
+        <div class="metric"><strong>CD</strong></div>
+        <div class="metric"><strong>Compose</strong></div>
+        <div class="metric"><strong>Healthcheck</strong></div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

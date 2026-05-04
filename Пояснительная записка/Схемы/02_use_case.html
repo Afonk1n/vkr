@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Диаграмма вариантов использования</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="canvas">
+    <section class="sheet">
+      <div class="header">
+        <div>
+          <h1>Диаграмма вариантов использования</h1>
+          <p class="subtitle">Схема показывает основные роли системы «Мьюзик Рейтинг» и доступные им действия.</p>
+        </div>
+        <div class="badge">UML use case</div>
+      </div>
+
+      <div class="usecase-diagram">
+        <svg class="usecase-links" viewBox="0 0 1480 500" aria-hidden="true">
+          <path d="M234 142 L374 142"/>
+          <path d="M234 142 L702 142"/>
+          <path d="M234 364 L374 266"/>
+          <path d="M234 364 L702 266"/>
+          <path d="M234 364 L374 142"/>
+          <path d="M1246 254 L639 390"/>
+          <path d="M1246 254 L967 390"/>
+        </svg>
+
+        <div class="usecase-system">
+          <div class="usecase-system-title">«Мьюзик Рейтинг»</div>
+        </div>
+
+        <div class="actor actor-guest"><div class="actor-icon">Г</div>Гость</div>
+        <div class="actor actor-user"><div class="actor-icon">П</div>Пользователь</div>
+        <div class="actor actor-admin"><div class="actor-icon">А</div>Администратор</div>
+
+        <div class="usecase uc-feed">Просмотр ленты и топов</div>
+        <div class="usecase uc-search">Поиск релизов</div>
+        <div class="usecase primary uc-review">Создание рецензии</div>
+        <div class="usecase uc-profile">Профиль и предпочтения</div>
+        <div class="usecase uc-moderate">Модерация рецензий</div>
+        <div class="usecase uc-catalog">Управление каталогом</div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
