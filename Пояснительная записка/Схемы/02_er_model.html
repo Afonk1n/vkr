@@ -1,76 +1,89 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <title>ER-модель Мьюзик Рейтинг</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8" />
+  <title>Логическая модель базы данных</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main class="canvas">
-    <section class="sheet">
-      <div class="header">
-        <div>
-          <h1>ER-модель базы данных</h1>
-          <p class="subtitle">Модель отражает связи между пользователями, музыкальным каталогом, рецензиями, оценками, лайками и предпочтениями профиля.</p>
-        </div>
-        <div class="badge">PostgreSQL</div>
+  <main class="sheet er-classic-sheet">
+    <header class="scheme-header">
+      <div>
+        <h1>Логическая модель базы данных</h1>
+        <p>Схема показывает основные сущности системы и связи между пользователями, музыкальным каталогом, рецензиями, реакциями и подписками.</p>
       </div>
+      <span class="scheme-pill">PostgreSQL</span>
+    </header>
 
-      <div class="er-diagram">
-        <svg class="er-links" viewBox="0 0 1480 520" aria-hidden="true">
-          <path d="M330 145 H430"/>
-          <path d="M690 145 H790"/>
-          <path d="M1050 145 H1150"/>
-          <path d="M200 220 V335"/>
-          <path d="M330 410 H430"/>
-          <path d="M560 220 V335"/>
-          <path d="M690 410 H790"/>
-          <path d="M920 220 V335"/>
-          <path d="M1050 410 H1150"/>
-          <path d="M1280 220 V335"/>
+    <section class="er-classic">
+      <svg class="er-classic-links" viewBox="0 0 1280 640" aria-hidden="true">
+        <path d="M205 130 H360" />
+        <path d="M510 130 H655" />
+        <path d="M805 130 H955" />
+        <path d="M730 220 V322" />
+        <path d="M205 220 V322" />
+        <path d="M360 410 H205" />
+        <path d="M510 410 H655" />
+        <path d="M805 410 H955" />
+        <path d="M1105 220 V322" />
+        <path d="M360 500 H655" />
+        <path d="M805 500 H955" />
 
-          <circle cx="330" cy="145" r="5" fill="#5a3f2b"/>
-          <circle cx="430" cy="145" r="5" fill="#5a3f2b"/>
-          <circle cx="690" cy="145" r="5" fill="#5a3f2b"/>
-          <circle cx="790" cy="145" r="5" fill="#5a3f2b"/>
-          <circle cx="1050" cy="145" r="5" fill="#5a3f2b"/>
-          <circle cx="1150" cy="145" r="5" fill="#5a3f2b"/>
-          <circle cx="200" cy="220" r="5" fill="#5a3f2b"/>
-          <circle cx="200" cy="335" r="5" fill="#5a3f2b"/>
-          <circle cx="330" cy="410" r="5" fill="#5a3f2b"/>
-          <circle cx="430" cy="410" r="5" fill="#5a3f2b"/>
-          <circle cx="560" cy="220" r="5" fill="#5a3f2b"/>
-          <circle cx="560" cy="335" r="5" fill="#5a3f2b"/>
-          <circle cx="690" cy="410" r="5" fill="#5a3f2b"/>
-          <circle cx="790" cy="410" r="5" fill="#5a3f2b"/>
-          <circle cx="920" cy="220" r="5" fill="#5a3f2b"/>
-          <circle cx="920" cy="335" r="5" fill="#5a3f2b"/>
-          <circle cx="1050" cy="410" r="5" fill="#5a3f2b"/>
-          <circle cx="1150" cy="410" r="5" fill="#5a3f2b"/>
-          <circle cx="1280" cy="220" r="5" fill="#5a3f2b"/>
-          <circle cx="1280" cy="335" r="5" fill="#5a3f2b"/>
+        <text x="238" y="118">1</text><text x="328" y="118">N</text>
+        <text x="542" y="118">1</text><text x="625" y="118">N</text>
+        <text x="838" y="118">1</text><text x="925" y="118">N</text>
+        <text x="740" y="268">1</text><text x="740" y="315">N</text>
+        <text x="216" y="268">1</text><text x="216" y="315">N</text>
+        <text x="238" y="398">N</text><text x="328" y="398">1</text>
+        <text x="542" y="398">N</text><text x="625" y="398">1</text>
+        <text x="838" y="398">N</text><text x="925" y="398">1</text>
+        <text x="1118" y="268">1</text><text x="1118" y="315">N</text>
+        <text x="470" y="488">N</text><text x="555" y="488">1</text>
+        <text x="845" y="488">N</text><text x="920" y="488">1</text>
+      </svg>
 
-          <text x="360" y="132">1:N</text>
-          <text x="720" y="132">1:N</text>
-          <text x="1080" y="132">1:N</text>
-          <text x="216" y="284">1:N</text>
-          <text x="360" y="397">1:N</text>
-          <text x="576" y="284">1:N</text>
-          <text x="720" y="397">1:N</text>
-          <text x="936" y="284">1:N</text>
-          <text x="1080" y="397">1:N</text>
-          <text x="1296" y="284">1:N</text>
-        </svg>
+      <section class="entity-box pos-users">
+        <h2>users</h2>
+        <p>PK id</p><p>username, email</p><p>password</p><p>profile fields</p>
+      </section>
+      <section class="entity-box pos-genres">
+        <h2>genres</h2>
+        <p>PK id</p><p>name</p><p>description</p>
+      </section>
+      <section class="entity-box pos-albums">
+        <h2>albums</h2>
+        <p>PK id</p><p>FK genre_id</p><p>title, artist</p><p>average_rating</p>
+      </section>
+      <section class="entity-box pos-tracks">
+        <h2>tracks</h2>
+        <p>PK id</p><p>FK album_id</p><p>title</p><p>duration</p>
+      </section>
 
-        <section class="entity er-node n-users"><div class="entity-title">users</div><ul><li>PK id</li><li>username, email</li><li>password_hash</li><li>profile fields</li></ul></section>
-        <section class="entity er-node n-artists"><div class="entity-title">artists</div><ul><li>PK id</li><li>name</li><li>image_url</li><li>verified</li></ul></section>
-        <section class="entity er-node n-albums"><div class="entity-title">albums</div><ul><li>PK id</li><li>FK artist_id</li><li>FK genre_id</li><li>cover_url</li></ul></section>
-        <section class="entity er-node n-tracks"><div class="entity-title">tracks</div><ul><li>PK id</li><li>FK album_id</li><li>duration</li><li>track_number</li></ul></section>
-        <section class="entity er-node n-subs"><div class="entity-title">subscriptions</div><ul><li>PK id</li><li>FK follower_id</li><li>FK author_id</li><li>created_at</li></ul></section>
-        <section class="entity er-node n-reviews"><div class="entity-title">reviews</div><ul><li>PK id</li><li>FK user_id</li><li>FK album_id / track_id</li><li>scores, status</li></ul></section>
-        <section class="entity er-node n-likes"><div class="entity-title">review_likes</div><ul><li>PK id</li><li>FK user_id</li><li>FK review_id</li><li>created_at</li></ul></section>
-        <section class="entity er-node n-prefs"><div class="entity-title">preferences</div><ul><li>PK id</li><li>FK user_id</li><li>entity_type</li><li>entity_id, position</li></ul></section>
-      </div>
+      <section class="entity-box pos-follows">
+        <h2>user_follows</h2>
+        <p>PK id</p><p>FK follower_id</p><p>FK following_id</p>
+      </section>
+      <section class="entity-box pos-reviews">
+        <h2>reviews</h2>
+        <p>PK id</p><p>FK user_id</p><p>FK album_id / track_id</p><p>scores, status</p>
+      </section>
+      <section class="entity-box pos-track-genres">
+        <h2>track_genres</h2>
+        <p>PK id</p><p>FK track_id</p><p>FK genre_id</p>
+      </section>
+      <section class="entity-box pos-review-likes">
+        <h2>review_likes</h2>
+        <p>PK id</p><p>FK user_id</p><p>FK review_id</p>
+      </section>
+
+      <section class="entity-box pos-album-likes">
+        <h2>album_likes</h2>
+        <p>PK id</p><p>FK user_id</p><p>FK album_id</p>
+      </section>
+      <section class="entity-box pos-track-likes">
+        <h2>track_likes</h2>
+        <p>PK id</p><p>FK user_id</p><p>FK track_id</p>
+      </section>
     </section>
   </main>
 </body>

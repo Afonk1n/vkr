@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>Логическая модель базы данных</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --paper: #fffaf2;
+      --panel: #f5ead9;
+      --line: #bda88f;
+      --ink: #2f251d;
+      --muted: #746251;
+      --accent: #5a3f2b;
+      --accent-2: #b8833c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      width: 1600px;
+      height: 900px;
+      overflow: hidden;
+      background: #ffffff;
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+    .sheet {
+      width: 1520px;
+      height: 820px;
+      margin: 40px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: #fffaf2;
+      padding: 28px 34px;
+      overflow: hidden;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 28px;
+      margin-bottom: 18px;
+    }
+    .kicker {
+      margin: 0 0 6px;
+      color: var(--accent-2);
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0;
+      font-size: 38px;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+    .subtitle {
+      margin: 9px 0 0;
+      max-width: 780px;
+      color: var(--muted);
+      font-size: 20px;
+      line-height: 1.3;
+    }
+    .badge {
+      flex: 0 0 auto;
+      margin-top: 4px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 10px 18px;
+      background: #ffffff;
+      color: var(--accent);
+      font-size: 18px;
+      font-weight: 800;
+    }
+    .diagram {
+      position: relative;
+      width: 100%;
+      height: 680px;
+      border-radius: 18px;
+      background: #ffffff;
+      border: 1px solid rgba(189,168,143,.7);
+      overflow: hidden;
+    }
+    svg.links {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .rel {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .rel-light { stroke: #967a60; stroke-width: 1.8; }
+    .card {
+      position: absolute;
+      width: 205px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fffdf9;
+      overflow: hidden;
+    }
+    .card.wide { width: 226px; }
+    .card h2 {
+      margin: 0;
+      padding: 10px 13px;
+      background: var(--accent);
+      color: #fffaf2;
+      font-size: 19px;
+      line-height: 1.1;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 8px;
+      align-items: baseline;
+      min-height: 28px;
+      margin: 0 12px;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(90,63,43,.18);
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.18;
+      white-space: nowrap;
+    }
+    .row:last-child { border-bottom: 0; }
+    .key {
+      color: var(--accent-2);
+      font-weight: 900;
+      font-size: 13px;
+    }
+    .fk { color: #5f7182; }
+    .note {
+      position: absolute;
+      left: 34px;
+      bottom: 18px;
+      width: 565px;
+      border: 1px solid rgba(184,131,60,.42);
+      border-radius: 12px;
+      background: #fff8ef;
+      padding: 12px 16px;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.32;
+    }
+    .label {
+      position: absolute;
+      z-index: 1;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #ffffff;
+      color: var(--accent-2);
+      border: 1px solid rgba(189,168,143,.5);
+      font-size: 15px;
+      font-weight: 900;
+    }
+    .users { left: 42px; top: 212px; }
+    .follows { left: 42px; top: 438px; }
+    .reviews { left: 356px; top: 130px; }
+    .review-likes { left: 356px; top: 418px; }
+    .genres { left: 696px; top: 46px; }
+    .albums { left: 696px; top: 226px; }
+    .tracks { left: 696px; top: 456px; }
+    .track-genres { left: 1036px; top: 86px; }
+    .album-likes { left: 1036px; top: 314px; }
+    .track-likes { left: 1036px; top: 514px; }
+  </style>
+</head>
+<body>
+  <main class="sheet">
+    <header class="header">
+      <div>
+        <p class="kicker">Логическая модель</p>
+        <h1>ER-диаграмма базы данных</h1>
+        <p class="subtitle">Схема отражает основные таблицы физической модели, первичные и внешние ключи, а также связи между пользователями, каталогом, рецензиями, лайками и подписками.</p>
+      </div>
+      <span class="badge">PostgreSQL</span>
+    </header>
+
+    <section class="diagram">
+      <svg class="links" viewBox="0 0 1450 680" aria-hidden="true">
+        <path class="rel" d="M247 282 H356" />
+        <path class="rel" d="M247 324 C286 324 298 476 356 476" />
+        <path class="rel-light" d="M145 410 V438" />
+        <path class="rel-light" d="M247 492 C292 492 305 268 356 268" />
+
+        <path class="rel" d="M561 246 H696" />
+        <path class="rel" d="M561 290 C620 290 636 526 696 526" />
+        <path class="rel" d="M470 366 V418" />
+
+        <path class="rel" d="M798 178 V226" />
+        <path class="rel" d="M798 378 V456" />
+        <path class="rel" d="M901 138 H1036" />
+        <path class="rel" d="M901 534 C965 534 970 178 1036 178" />
+
+        <path class="rel" d="M901 322 H1036" />
+        <path class="rel" d="M901 552 H1036" />
+        <path class="rel-light" d="M247 338 C590 338 740 388 1036 388" />
+        <path class="rel-light" d="M247 352 C620 352 728 588 1036 588" />
+      </svg>
+
+      <span class="label" style="left:268px; top:256px;">1:N</span>
+      <span class="label" style="left:274px; top:438px;">1:N</span>
+      <span class="label" style="left:112px; top:411px;">1:N</span>
+      <span class="label" style="left:586px; top:218px;">N:1</span>
+      <span class="label" style="left:602px; top:486px;">N:1</span>
+      <span class="label" style="left:484px; top:382px;">1:N</span>
+      <span class="label" style="left:812px; top:190px;">1:N</span>
+      <span class="label" style="left:812px; top:404px;">1:N</span>
+      <span class="label" style="left:938px; top:112px;">1:N</span>
+      <span class="label" style="left:940px; top:496px;">1:N</span>
+      <span class="label" style="left:928px; top:296px;">1:N</span>
+      <span class="label" style="left:928px; top:526px;">1:N</span>
+
+      <article class="card users">
+        <h2>users</h2>
+        <div class="row"><span class="key">PK</span><span>id</span></div>
+        <div class="row"><span></span><span>username</span></div>
+        <div class="row"><span></span><span>email</span></div>
+        <div class="row"><span></span><span>password</span></div>
+        <div class="row"><span></span><span>profile_fields</span></div>
+      </article>
+
+      <article class="card follows">
+        <h2>user_follows</h2>
+        <div class="row"><span class="key">PK</span><span>id</span></div>
+        <div class="row"><span class="key fk">FK</span><span>follower_id</span></div>
+        <div class="row"><span class="key fk">FK</span><span>following_id</span></div>
+        <div class="row"><span></span><span>created_at</span></div>
+      </article>
+
+      <article class="card reviews wide">
+        <h2>reviews</h2>
+        <div class="row"><span class="key">PK</span><span>id</span></div>
+        <div class="row"><span class="key fk">FK</span><span>user_id</span></div>
+        <div class="row"><span class="key fk">FK</span><span>album_id</span></div>
+        <div class="row"><span class="key fk">FK</span><span>track_id</span></div>
+        <div class="row"><span></span><span>scores, status</span></div>
+      </article>
+
+      <article class="card review-likes wide">
+        <h2>review_likes</h2>
+        <div class="row"><span class="key">PK</span><span>id</span></div>
+        <div class="row"><span class="key fk">FK</span><span>user_id</span></div>
+        <div class="row"><span class="key fk">FK</span><span>review_id</span></div>
+        <div class="row"><span></span><span>created_at</span></div>
+      </article>
+
+      <article class="card genres">
+        <h2>genres</h2>
+        <div class="row"><span class="key">PK</span><span>id</span></div>
+        <div class="row"><span></span><span>name</span></div>
+        <div class="row"><span></span><span>description</span></div>
+      </article>
+
+      <article class="card albums">
+        <h2>albums</h2>
+        <div class="row"><span class="key">PK</span><span>id</span></div>
+        <div class="row"><span class="key fk">FK</span><span>genre_id</span></div>
+        <div class="row"><span></span><span>title</span></div>
+        <div class="row"><span></span><span>artist</span></div>
+        <div class="row"><span></span><span>cover_url</span></div>
+      </article>
+
+      <article class="card tracks">
+        <h2>tracks</h2>
+        <div class="row"><span class="key">PK</span><span>id</span></div>
+        <div class="row"><span class="key fk">FK</span><span>album_id</span></div>
+        <div class="row"><span></span><span>title</span></div>
+        <div class="row"><span></span><span>duration</span></div>
+        <div class="row"><span></span><span>track_number</span></div>
+      </article>
+
+      <article class="card track-genres wide">
+        <h2>track_genres</h2>
+        <div class="row"><span class="key">PK</span><span>id</span></div>
+        <div class="row"><span class="key fk">FK</span><span>track_id</span></div>
+        <div class="row"><span class="key fk">FK</span><span>genre_id</span></div>
+      </article>
+
+      <article class="card album-likes wide">
+        <h2>album_likes</h2>
+        <div class="row"><span class="key">PK</span><span>id</span></div>
+        <div class="row"><span class="key fk">FK</span><span>user_id</span></div>
+        <div class="row"><span class="key fk">FK</span><span>album_id</span></div>
+        <div class="row"><span></span><span>created_at</span></div>
+      </article>
+
+      <article class="card track-likes wide">
+        <h2>track_likes</h2>
+        <div class="row"><span class="key">PK</span><span>id</span></div>
+        <div class="row"><span class="key fk">FK</span><span>user_id</span></div>
+        <div class="row"><span class="key fk">FK</span><span>track_id</span></div>
+        <div class="row"><span></span><span>created_at</span></div>
+      </article>
+
+      <div class="note">Связь треков и жанров выделена через промежуточную таблицу track_genres. Рецензия относится либо к альбому, либо к отдельному треку; в физической модели это реализуется внешними ключами album_id и track_id.</div>
+    </section>
+  </main>
+</body>
+</html>

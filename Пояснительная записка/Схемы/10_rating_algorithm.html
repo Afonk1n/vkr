@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>Алгоритм расчета итоговой оценки</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="sheet flow-sheet">
+    <header class="scheme-header">
+      <div>
+        <h1>Алгоритм расчета итоговой оценки рецензии</h1>
+        <p>Блок-схема отражает порядок проверки введенных пользователем критериев, вычисления итогового балла и сохранения рецензии на модерацию.</p>
+      </div>
+      <span class="scheme-pill">Рецензия → оценка → модерация</span>
+    </header>
+
+    <section class="algorithm-grid">
+      <div class="flow-node start">Начало</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-node">Пользователь выбирает альбом или трек</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-node">Вводятся оценки по 4 базовым критериям и атмосфере</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-node decision">Все значения входят в допустимые диапазоны?</div>
+      <div class="flow-split">
+        <div class="flow-branch">
+          <span>Нет</span>
+          <div class="flow-node warning">Показать сообщение об ошибке и вернуть пользователя к форме</div>
+        </div>
+        <div class="flow-branch">
+          <span>Да</span>
+          <div class="flow-node">Суммировать 4 базовых критерия</div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node">Применить коэффициент шкалы и множитель атмосферы</div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node">Округлить итоговый балл до целого значения</div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-node decision">Добавлен текст рецензии?</div>
+          <div class="flow-split compact">
+            <div class="flow-branch">
+              <span>Нет</span>
+              <div class="flow-node">Сохранить оценку как опубликованную запись</div>
+            </div>
+            <div class="flow-branch">
+              <span>Да</span>
+              <div class="flow-node">Сохранить рецензию со статусом «ожидает модерации»</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-node finish">Конец</div>
+    </section>
+  </main>
+</body>
+</html>

@@ -287,7 +287,7 @@ const AdminPanel = () => {
         <div className="admin-header">
           <div>
             <span className="admin-kicker">Панель управления</span>
-            <h1>Админка</h1>
+            <h1>Панель модерации</h1>
             <p>Модерация рецензий и быстрый конструктор музыкального каталога для демо-данных.</p>
           </div>
           <div
