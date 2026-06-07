@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { genresAPI, tracksAPI } from '../services/api';
 import TrackCard from '../components/TrackCard';
 import './SearchPage.css';
 
 const SearchPage = () => {
+  const [searchParams] = useSearchParams();
   const [tracks, setTracks] = useState([]);
   const [genres, setGenres] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +26,12 @@ const SearchPage = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(20);
+
+  useEffect(() => {
+    const nextQuery = searchParams.get('q') || '';
+    setSearchQuery(nextQuery);
+    setCurrentPage(1);
+  }, [searchParams]);
 
   // Fetch genres on mount
   useEffect(() => {
@@ -162,7 +170,7 @@ const SearchPage = () => {
   return (
     <div className="container">
       <div className="search-page">
-        <h1 className="search-page-title">Каталог альбомов</h1>
+        <h1 className="search-page-title">Каталог музыки</h1>
 
         <div className="search-page-content">
           {/* Left sidebar with filters */}
@@ -285,4 +293,3 @@ const SearchPage = () => {
 };
 
 export default SearchPage;
-

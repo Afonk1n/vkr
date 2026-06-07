@@ -244,14 +244,14 @@
   font-weight: 900;
 }
 
-.achievement-seal-icon {
+.achievement-seal .achievement-seal-icon {
   display: block;
   margin: 0;
   color: var(--text-color);
   font-size: 0.88rem;
 }
 
-.achievement-seal-emoji {
+.achievement-seal .achievement-seal-emoji {
   position: absolute;
   right: -0.25rem;
   bottom: -0.25rem;

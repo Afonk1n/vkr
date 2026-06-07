@@ -60,7 +60,7 @@ const statusLabels = {
 };
 
 const AdminPanel = () => {
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [activePage, setActivePage] = useState('moderation');
   const [pendingReviews, setPendingReviews] = useState([]);
@@ -126,13 +126,16 @@ const AdminPanel = () => {
   }, []);
 
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
     if (!isAuthenticated || !isAdmin) {
       navigate('/feed');
       return;
     }
     fetchReviews(status);
     fetchGenres();
-  }, [isAuthenticated, isAdmin, navigate, status, fetchReviews, fetchGenres]);
+  }, [authLoading, isAuthenticated, isAdmin, navigate, status, fetchReviews, fetchGenres]);
 
   useEffect(() => {
     return () => {
@@ -276,6 +279,14 @@ const AdminPanel = () => {
       setReleaseSaving(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="container">
+        <div className="loading">Загрузка...</div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated || !isAdmin) {
     return null;

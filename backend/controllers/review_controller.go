@@ -8,6 +8,7 @@ import (
 	"music-review-site/backend/utils"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -271,8 +272,12 @@ func (rc *ReviewController) CreateReview(c *gin.Context) {
 	// Calculate final score
 	review.CalculateFinalScore()
 
-	// Все новые рецензии проходят модерацию (для удобства тестирования)
-	review.Status = models.ReviewStatusPending
+	// Text reviews go to moderation, while score-only ratings can be published immediately.
+	if strings.TrimSpace(review.Text) == "" {
+		review.Status = models.ReviewStatusApproved
+	} else {
+		review.Status = models.ReviewStatusPending
+	}
 
 	if err := rc.DB.Create(&review).Error; err != nil {
 		// Log detailed error for debugging

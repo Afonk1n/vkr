@@ -14,7 +14,7 @@ type User struct {
 	Password          string         `json:"-" gorm:"not null"` // Password hash, not exposed in JSON
 	AvatarPath        string         `json:"avatar_path" gorm:"type:text"`
 	Bio               string         `json:"bio" gorm:"type:text"`
-	SocialLinks       string         `json:"social_links" gorm:"type:jsonb"` // JSON: {"vk": "", "telegram": "", "instagram": ""}
+	SocialLinks       string         `json:"social_links" gorm:"type:jsonb;default:'{}'"` // JSON: {"vk": "", "telegram": "", "instagram": ""}
 	IsAdmin           bool           `json:"is_admin" gorm:"default:false"`
 	FavoriteAlbumIDs  string         `json:"favorite_album_ids" gorm:"type:text;default:'[]'"`
 	FavoriteArtists   string         `json:"favorite_artists" gorm:"type:text;default:'[]'"`

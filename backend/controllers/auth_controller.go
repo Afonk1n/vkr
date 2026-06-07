@@ -82,10 +82,11 @@ func (ac *AuthController) Register(c *gin.Context) {
 
 	// Create user
 	user := models.User{
-		Username: req.Username,
-		Email:    req.Email,
-		Password: hashedPassword,
-		IsAdmin:  false,
+		Username:    req.Username,
+		Email:       req.Email,
+		Password:    hashedPassword,
+		SocialLinks: "{}",
+		IsAdmin:     false,
 	}
 
 	if err := ac.DB.Create(&user).Error; err != nil {

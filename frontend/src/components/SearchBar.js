@@ -75,7 +75,9 @@ const SearchBar = () => {
   const hasResults = results.artists.length > 0 || results.albums.length > 0 || results.tracks.length > 0;
 
   const handleFiltersClick = () => {
-    navigate('/search');
+    const trimmedQuery = query.trim();
+    navigate(trimmedQuery ? `/search?q=${encodeURIComponent(trimmedQuery)}` : '/search');
+    setShowResults(false);
   };
 
   return (
