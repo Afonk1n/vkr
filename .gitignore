@@ -10,4 +10,7 @@
 Thumbs.db
 Desktop.ini
 .cache/
+*.log
+.~lock.*#
+D*hook-diag.txt
 
