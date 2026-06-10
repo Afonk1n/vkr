@@ -219,9 +219,32 @@ func InitDB() (*gorm.DB, error) {
 	return DB, nil
 }
 
+// dedupeLikes removes duplicate like rows so that the unique indexes
+// (ux_*_like_pair) can be created. Засеянные/старые данные могли содержать
+// дубли пар (user_id, entity_id); оставляем строку с минимальным id.
+func dedupeLikes() {
+	statements := []string{
+		`DELETE FROM review_likes a USING review_likes b
+		 WHERE a.id > b.id AND a.user_id = b.user_id AND a.review_id = b.review_id`,
+		`DELETE FROM album_likes a USING album_likes b
+		 WHERE a.id > b.id AND a.user_id = b.user_id AND a.album_id = b.album_id`,
+		`DELETE FROM track_likes a USING track_likes b
+		 WHERE a.id > b.id AND a.user_id = b.user_id AND a.track_id = b.track_id`,
+	}
+	for _, stmt := range statements {
+		// Таблицы может ещё не быть на самой первой миграции — это нормально.
+		if err := DB.Exec(stmt).Error; err != nil {
+			log.Printf("dedupeLikes: skipping (%v)", err)
+		}
+	}
+}
+
 // runMigrations runs database migrations
 func runMigrations() error {
 	log.Println("Running database migrations...")
+
+	// Чистим дубли лайков до AutoMigrate, иначе создание уникальных индексов упадёт.
+	dedupeLikes()
 
 	err := DB.AutoMigrate(
 		&models.User{},

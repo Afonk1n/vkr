@@ -48,10 +48,8 @@ func (tc *TrackController) GetTracks(c *gin.Context) {
 		return
 	}
 
+	// Среднее считаем агрегатом на чтении (read-only), без UPDATE на каждый трек.
 	for i := range tracks {
-		if err := tc.CalculateAverageRating(tracks[i].ID); err != nil {
-			log.Printf("Warning: failed to calculate average rating for track %d: %v", tracks[i].ID, err)
-		}
 		if err := tc.AttachAverageScoreBreakdown(&tracks[i]); err != nil {
 			log.Printf("Warning: failed to attach average score breakdown for track %d: %v", tracks[i].ID, err)
 		}
@@ -167,18 +165,11 @@ func (tc *TrackController) GetAllTracks(c *gin.Context) {
 		return
 	}
 
-	// Calculate average ratings for all tracks
+	// Среднее считаем агрегатом на чтении (read-only). Треки уже загружены
+	// со всеми связями основным запросом — повторная загрузка и UPDATE не нужны.
 	for i := range tracks {
-		if err := tc.CalculateAverageRating(tracks[i].ID); err != nil {
-			log.Printf("Warning: failed to calculate average rating for track %d: %v", tracks[i].ID, err)
-		}
-		// Reload track to get updated rating
-		var updatedTrack models.Track
-		if err := tc.DB.Preload("Album").Preload("Album.Genre").Preload("Genres").Preload("Likes").First(&updatedTrack, tracks[i].ID).Error; err == nil {
-			if err := tc.AttachAverageScoreBreakdown(&updatedTrack); err != nil {
-				log.Printf("Warning: failed to attach average score breakdown for track %d: %v", updatedTrack.ID, err)
-			}
-			tracks[i] = updatedTrack
+		if err := tc.AttachAverageScoreBreakdown(&tracks[i]); err != nil {
+			log.Printf("Warning: failed to attach average score breakdown for track %d: %v", tracks[i].ID, err)
 		}
 	}
 
@@ -204,12 +195,7 @@ func (tc *TrackController) GetTrack(c *gin.Context) {
 		return
 	}
 
-	// Calculate average rating
-	if err := tc.CalculateAverageRating(track.ID); err != nil {
-		log.Printf("Warning: failed to calculate average rating for track %d: %v", track.ID, err)
-	}
-	// Reload track to get updated rating
-	tc.DB.Preload("Album").Preload("Album.Genre").Preload("Likes").Preload("Genres").First(&track, id)
+	// Среднее — агрегатом на чтении, без UPDATE.
 	if err := tc.AttachAverageScoreBreakdown(&track); err != nil {
 		log.Printf("Warning: failed to attach average score breakdown for track %d: %v", track.ID, err)
 	}
@@ -385,31 +371,20 @@ func (tc *TrackController) GetPopularTracks(c *gin.Context) {
 		return
 	}
 
-	// Calculate average ratings for all tracks
+	// Среднее — агрегатом на чтении; дедуп жанров на уже загруженном треке.
 	for i := range tracks {
-		if err := tc.CalculateAverageRating(tracks[i].ID); err != nil {
-			log.Printf("Warning: failed to calculate average rating for track %d: %v", tracks[i].ID, err)
+		if err := tc.AttachAverageScoreBreakdown(&tracks[i]); err != nil {
+			log.Printf("Warning: failed to attach average score breakdown for track %d: %v", tracks[i].ID, err)
 		}
-		// Reload track to get updated rating with all relationships
-		var updatedTrack models.Track
-		if err := tc.DB.Preload("Album").Preload("Album.Genre").Preload("Genres").Preload("Likes").First(&updatedTrack, tracks[i].ID).Error; err == nil {
-			if err := tc.AttachAverageScoreBreakdown(&updatedTrack); err != nil {
-				log.Printf("Warning: failed to attach average score breakdown for track %d: %v", updatedTrack.ID, err)
+		seen := make(map[uint]bool, len(tracks[i].Genres))
+		unique := tracks[i].Genres[:0]
+		for _, genre := range tracks[i].Genres {
+			if !seen[genre.ID] {
+				seen[genre.ID] = true
+				unique = append(unique, genre)
 			}
-			// Remove duplicate genres by ID
-			genreMap := make(map[uint]models.Genre)
-			for _, genre := range updatedTrack.Genres {
-				if _, exists := genreMap[genre.ID]; !exists {
-					genreMap[genre.ID] = genre
-				}
-			}
-			// Rebuild genres slice without duplicates
-			updatedTrack.Genres = make([]models.Genre, 0, len(genreMap))
-			for _, genre := range genreMap {
-				updatedTrack.Genres = append(updatedTrack.Genres, genre)
-			}
-			tracks[i] = updatedTrack
 		}
+		tracks[i].Genres = unique
 	}
 
 	c.JSON(http.StatusOK, tracks)
@@ -488,8 +463,8 @@ func (tc *TrackController) UnlikeTrack(c *gin.Context) {
 		return
 	}
 
-	// Delete like
-	if err := tc.DB.Where("user_id = ? AND track_id = ?", userID, trackID).Delete(&models.TrackLike{}).Error; err != nil {
+	// Жёсткое удаление (см. уникальный индекс ux_track_like_pair).
+	if err := tc.DB.Unscoped().Where("user_id = ? AND track_id = ?", userID, trackID).Delete(&models.TrackLike{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
 			Error:   "Internal Server Error",
 			Message: "Failed to unlike track",

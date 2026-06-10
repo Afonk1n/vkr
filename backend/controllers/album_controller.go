@@ -22,6 +22,15 @@ type AlbumController struct {
 	DB *gorm.DB
 }
 
+// albumSortColumns — белый список колонок для ORDER BY по альбомам
+// (release_date обрабатывается отдельно из-за NULLS LAST).
+var albumSortColumns = map[string]string{
+	"created_at":     "created_at",
+	"average_rating": "average_rating",
+	"title":          "title",
+	"artist":         "artist",
+}
+
 // CreateAlbumRequest represents album creation request
 type CreateAlbumRequest struct {
 	Title          string `json:"title" binding:"required"`
@@ -78,24 +87,18 @@ func (ac *AlbumController) GetAlbums(c *gin.Context) {
 		query = query.Where("title ILIKE ? OR artist ILIKE ?", "%"+search+"%", "%"+search+"%")
 	}
 
-	// Sort
+	// Sort. release_date требует особой обработки NULL'ов; остальные колонки
+	// проходят через белый список (защита от SQL-инъекции через ORDER BY).
 	sortBy := c.DefaultQuery("sort_by", "created_at")
 	sortOrder := c.DefaultQuery("sort_order", "desc")
-
-	// Handle special sorting cases
 	if sortBy == "release_date" {
-		// For release_date, handle NULL values
-		if sortOrder == "desc" {
-			query = query.Order("release_date DESC NULLS LAST, created_at DESC")
-		} else {
+		if strings.EqualFold(sortOrder, "asc") {
 			query = query.Order("release_date ASC NULLS LAST, created_at ASC")
+		} else {
+			query = query.Order("release_date DESC NULLS LAST, created_at DESC")
 		}
-	} else if sortBy == "title" || sortBy == "artist" {
-		// For text fields, use case-insensitive sorting
-		query = query.Order(sortBy + " " + sortOrder)
 	} else {
-		// For numeric fields (average_rating, created_at, etc.)
-		query = query.Order(sortBy + " " + sortOrder)
+		query = query.Order(utils.SafeOrderClause(sortBy, sortOrder, albumSortColumns, "created_at"))
 	}
 
 	// Pagination
@@ -548,8 +551,8 @@ func (ac *AlbumController) UnlikeAlbum(c *gin.Context) {
 		return
 	}
 
-	// Delete like
-	if err := ac.DB.Where("user_id = ? AND album_id = ?", userID, albumID).Delete(&models.AlbumLike{}).Error; err != nil {
+	// Жёсткое удаление (см. уникальный индекс ux_album_like_pair).
+	if err := ac.DB.Unscoped().Where("user_id = ? AND album_id = ?", userID, albumID).Delete(&models.AlbumLike{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
 			Error:   "Internal Server Error",
 			Message: "Failed to unlike album",

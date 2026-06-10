@@ -9,8 +9,8 @@ import (
 // ReviewLike represents a like on a review
 type ReviewLike struct {
 	ID        uint           `json:"id" gorm:"primaryKey"`
-	UserID    uint           `json:"user_id" gorm:"not null"`
-	ReviewID  uint           `json:"review_id" gorm:"not null"`
+	UserID    uint           `json:"user_id" gorm:"not null;uniqueIndex:ux_review_like_pair"`
+	ReviewID  uint           `json:"review_id" gorm:"not null;uniqueIndex:ux_review_like_pair"`
 	CreatedAt time.Time      `json:"created_at"`
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 

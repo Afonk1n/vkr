@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -318,24 +319,79 @@ func calculateProfilePoints(stats UserStats) int {
 }
 
 // CalculateProfileRank returns the user's position by profile experience.
+// Раньше здесь был O(N·M): на каждый просмотр профиля грузились все пользователи
+// и для каждого заново считалась полная статистика (~8 запросов на юзера).
+// Теперь очки всех пользователей считаются несколькими агрегатами, а ранг —
+// простым сравнением в памяти.
 func (uc *UserController) CalculateProfileRank(userID uint, userStats UserStats) int {
-	userPoints := calculateProfilePoints(userStats)
-	var users []models.User
-	if err := uc.DB.Select("id").Find(&users).Error; err != nil {
-		return 0
+	points := uc.calculateAllUserPoints()
+	userPoints := points[userID]
+	if userPoints == 0 {
+		// Подстраховка: если по какой-то причине юзера нет в агрегате,
+		// берём очки из уже посчитанной статистики профиля.
+		userPoints = calculateProfilePoints(userStats)
 	}
 
 	rank := 1
-	for _, candidate := range users {
-		if candidate.ID == userID {
-			continue
-		}
-		if calculateProfilePoints(uc.CalculateUserStats(candidate.ID)) > userPoints {
+	for id, p := range points {
+		if id != userID && p > userPoints {
 			rank++
 		}
 	}
-
 	return rank
+}
+
+// calculateAllUserPoints возвращает карту "userID -> очки профиля" для всех
+// пользователей, рассчитанную фиксированным числом агрегирующих запросов.
+func (uc *UserController) calculateAllUserPoints() map[uint]int {
+	type aggRow struct {
+		UserID uint
+		N      int64
+	}
+
+	addAll := func(rows []aggRow, weight int, acc map[uint]int) {
+		for _, r := range rows {
+			acc[r.UserID] += int(r.N) * weight
+		}
+	}
+
+	points := make(map[uint]int)
+
+	// Одобренные рецензии на автора.
+	var reviews []aggRow
+	uc.DB.Model(&models.Review{}).
+		Select("user_id, COUNT(*) AS n").
+		Where("status = ?", models.ReviewStatusApproved).
+		Group("user_id").Scan(&reviews)
+	addAll(reviews, 320, points)
+
+	// Лайки, поставленные пользователем.
+	var given []aggRow
+	uc.DB.Model(&models.ReviewLike{}).
+		Select("user_id, COUNT(*) AS n").
+		Group("user_id").Scan(&given)
+	addAll(given, 12, points)
+
+	// Лайки, полученные на одобренные рецензии автора.
+	var received []aggRow
+	uc.DB.Table("review_likes").
+		Select("reviews.user_id AS user_id, COUNT(*) AS n").
+		Joins("JOIN reviews ON reviews.id = review_likes.review_id").
+		Where("reviews.status = ? AND reviews.deleted_at IS NULL", models.ReviewStatusApproved).
+		Group("reviews.user_id").Scan(&received)
+	addAll(received, 55, points)
+
+	// Лайки от верифицированных артистов.
+	var authorReceived []aggRow
+	uc.DB.Table("review_likes").
+		Select("reviews.user_id AS user_id, COUNT(*) AS n").
+		Joins("JOIN reviews ON reviews.id = review_likes.review_id").
+		Joins("JOIN users ON users.id = review_likes.user_id").
+		Where("reviews.status = ? AND reviews.deleted_at IS NULL AND users.is_verified_artist = ?", models.ReviewStatusApproved, true).
+		Group("reviews.user_id").Scan(&authorReceived)
+	addAll(authorReceived, 240, points)
+
+	return points
 }
 
 // CalculateUserStats returns profile statistics for a user
@@ -409,18 +465,28 @@ func (uc *UserController) CalculateGenreStats(userID uint) []GenreStat {
 		result = append(result, GenreStat{Name: name, Count: count})
 	}
 	// Sort descending by count
-	for i := 0; i < len(result)-1; i++ {
-		for j := i + 1; j < len(result); j++ {
-			if result[j].Count > result[i].Count {
-				result[i], result[j] = result[j], result[i]
-			}
-		}
-	}
+	sort.SliceStable(result, func(i, j int) bool {
+		return result[i].Count > result[j].Count
+	})
 	// Return top 8 genres max
 	if len(result) > 8 {
 		result = result[:8]
 	}
 	return result
+}
+
+// canSeeAllReviewStatuses сообщает, вправе ли текущий зритель видеть рецензии
+// в любых статусах (pending/rejected) у профиля targetID: только сам владелец
+// или администратор.
+func canSeeAllReviewStatuses(c *gin.Context, targetID string) bool {
+	user, ok := middleware.GetUserFromContext(c)
+	if !ok {
+		return false
+	}
+	if user.IsAdmin {
+		return true
+	}
+	return strconv.FormatUint(uint64(user.ID), 10) == targetID
 }
 
 // GetUserLikedReviews retrieves reviews liked by a user.
@@ -478,15 +544,17 @@ func (uc *UserController) GetUserReviews(c *gin.Context) {
 
 	query := uc.DB.Preload("User").Preload("Album").Preload("Album.Genre").Preload("Track").Preload("Track.Album").Preload("Likes").Preload("Likes.User").Where("user_id = ?", id)
 
-	// Filter by status
-	if status := c.Query("status"); status != "" {
-		query = query.Where("status = ?", status)
+	// Чужие непубличные рецензии (pending/rejected) показываем только владельцу
+	// или администратору. Иначе принудительно фильтруем по approved.
+	requestedStatus := c.Query("status")
+	if !canSeeAllReviewStatuses(c, id) {
+		query = query.Where("status = ?", models.ReviewStatusApproved)
+	} else if requestedStatus != "" {
+		query = query.Where("status = ?", requestedStatus)
 	}
 
-	// Sort
-	sortBy := c.DefaultQuery("sort_by", "created_at")
-	sortOrder := c.DefaultQuery("sort_order", "desc")
-	query = query.Order(sortBy + " " + sortOrder)
+	// Sort (whitelist — защита от SQL-инъекции)
+	query = query.Order(utils.SafeOrderClause(c.Query("sort_by"), c.Query("sort_order"), reviewSortColumns, "created_at"))
 
 	// Pagination
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -889,13 +957,9 @@ func (uc *UserController) CalculateUserBadges(userID uint) []Badge {
 	}
 
 	// Sort badges by priority (lower number = higher priority)
-	for i := 0; i < len(badges)-1; i++ {
-		for j := i + 1; j < len(badges); j++ {
-			if badges[i].Priority > badges[j].Priority {
-				badges[i], badges[j] = badges[j], badges[i]
-			}
-		}
-	}
+	sort.SliceStable(badges, func(i, j int) bool {
+		return badges[i].Priority < badges[j].Priority
+	})
 
 	return badges
 }

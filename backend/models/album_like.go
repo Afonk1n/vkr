@@ -9,8 +9,8 @@ import (
 // AlbumLike represents a like on an album
 type AlbumLike struct {
 	ID        uint           `json:"id" gorm:"primaryKey"`
-	UserID    uint           `json:"user_id" gorm:"not null"`
-	AlbumID   uint           `json:"album_id" gorm:"not null"`
+	UserID    uint           `json:"user_id" gorm:"not null;uniqueIndex:ux_album_like_pair"`
+	AlbumID   uint           `json:"album_id" gorm:"not null;uniqueIndex:ux_album_like_pair"`
 	CreatedAt time.Time      `json:"created_at"`
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 

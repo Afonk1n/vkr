@@ -7,6 +7,7 @@ import (
 	"music-review-site/backend/models"
 	"music-review-site/backend/utils"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -25,6 +26,29 @@ func convertAtmosphereToMultiplier(rating int) float64 {
 
 type ReviewController struct {
 	DB *gorm.DB
+}
+
+// reviewSortColumns — белый список колонок для ORDER BY по рецензиям.
+var reviewSortColumns = map[string]string{
+	"created_at":  "created_at",
+	"updated_at":  "updated_at",
+	"final_score": "final_score",
+}
+
+// recalcReviewTargets пересчитывает кэш среднего рейтинга у альбома и/или трека,
+// к которым относится рецензия. Любое изменение статуса (approve/reject), правка
+// оценок или удаление должны звать это, иначе кэш-колонка average_rating протухает.
+func (rc *ReviewController) recalcReviewTargets(albumID, trackID *uint) {
+	if albumID != nil {
+		if err := (&AlbumController{DB: rc.DB}).CalculateAverageRating(*albumID); err != nil {
+			log.Printf("Warning: failed to recalc album %d average: %v", *albumID, err)
+		}
+	}
+	if trackID != nil {
+		if err := (&TrackController{DB: rc.DB}).CalculateAverageRating(*trackID); err != nil {
+			log.Printf("Warning: failed to recalc track %d average: %v", *trackID, err)
+		}
+	}
 }
 
 // CreateReviewRequest represents review creation request
@@ -92,10 +116,8 @@ func (rc *ReviewController) GetReviews(c *gin.Context) {
 		query = query.Where("status = ?", models.ReviewStatusApproved)
 	}
 
-	// Sort
-	sortBy := c.DefaultQuery("sort_by", "created_at")
-	sortOrder := c.DefaultQuery("sort_order", "desc")
-	query = query.Order(sortBy + " " + sortOrder)
+	// Sort (только из белого списка — защита от SQL-инъекции через ORDER BY)
+	query = query.Order(utils.SafeOrderClause(c.Query("sort_by"), c.Query("sort_order"), reviewSortColumns, "created_at"))
 
 	// Pagination
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -154,8 +176,6 @@ func (rc *ReviewController) CreateReview(c *gin.Context) {
 		return
 	}
 
-	log.Printf("CreateReview: user %d is creating a review", userID)
-
 	var req CreateReviewRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		log.Printf("Error binding JSON in CreateReview: %v", err)
@@ -167,12 +187,8 @@ func (rc *ReviewController) CreateReview(c *gin.Context) {
 		return
 	}
 
-	log.Printf("CreateReview request: AlbumID=%v, TrackID=%v, Ratings=%d/%d/%d/%d, Atmosphere=%d",
-		req.AlbumID, req.TrackID, req.RatingRhymes, req.RatingStructure, req.RatingImplementation, req.RatingIndividuality, req.AtmosphereRating)
-
 	// Validate that either album_id or track_id is provided
 	if req.AlbumID == nil && req.TrackID == nil {
-		log.Printf("CreateReview: neither album_id nor track_id provided")
 		c.JSON(http.StatusBadRequest, utils.ErrorResponse{
 			Error:   "Bad Request",
 			Message: "Необходимо указать album_id или track_id",
@@ -181,7 +197,6 @@ func (rc *ReviewController) CreateReview(c *gin.Context) {
 		return
 	}
 	if req.AlbumID != nil && req.TrackID != nil {
-		log.Printf("CreateReview: both album_id and track_id provided")
 		c.JSON(http.StatusBadRequest, utils.ErrorResponse{
 			Error:   "Bad Request",
 			Message: "Можно указать только album_id или track_id, но не оба одновременно",
@@ -205,10 +220,6 @@ func (rc *ReviewController) CreateReview(c *gin.Context) {
 		RatingIndividuality:  req.RatingIndividuality,
 		AtmosphereMultiplier: atmosphereMultiplier,
 	}
-
-	log.Printf("Review before validation: UserID=%d, AlbumID=%v, TrackID=%v, Ratings=%d/%d/%d/%d, AtmosphereMultiplier=%f",
-		review.UserID, review.AlbumID, review.TrackID, review.RatingRhymes, review.RatingStructure,
-		review.RatingImplementation, review.RatingIndividuality, review.AtmosphereMultiplier)
 
 	if err := utils.ValidateReview(&review); err != nil {
 		log.Printf("Validation error in CreateReview: %v", err)
@@ -441,13 +452,8 @@ func (rc *ReviewController) UpdateReview(c *gin.Context) {
 		return
 	}
 
-	// Update album average rating if review is for an album
-	if review.AlbumID != nil {
-		albumController := &AlbumController{DB: rc.DB}
-		if err := albumController.CalculateAverageRating(*review.AlbumID); err != nil {
-			// Log error but don't fail the request
-		}
-	}
+	// Пересчитываем средний рейтинг и альбома, и трека.
+	rc.recalcReviewTargets(review.AlbumID, review.TrackID)
 
 	rc.DB.Preload("User").Preload("Album").Preload("Album.Genre").First(&review, review.ID)
 	c.JSON(http.StatusOK, review)
@@ -489,6 +495,7 @@ func (rc *ReviewController) DeleteReview(c *gin.Context) {
 	}
 
 	albumID := review.AlbumID
+	trackID := review.TrackID
 	if err := rc.DB.Delete(&review).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
 			Error:   "Internal Server Error",
@@ -498,13 +505,8 @@ func (rc *ReviewController) DeleteReview(c *gin.Context) {
 		return
 	}
 
-	// Update album average rating if review was for an album
-	if albumID != nil {
-		albumController := &AlbumController{DB: rc.DB}
-		if err := albumController.CalculateAverageRating(*albumID); err != nil {
-			// Log error but don't fail the request
-		}
-	}
+	// Пересчитываем средний рейтинг и альбома, и трека.
+	rc.recalcReviewTargets(albumID, trackID)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Review deleted successfully",
@@ -549,13 +551,8 @@ func (rc *ReviewController) ApproveReview(c *gin.Context) {
 		return
 	}
 
-	// Update album average rating if review is for an album
-	if review.AlbumID != nil {
-		albumController := &AlbumController{DB: rc.DB}
-		if err := albumController.CalculateAverageRating(*review.AlbumID); err != nil {
-			// Log error but don't fail the request
-		}
-	}
+	// Одобрение меняет состав approved-рецензий → пересчитываем альбом и трек.
+	rc.recalcReviewTargets(review.AlbumID, review.TrackID)
 
 	rc.DB.Preload("User").Preload("Album").Preload("Album.Genre").First(&review, review.ID)
 	c.JSON(http.StatusOK, review)
@@ -598,6 +595,9 @@ func (rc *ReviewController) RejectReview(c *gin.Context) {
 		})
 		return
 	}
+
+	// Отклонённая рецензия больше не участвует в среднем — пересчитываем.
+	rc.recalcReviewTargets(review.AlbumID, review.TrackID)
 
 	rc.DB.Preload("User").Preload("Album").Preload("Album.Genre").First(&review, review.ID)
 	c.JSON(http.StatusOK, review)
@@ -676,8 +676,9 @@ func (rc *ReviewController) UnlikeReview(c *gin.Context) {
 		return
 	}
 
-	// Delete like
-	if err := rc.DB.Where("user_id = ? AND review_id = ?", userID, reviewID).Delete(&models.ReviewLike{}).Error; err != nil {
+	// Жёсткое удаление: при soft-delete остаточная строка конфликтовала бы
+	// с уникальным индексом (user_id, review_id) при повторном лайке.
+	if err := rc.DB.Unscoped().Where("user_id = ? AND review_id = ?", userID, reviewID).Delete(&models.ReviewLike{}).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
 			Error:   "Internal Server Error",
 			Message: "Failed to unlike review",
@@ -727,14 +728,10 @@ func (rc *ReviewController) GetPopularReviews(c *gin.Context) {
 	}
 	annotateArtistMarks(rc.DB, reviews)
 
-	// Sort by likes count
-	for i := 0; i < len(reviews); i++ {
-		for j := i + 1; j < len(reviews); j++ {
-			if len(reviews[i].Likes) < len(reviews[j].Likes) {
-				reviews[i], reviews[j] = reviews[j], reviews[i]
-			}
-		}
-	}
+	// Sort by likes count (по убыванию).
+	sort.SliceStable(reviews, func(i, j int) bool {
+		return len(reviews[i].Likes) > len(reviews[j].Likes)
+	})
 
 	// Limit results
 	if len(reviews) > limit {

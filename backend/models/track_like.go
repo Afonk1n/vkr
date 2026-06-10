@@ -9,8 +9,8 @@ import (
 // TrackLike represents a like on a track
 type TrackLike struct {
 	ID        uint           `json:"id" gorm:"primaryKey"`
-	UserID    uint           `json:"user_id" gorm:"not null"`
-	TrackID   uint           `json:"track_id" gorm:"not null"`
+	UserID    uint           `json:"user_id" gorm:"not null;uniqueIndex:ux_track_like_pair"`
+	TrackID   uint           `json:"track_id" gorm:"not null;uniqueIndex:ux_track_like_pair"`
 	CreatedAt time.Time      `json:"created_at"`
 	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
 

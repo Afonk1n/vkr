@@ -57,7 +57,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 			albums.GET("/:id/tracks", trackController.GetTracks)
 			albums.GET("/:id", albumController.GetAlbum)
 			albums.POST("/cover", middleware.AuthMiddleware(db), middleware.AdminMiddleware(), albumController.UploadCover)
-			albums.POST("", middleware.AuthMiddleware(db), albumController.CreateAlbum)
+			albums.POST("", middleware.AuthMiddleware(db), middleware.AdminMiddleware(), albumController.CreateAlbum)
 			albums.PUT("/:id", middleware.AuthMiddleware(db), middleware.AdminMiddleware(), albumController.UpdateAlbum)
 			albums.DELETE("/:id", middleware.AuthMiddleware(db), middleware.AdminMiddleware(), albumController.DeleteAlbum)
 			// Like routes
@@ -107,7 +107,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 			users.POST("/:id/follow", middleware.AuthMiddleware(db), userController.FollowUser)
 			users.DELETE("/:id/follow", middleware.AuthMiddleware(db), userController.UnfollowUser)
 			users.GET("/:id", middleware.OptionalAuthMiddleware(db), userController.GetUser)
-			users.GET("/:id/reviews", userController.GetUserReviews)
+			users.GET("/:id/reviews", middleware.OptionalAuthMiddleware(db), userController.GetUserReviews)
 			users.GET("/:id/liked-reviews", userController.GetUserLikedReviews)
 			users.PUT("/:id", middleware.AuthMiddleware(db), userController.UpdateUser)
 			users.POST("/:id/avatar", middleware.AuthMiddleware(db), userController.UploadAvatar)
