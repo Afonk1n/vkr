@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { genresAPI, tracksAPI } from '../services/api';
 import TrackCard from '../components/TrackCard';
+import { CardGridSkeleton } from '../components/Skeleton';
 import './SearchPage.css';
 
 const SearchPage = () => {
@@ -233,7 +234,7 @@ const SearchPage = () => {
             )}
 
             {loading ? (
-              <div className="loading">Загрузка...</div>
+              <CardGridSkeleton count={8} />
             ) : (
               <>
                 {/* Results header with count and pagination */}

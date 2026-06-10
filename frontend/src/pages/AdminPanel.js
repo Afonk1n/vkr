@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { albumsAPI, genresAPI, reviewsAPI, tracksAPI } from '../services/api';
 import ReviewCard from '../components/ReviewCard';
 import { SegmentedSlidingThumb } from '../components/SegmentedSlidingThumb';
 import { useSlidingThumb } from '../hooks/useSlidingThumb';
 import { getImageUrl } from '../utils/imageUtils';
+import { ListSkeleton } from '../components/Skeleton';
 import './AdminPanel.css';
 
 const randomDuration = () => Math.floor(Math.random() * (240 - 60 + 1)) + 60;
@@ -60,8 +61,7 @@ const statusLabels = {
 };
 
 const AdminPanel = () => {
-  const { isAuthenticated, isAdmin, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const { isAuthenticated, isAdmin } = useAuth();
   const [activePage, setActivePage] = useState('moderation');
   const [pendingReviews, setPendingReviews] = useState([]);
   const [status, setStatus] = useState('pending');
@@ -125,17 +125,11 @@ const AdminPanel = () => {
     }
   }, []);
 
+  // Доступ к /admin уже проверен ProtectedRoute adminOnly — грузим данные.
   useEffect(() => {
-    if (authLoading) {
-      return;
-    }
-    if (!isAuthenticated || !isAdmin) {
-      navigate('/feed');
-      return;
-    }
     fetchReviews(status);
     fetchGenres();
-  }, [authLoading, isAuthenticated, isAdmin, navigate, status, fetchReviews, fetchGenres]);
+  }, [status, fetchReviews, fetchGenres]);
 
   useEffect(() => {
     return () => {
@@ -145,25 +139,29 @@ const AdminPanel = () => {
     };
   }, [releaseForm.coverPreview]);
 
-  const handleApprove = async (reviewId) => {
+  // Оптимистичная модерация: убираем строку из текущего списка и сразу правим
+  // счётчики, без тяжёлого рефетча на 4 запроса. При ошибке — ресинк с сервером.
+  const moderateReview = async (reviewId, action, toStatus) => {
+    const removed = pendingReviews.find((r) => r.id === reviewId);
+    setError('');
+    setPendingReviews((list) => list.filter((r) => r.id !== reviewId));
+    setStats((prev) => ({
+      ...prev,
+      [status]: Math.max(0, (prev[status] || 0) - 1),
+      [toStatus]: (prev[toStatus] || 0) + 1,
+    }));
     try {
-      await reviewsAPI.approve(reviewId);
-      fetchReviews(status);
+      await action(reviewId);
     } catch (err) {
-      setError('Ошибка при одобрении рецензии');
-      console.error('Error approving review:', err);
+      console.error(`Error during moderation (${toStatus}):`, err);
+      setError(toStatus === 'approved' ? 'Ошибка при одобрении рецензии' : 'Ошибка при отклонении рецензии');
+      // Откатываем UI к серверному состоянию.
+      if (removed) fetchReviews(status);
     }
   };
 
-  const handleReject = async (reviewId) => {
-    try {
-      await reviewsAPI.reject(reviewId);
-      fetchReviews(status);
-    } catch (err) {
-      setError('Ошибка при отклонении рецензии');
-      console.error('Error rejecting review:', err);
-    }
-  };
+  const handleApprove = (reviewId) => moderateReview(reviewId, reviewsAPI.approve, 'approved');
+  const handleReject = (reviewId) => moderateReview(reviewId, reviewsAPI.reject, 'rejected');
 
   const updateReleaseField = (field, value) => {
     setReleaseMessage(null);
@@ -280,14 +278,7 @@ const AdminPanel = () => {
     }
   };
 
-  if (authLoading) {
-    return (
-      <div className="container">
-        <div className="loading">Загрузка...</div>
-      </div>
-    );
-  }
-
+  // Подстраховка на случай прямого рендера без обёртки.
   if (!isAuthenticated || !isAdmin) {
     return null;
   }
@@ -358,7 +349,7 @@ const AdminPanel = () => {
             {error && <div className="error-message">{error}</div>}
 
             {loading ? (
-              <div className="loading">Загрузка...</div>
+              <ListSkeleton count={4} />
             ) : pendingReviews.length === 0 ? (
               <div className="empty-state admin-empty-state">
                 {status === 'pending' ? 'Нет рецензий на модерации' : 'В этом статусе пока пусто'}

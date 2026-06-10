@@ -40,11 +40,17 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
     if (error.response?.status === 401) {
-      // Unauthorized - clear auth and redirect to login
+      // Сессия протухла: чистим хранилище и мягко уведомляем приложение.
+      // Никакого window.location.href — это перезагрузило бы весь SPA и убило стейт.
+      // AuthProvider слушает это событие, сбрасывает пользователя, а защищённые
+      // роуты сами уведут на /login без жёсткого reload.
+      const hadSession = localStorage.getItem('sessionToken') || localStorage.getItem('userId');
       localStorage.removeItem('sessionToken');
       localStorage.removeItem('userId');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      if (hadSession) {
+        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+      }
     }
     return Promise.reject(error);
   }

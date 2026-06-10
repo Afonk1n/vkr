@@ -6,6 +6,9 @@ import ReviewForm from '../components/ReviewForm';
 import ReviewCard from '../components/ReviewCard';
 import LikeButton from '../components/LikeButton';
 import AverageScoreBadge from '../components/AverageScoreBadge';
+import ReleasePassport from '../components/ReleasePassport';
+import SimilarReleases from '../components/SimilarReleases';
+import { DetailSkeleton } from '../components/Skeleton';
 import { getImageUrl } from '../utils/imageUtils';
 import './TrackDetailPage.css';
 
@@ -31,25 +34,46 @@ const TrackDetailPage = () => {
     } catch (err) {
       setError('Ошибка загрузки трека');
       console.error('Error fetching track:', err);
-    } finally {
-      setLoading(false);
     }
   }, [id]);
 
   const fetchReviews = useCallback(async () => {
     try {
       const response = await reviewsAPI.getAll({ track_id: id });
-      setReviews(response.data.reviews);
+      setReviews(response.data.reviews ?? []);
     } catch (err) {
       console.error('Error fetching reviews:', err);
     }
   }, [id]);
 
+  // Первичная загрузка с защитой от гонок при смене id.
   useEffect(() => {
-    fetchTrack();
-    fetchReviews();
+    let ignore = false;
+    setLoading(true);
+    setError('');
     setCoverImageError(false);
-  }, [fetchTrack, fetchReviews]);
+
+    (async () => {
+      try {
+        const [trackRes, reviewsRes] = await Promise.allSettled([
+          tracksAPI.getById(id),
+          reviewsAPI.getAll({ track_id: id }),
+        ]);
+        if (ignore) return;
+        if (trackRes.status === 'fulfilled') {
+          setTrack(trackRes.value.data);
+        } else {
+          setError('Ошибка загрузки трека');
+          console.error('Error fetching track:', trackRes.reason);
+        }
+        setReviews(reviewsRes.status === 'fulfilled' ? (reviewsRes.value.data.reviews ?? []) : []);
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    })();
+
+    return () => { ignore = true; };
+  }, [id]);
 
   const handleReviewSubmit = async (reviewData) => {
     try {
@@ -88,30 +112,12 @@ const TrackDetailPage = () => {
     setShowReviewForm(false);
   };
 
-  const handleTrackLike = async () => {
-    try {
-      await tracksAPI.like(track.id);
-      fetchTrack();
-    } catch (err) {
-      throw err;
-    }
-  };
-
-  const handleTrackUnlike = async () => {
-    try {
-      await tracksAPI.unlike(track.id);
-      fetchTrack();
-    } catch (err) {
-      throw err;
-    }
-  };
+  // Счётчик ведёт сам LikeButton (оптимистично + откат), рефетч не нужен.
+  const handleTrackLike = () => tracksAPI.like(track.id);
+  const handleTrackUnlike = () => tracksAPI.unlike(track.id);
 
   if (loading) {
-    return (
-      <div className="container">
-        <div className="loading">Загрузка...</div>
-      </div>
-    );
+    return <DetailSkeleton />;
   }
 
   if (error || !track) {
@@ -182,6 +188,7 @@ const TrackDetailPage = () => {
             )}
             <div className="track-actions-large">
               <LikeButton item={track} itemType="track" onLike={handleTrackLike} onUnlike={handleTrackUnlike} />
+              <ReleasePassport source={track} reviews={reviews} title={track.title} type="track" />
             </div>
           </div>
         </div>
@@ -241,6 +248,12 @@ const TrackDetailPage = () => {
             </div>
           )}
         </div>
+
+        <SimilarReleases
+          type="track"
+          genreIds={(track.genres || []).map((g) => g.id)}
+          excludeId={track.id}
+        />
       </div>
     </div>
   );

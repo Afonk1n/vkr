@@ -6,6 +6,9 @@ import ReviewForm from '../components/ReviewForm';
 import ReviewCard from '../components/ReviewCard';
 import LikeButton from '../components/LikeButton';
 import AverageScoreBadge from '../components/AverageScoreBadge';
+import ReleasePassport from '../components/ReleasePassport';
+import SimilarReleases from '../components/SimilarReleases';
+import { DetailSkeleton } from '../components/Skeleton';
 import { getImageUrl } from '../utils/imageUtils';
 import './AlbumDetailPage.css';
 
@@ -38,7 +41,7 @@ const AlbumDetailPage = () => {
   const fetchTracks = useCallback(async () => {
     try {
       const response = await tracksAPI.getByAlbum(id);
-      setTracks(response.data);
+      setTracks(response.data || []);
     } catch (err) {
       console.error('Error fetching tracks:', err);
     }
@@ -47,20 +50,44 @@ const AlbumDetailPage = () => {
   const fetchReviews = useCallback(async () => {
     try {
       const response = await reviewsAPI.getAll({ album_id: id });
-      setReviews(response.data.reviews);
+      setReviews(response.data.reviews ?? []);
     } catch (err) {
       console.error('Error fetching reviews:', err);
-    } finally {
-      setLoading(false);
     }
   }, [id]);
 
+  // Первичная загрузка с защитой от гонок: при быстрой смене альбома
+  // ответ от прошлого id не перезапишет актуальные данные. loading завязан
+  // на альбом (а не на рецензии) — иначе мелькает "Альбом не найден".
   useEffect(() => {
-    fetchAlbum();
-    fetchReviews();
-    fetchTracks();
+    let ignore = false;
+    setLoading(true);
+    setError('');
     setCoverImageError(false);
-  }, [fetchAlbum, fetchReviews, fetchTracks]);
+
+    (async () => {
+      try {
+        const [albumRes, tracksRes, reviewsRes] = await Promise.allSettled([
+          albumsAPI.getById(id),
+          tracksAPI.getByAlbum(id),
+          reviewsAPI.getAll({ album_id: id }),
+        ]);
+        if (ignore) return;
+        if (albumRes.status === 'fulfilled') {
+          setAlbum(albumRes.value.data);
+        } else {
+          setError('Ошибка загрузки альбома');
+          console.error('Error fetching album:', albumRes.reason);
+        }
+        setTracks(tracksRes.status === 'fulfilled' ? (tracksRes.value.data || []) : []);
+        setReviews(reviewsRes.status === 'fulfilled' ? (reviewsRes.value.data.reviews ?? []) : []);
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    })();
+
+    return () => { ignore = true; };
+  }, [id]);
 
   const handleReviewSubmit = async (reviewData) => {
     try {
@@ -101,30 +128,13 @@ const AlbumDetailPage = () => {
     setShowReviewForm(false);
   };
 
-  const handleAlbumLike = async () => {
-    try {
-      await albumsAPI.like(album.id);
-      fetchAlbum();
-    } catch (err) {
-      throw err;
-    }
-  };
-
-  const handleAlbumUnlike = async () => {
-    try {
-      await albumsAPI.unlike(album.id);
-      fetchAlbum();
-    } catch (err) {
-      throw err;
-    }
-  };
+  // Счётчик обновляет сам LikeButton (оптимистично + откат при ошибке),
+  // поэтому повторный fetchAlbum не нужен — он лишь вызывал мигание.
+  const handleAlbumLike = () => albumsAPI.like(album.id);
+  const handleAlbumUnlike = () => albumsAPI.unlike(album.id);
 
   if (loading) {
-    return (
-      <div className="container">
-        <div className="loading">Загрузка...</div>
-      </div>
-    );
+    return <DetailSkeleton />;
   }
 
   if (error || !album) {
@@ -166,6 +176,7 @@ const AlbumDetailPage = () => {
                 onLike={handleAlbumLike}
                 onUnlike={handleAlbumUnlike}
               />
+              <ReleasePassport source={album} reviews={reviews} title={album.title} type="album" />
             </div>
             {album.description && <p className="album-description">{album.description}</p>}
           </div>
@@ -254,6 +265,12 @@ const AlbumDetailPage = () => {
             </div>
           )}
         </div>
+
+        <SimilarReleases
+          type="album"
+          genreId={album.genre?.id || album.genre_id}
+          excludeId={album.id}
+        />
       </div>
     </div>
   );

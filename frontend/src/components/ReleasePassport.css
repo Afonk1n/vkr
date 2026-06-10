@@ -1,0 +1,328 @@
+/* ── Кнопка-триггер ───────────────────────────────────────────── */
+.passport-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  box-shadow: var(--shadow-md);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast);
+}
+.passport-trigger:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+  box-shadow: var(--shadow-lg);
+}
+.passport-trigger:active {
+  transform: translateY(0);
+}
+.passport-trigger-icon {
+  font-size: 1.1rem;
+}
+
+/* ── Оверлей + карточка ───────────────────────────────────────── */
+.passport-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: var(--overlay-dark);
+  backdrop-filter: blur(6px);
+  animation: passport-overlay-in 0.2s ease;
+}
+@keyframes passport-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.passport-card {
+  position: relative;
+  width: min(680px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.75rem;
+  border-radius: var(--radius-xl);
+  background: var(--card-background);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-xl);
+  animation: passport-card-in 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+@keyframes passport-card-in {
+  from { opacity: 0; transform: translateY(18px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.passport-close {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-secondary);
+  background: var(--surface-control);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.passport-close:hover {
+  background: var(--hover-color);
+  color: var(--text-color);
+}
+
+/* ── Шапка ────────────────────────────────────────────────────── */
+.passport-kicker {
+  display: inline-block;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+.passport-title {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  color: var(--text-color);
+  padding-right: 2rem;
+}
+
+/* ── Герой: крупный балл ──────────────────────────────────────── */
+.passport-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  margin: 1.25rem 0 1.5rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: var(--radius-lg);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-color);
+}
+.passport-score {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2rem;
+  color: var(--score-color, var(--primary-color));
+}
+.passport-score-value {
+  font-size: 3.2rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.passport-score-max {
+  font-size: 1.1rem;
+  font-weight: 600;
+  opacity: 0.7;
+}
+.passport-hero-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.passport-hero-line {
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}
+.passport-spread {
+  align-self: flex-start;
+  padding: 0.22rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.passport-spread--high {
+  color: var(--success-color);
+  background: var(--status-approved-bg);
+}
+.passport-spread--mid {
+  color: var(--warning-color);
+  background: var(--status-pending-bg);
+}
+.passport-spread--low {
+  color: var(--error-color);
+  background: var(--error-bg);
+}
+
+/* ── Тело: две секции ─────────────────────────────────────────── */
+.passport-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+.passport-section-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.02rem;
+  color: var(--text-color);
+}
+
+/* ── Радар ────────────────────────────────────────────────────── */
+.passport-radar {
+  width: 100%;
+  max-width: 240px;
+  margin: 0 auto;
+  display: block;
+}
+.passport-radar-grid {
+  fill: none;
+  stroke: var(--border-color);
+  stroke-width: 1;
+}
+.passport-radar-axis {
+  stroke: var(--border-color);
+  stroke-width: 1;
+}
+.passport-radar-shape {
+  fill: color-mix(in srgb, var(--primary-color) 32%, transparent);
+  stroke: var(--primary-color);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  transform-origin: center;
+  animation: passport-radar-pop 0.5s ease 0.1s both;
+}
+@keyframes passport-radar-pop {
+  from { opacity: 0; transform: scale(0.4); }
+  to { opacity: 1; transform: scale(1); }
+}
+.passport-radar-label {
+  fill: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.passport-legend {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.passport-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.passport-legend-tag {
+  flex-shrink: 0;
+  width: 1.9rem;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.12rem 0;
+  border-radius: var(--radius-sm);
+  color: var(--primary-color);
+  background: var(--info-bg);
+}
+.passport-legend-name {
+  flex: 1;
+}
+.passport-legend strong {
+  color: var(--text-color);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Гистограмма ──────────────────────────────────────────────── */
+.passport-histogram {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  height: 150px;
+  padding-top: 0.5rem;
+}
+.passport-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  height: 100%;
+}
+.passport-bar-track {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.passport-bar-fill {
+  width: 78%;
+  min-height: 3px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  position: relative;
+  animation: passport-bar-grow 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+  transform-origin: bottom;
+}
+@keyframes passport-bar-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.passport-bar-count {
+  position: absolute;
+  top: -1.15rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-color);
+}
+.passport-bar-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ── Вердикт ──────────────────────────────────────────────────── */
+.passport-verdict {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-section);
+  border-left: 3px solid var(--primary-color);
+}
+.passport-verdict p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+.passport-verdict-strong { color: var(--success-color); }
+.passport-verdict-weak { color: var(--warning-color); }
+
+.passport-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+/* ── Адаптив ──────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .passport-body {
+    grid-template-columns: 1fr;
+  }
+  .passport-score-value {
+    font-size: 2.6rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .passport-overlay,
+  .passport-card,
+  .passport-radar-shape,
+  .passport-bar-fill {
+    animation: none;
+  }
+}

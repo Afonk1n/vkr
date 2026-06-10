@@ -164,7 +164,7 @@ const FeedPage = () => {
             <div className="feed-layout">
               <div className="reviews-feed-list">
                 {feedReviews.map((review) => (
-                  <ReviewCardSmall key={review.id} review={review} onUpdate={loadFeed} />
+                  <ReviewCardSmall key={review.id} review={review} />
                 ))}
               </div>
               <aside className="feed-sidebar" aria-label="Сводка ленты">

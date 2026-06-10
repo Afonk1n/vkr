@@ -30,28 +30,36 @@ const SearchBar = () => {
   }, []);
 
   useEffect(() => {
-    const search = async () => {
-      if (query.trim().length < 2) {
-        setResults({ artists: [], albums: [], tracks: [] });
-        setShowResults(false);
-        return;
-      }
+    if (query.trim().length < 2) {
+      setResults({ artists: [], albums: [], tracks: [] });
+      setShowResults(false);
+      return undefined;
+    }
 
+    // Защита от гонки: ответ от предыдущего (более медленного) запроса
+    // не должен перезаписать результаты актуального.
+    let ignore = false;
+    const search = async () => {
       setLoading(true);
       try {
         const response = await searchAPI.search(query);
+        if (ignore) return;
         setResults(response.data);
         setShowResults(true);
       } catch (error) {
+        if (ignore) return;
         console.error('Search error:', error);
         setResults({ artists: [], albums: [], tracks: [] });
       } finally {
-        setLoading(false);
+        if (!ignore) setLoading(false);
       }
     };
 
     const timeoutId = setTimeout(search, 300);
-    return () => clearTimeout(timeoutId);
+    return () => {
+      ignore = true;
+      clearTimeout(timeoutId);
+    };
   }, [query]);
 
   const handleAlbumClick = (albumId) => {

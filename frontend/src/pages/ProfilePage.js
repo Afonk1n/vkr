@@ -8,7 +8,7 @@ import ProfileDashboard from '../components/ProfileDashboard';
 import './ProfilePage.css';
 
 const ProfilePage = () => {
-  const { user, isAuthenticated, updateUser, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, updateUser } = useAuth();
   const navigate = useNavigate();
   const [reviews, setReviews] = useState([]);
   const [likedReviews, setLikedReviews] = useState([]);
@@ -57,16 +57,12 @@ const ProfilePage = () => {
     }
   }, [user]);
 
+  // Доступ к роуту уже гарантирован ProtectedRoute — здесь только загрузка данных.
   useEffect(() => {
-    if (authLoading) return;
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
     fetchUserReviews();
     fetchCurrentUser();
     fetchLikedReviews();
-  }, [authLoading, isAuthenticated, navigate, fetchUserReviews, fetchCurrentUser, fetchLikedReviews]);
+  }, [fetchUserReviews, fetchCurrentUser, fetchLikedReviews]);
 
   const handleSaveProfile = async (profileData) => {
     try {

@@ -6,11 +6,12 @@ import { getImageUrl } from '../utils/imageUtils';
 import ReviewScoresStrip from './ReviewScoresStrip';
 import './ReviewCardSmall.css';
 
-const ReviewCardSmall = ({ review, onUpdate }) => {
+const ReviewCardSmall = ({ review }) => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [likeCount, setLikeCount] = useState(review.likes?.length || 0);
   const [isLiked, setIsLiked] = useState(false);
+  const [likeBusy, setLikeBusy] = useState(false);
   const hasArtistMark = review.has_artist_mark || (review.artist_mark_usernames || []).length > 0 ||
     (review.likes || []).some((like) => like.user?.is_verified_artist);
 
@@ -29,39 +30,35 @@ const ReviewCardSmall = ({ review, onUpdate }) => {
     }
   };
 
-  const handleLike = async (e) => {
+  // Один оптимистичный обработчик: UI меняется сразу, при ошибке — откат.
+  // Полный рефетч ленты (onUpdate) больше не дёргаем на каждый лайк.
+  const toggleLike = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (process.env.REACT_APP_USE_MOCK === 'true' || !process.env.REACT_APP_API_URL) {
-      setLikeCount((prev) => prev + 1);
-      setIsLiked(true);
-      return;
-    }
-    try {
-      await reviewsAPI.like(review.id);
-      setLikeCount((prev) => prev + 1);
-      setIsLiked(true);
-      if (onUpdate) onUpdate();
-    } catch (err) {
-      console.error('Error liking review:', err);
-    }
-  };
+    if (likeBusy) return;
 
-  const handleUnlike = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (process.env.REACT_APP_USE_MOCK === 'true' || !process.env.REACT_APP_API_URL) {
-      setLikeCount((prev) => Math.max(0, prev - 1));
-      setIsLiked(false);
-      return;
-    }
+    const isMock = process.env.REACT_APP_USE_MOCK === 'true' || !process.env.REACT_APP_API_URL;
+    const prevLiked = isLiked;
+    const prevCount = likeCount;
+    const nextLiked = !prevLiked;
+
+    setIsLiked(nextLiked);
+    setLikeCount((c) => (nextLiked ? c + 1 : Math.max(0, c - 1)));
+    if (isMock) return;
+
+    setLikeBusy(true);
     try {
-      await reviewsAPI.unlike(review.id);
-      setLikeCount((prev) => Math.max(0, prev - 1));
-      setIsLiked(false);
-      if (onUpdate) onUpdate();
+      if (nextLiked) {
+        await reviewsAPI.like(review.id);
+      } else {
+        await reviewsAPI.unlike(review.id);
+      }
     } catch (err) {
-      console.error('Error unliking review:', err);
+      console.error('Error toggling review like:', err);
+      setIsLiked(prevLiked);
+      setLikeCount(prevCount);
+    } finally {
+      setLikeBusy(false);
     }
   };
 
@@ -106,8 +103,16 @@ const ReviewCardSmall = ({ review, onUpdate }) => {
               )}
               <button
                 className={`review-card-small-like-button ${isLiked ? 'liked' : ''}`}
-                onClick={isLiked ? handleUnlike : handleLike}
-                title={isLiked ? 'Убрать лайк' : 'Поставить лайк'}
+                onClick={toggleLike}
+                disabled={!isAuthenticated || likeBusy}
+                aria-pressed={isLiked}
+                title={
+                  !isAuthenticated
+                    ? 'Войдите, чтобы ставить лайки'
+                    : isLiked
+                      ? 'Убрать лайк'
+                      : 'Поставить лайк'
+                }
               >
                 {isLiked ? '❤' : '♡'}
               </button>

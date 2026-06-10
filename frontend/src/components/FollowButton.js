@@ -12,19 +12,24 @@ const FollowButton = ({ userId, initialFollowing, onChange, compact = false }) =
 
   const handleClick = async () => {
     if (busy) return;
+    const prev = following;
+    const next = !prev;
+
+    // Оптимистично: статус и счётчик подписчиков (через onChange) меняются сразу.
+    setFollowing(next);
+    onChange?.(next);
     setBusy(true);
     try {
-      if (following) {
-        await usersAPI.unfollow(userId);
-        setFollowing(false);
-        onChange?.(false);
-      } else {
+      if (next) {
         await usersAPI.follow(userId);
-        setFollowing(true);
-        onChange?.(true);
+      } else {
+        await usersAPI.unfollow(userId);
       }
     } catch (e) {
       console.error(e);
+      // Откат при ошибке.
+      setFollowing(prev);
+      onChange?.(prev);
     } finally {
       setBusy(false);
     }

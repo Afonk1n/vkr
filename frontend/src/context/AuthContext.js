@@ -16,13 +16,15 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in
+    // 1. Мгновенно поднимаем пользователя из localStorage — без вспышки "гостя".
     const userId = localStorage.getItem('userId');
     const savedUser = localStorage.getItem('user');
 
+    let cachedUser = null;
     if (userId && savedUser) {
       try {
-        setUser(JSON.parse(savedUser));
+        cachedUser = JSON.parse(savedUser);
+        setUser(cachedUser);
       } catch (error) {
         console.error('Error parsing user data:', error);
         localStorage.removeItem('userId');
@@ -30,6 +32,30 @@ export const AuthProvider = ({ children }) => {
       }
     }
     setLoading(false);
+
+    // 2. В фоне валидируем сессию: если токен протух — интерсептор словит 401
+    //    и отправит 'auth:unauthorized'. Если жив — освежаем данные пользователя.
+    if (cachedUser) {
+      authAPI
+        .getMe()
+        .then((response) => {
+          const fresh = response.data;
+          if (fresh?.id) {
+            setUser(fresh);
+            localStorage.setItem('user', JSON.stringify(fresh));
+          }
+        })
+        .catch(() => {
+          /* 401 обработает интерсептор + слушатель ниже; прочее игнорируем */
+        });
+    }
+  }, []);
+
+  // Мягкий выход по сигналу из axios-интерсептора (протухшая сессия).
+  useEffect(() => {
+    const handleUnauthorized = () => setUser(null);
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
   }, []);
 
   const login = async (email, password) => {

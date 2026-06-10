@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import ReviewCard from '../components/ReviewCard';
 import FollowButton from '../components/FollowButton';
 import ProfileDashboard from '../components/ProfileDashboard';
+import Skeleton, { ListSkeleton } from '../components/Skeleton';
 import './UserProfilePage.css';
 
 const UserProfilePage = () => {
@@ -67,8 +68,15 @@ const UserProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="container">
-        <div className="loading">Загрузка...</div>
+      <div className="container" aria-busy="true">
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <Skeleton width={88} height={88} radius="50%" />
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            <Skeleton width="40%" height={26} />
+            <Skeleton width="60%" height={16} />
+          </div>
+        </div>
+        <ListSkeleton count={3} />
       </div>
     );
   }
