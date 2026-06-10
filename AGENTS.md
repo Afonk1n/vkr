@@ -17,13 +17,13 @@ vkr/
     migrations/             ручные SQL-миграции 0001..0004
     models/                 GORM-модели
     routes/routes.go        вся таблица маршрутов в одном файле
-    utils/                  токены сессий, хеш паролей
+    utils/                  токены сессий, хеш паролей, безопасный ORDER BY (sort.go)
     main.go                 точка входа, CORS, graceful shutdown
     Dockerfile              multi-stage (dev/prod)
   frontend/                 React 18 (CRA, react-scripts 5)
-    src/pages/              страницы (FeedPage, AlbumDetailPage, ProfilePage, AdminPanel, ...)
-    src/components/         UI-блоки (Header, ReviewCard, ProfileDashboard, ...)
-    src/context/AuthContext подписанный сессионный токен в localStorage
+    src/pages/              страницы (FeedPage, AlbumDetailPage, ProfilePage, AdminPanel, NotFoundPage, ...)
+    src/components/         UI-блоки (Header, ReviewCard, ReleasePassport, SimilarReleases, Skeleton, ProtectedRoute, ...)
+    src/context/AuthContext токен в localStorage + тихая валидация сессии через /auth/me
     src/services/           axios-клиент
     public/preview/         обложки альбомов и треков
     public/avatars/         аватары пользователей
@@ -36,8 +36,10 @@ vkr/
   .github/workflows/ci.yml  go vet/test/build, frontend build, compose smoke, push в GHCR
   README.md                 короткая инструкция запуска
   Documentation.md          техническая документация (модели, API, UX-решения)
-  Пояснительная записка/    материалы ВКР: .docx, главы, скрипты сборки
+  docs/DEPLOY-VPS.md        runbook деплоя на VPS
 ```
+
+> Материалы пояснительной записки и презентаций защиты **намеренно вынесены из репозитория** (хранятся отдельно у автора). В Git остаётся только само приложение и техдокументация.
 
 ## Главные команды
 
@@ -58,8 +60,10 @@ vkr/
 - **Роли**: `is_admin` на пользователе. Админка модерации — `/api/reviews/:id/approve|reject`, `AdminMiddleware`.
 - **БД**: PostgreSQL, GORM + ручные миграции в `backend/migrations`. `MIGRATIONS_MODE=auto|manual`, `DB_CREATE_ENABLED` создаёт БД, `SEED_ENABLED` запускает идемпотентный сидер.
 - **Сидер**: в [`backend/database/database.go`](backend/database/database.go), создаёт `admin@example.com`/`admin123` и `test@example.com`/`test123`, демо-альбомы, треки, рецензии (approved и pending), лайки. Не дублирует уже существующие сущности.
-- **Маршруты**: единая регистрация в [`backend/routes/routes.go`](backend/routes/routes.go) — туда же добавлять новые. Конкретные маршруты (`/:id/tracks`, `/popular`) объявлены ДО `/:id`, чтобы Gin не съел их как параметр.
-- **Frontend**: страницы в `src/pages`, API-клиент один (`src/services/api.js`). Темизация через CSS-переменные, светлая + тёмная.
+- **Маршруты**: единая регистрация в [`backend/routes/routes.go`](backend/routes/routes.go) — туда же добавлять новые. Конкретные маршруты (`/:id/tracks`, `/popular`) объявлены ДО `/:id`, чтобы Gin не съел их как параметр. Создание/правка/удаление каталога (альбомы, треки, жанры) — под `AdminMiddleware`.
+- **Сортировка списков**: `sort_by`/`sort_order` НЕ склеивать в `Order()` напрямую — это SQL-инъекция. Использовать `utils.SafeOrderClause` с белым списком колонок (см. `reviewSortColumns`, `albumSortColumns`).
+- **Лайки**: составной уникальный индекс `ux_*_like_pair` (user_id + entity_id), unlike — жёсткое удаление (`Unscoped`), иначе индекс блокирует повторный лайк.
+- **Frontend**: страницы в `src/pages`, API-клиент один (`src/services/api.js`). Темизация через CSS-переменные, светлая + тёмная. Приватные роуты — через `<ProtectedRoute>` в `App.js`. 401 не делает hard-reload: интерсептор шлёт событие `auth:unauthorized`, `AuthContext` мягко разлогинивает.
 
 ## Конвенции и фишки
 
@@ -67,7 +71,7 @@ vkr/
 - Оценка: 4 параметра (1–10) + атмосфера (множитель), итог приводится примерно к 1–90. Формула спрятана от пользователя; см. `Documentation.md` §8.
 - Уровень профиля считается по активности и реакции сообщества, НЕ по среднему баллу. Это сознательно: чтобы поощрять активность, а не «накрутку оценок».
 - Любимое (артисты/альбомы/треки) — максимум 3 в каждой категории; если у юзера ничего не выбрано, профиль автоматически собирает блоки из его рецензий.
-- Лайки — оптимистичные на фронте, без ожидания ответа API.
+- Лайки/подписки — оптимистичные на фронте: UI меняется сразу, при ошибке откат.
 - Демо-обложки лежат в `frontend/public/preview`, загружаемые — в `frontend/public/preview/uploads` (volume `cover_uploads`).
 - Аватары — `frontend/public/avatars`, в dev смонтированы как bind-mount, чтобы не терялись при пересборке.
 
@@ -114,7 +118,7 @@ vkr/
 | глобальные стили / темы | `frontend/src/index.css`, переменные в каждом *.css |
 | поменять CI | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
 | гайд по деплою | [`docs/DEPLOY-VPS.md`](docs/DEPLOY-VPS.md) |
-| ВКР-документация | `Пояснительная записка/` |
+| паспорт релиза / похожие / топы | `frontend/src/components/ReleasePassport.js`, `SimilarReleases.js`, `frontend/src/pages/TopsPage.js` |
 
 ## Известные ограничения
 
