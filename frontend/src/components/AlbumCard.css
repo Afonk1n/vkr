@@ -10,6 +10,7 @@
   text-decoration: none;
   color: var(--text-color);
   position: relative;
+  cursor: pointer;
 }
 
 .album-card:hover {
@@ -17,6 +18,11 @@
   box-shadow: var(--shadow-xl);
   text-decoration: none;
   border-color: var(--border-color);
+}
+
+.album-card:focus-visible {
+  border-color: color-mix(in srgb, var(--accent-color, var(--primary-color)) 58%, var(--border-color));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color, var(--primary-color)) 18%, transparent), var(--shadow);
 }
 
 .album-cover {

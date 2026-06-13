@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { albumsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { getImageUrl } from '../utils/imageUtils';
 import './AlbumCard.css';
 
 const AlbumCard = ({ album, onUpdate }) => {
+  const navigate = useNavigate();
   const [imageError, setImageError] = useState(false);
   const handleLike = async () => {
     try {
@@ -66,9 +67,23 @@ const AlbumCard = ({ album, onUpdate }) => {
   };
 
   const imageUrl = getImageUrl(album.cover_image_path);
+  const openAlbum = () => navigate(`/albums/${album.id}`);
+
+  const handleCardKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openAlbum();
+    }
+  };
 
   return (
-    <Link to={`/albums/${album.id}`} className="album-card">
+    <div
+      className="album-card"
+      onClick={openAlbum}
+      onKeyDown={handleCardKeyDown}
+      role="link"
+      tabIndex={0}
+    >
       <div className="album-cover">
         {imageUrl && !imageError ? (
           <img
@@ -122,7 +137,7 @@ const AlbumCard = ({ album, onUpdate }) => {
           <span className="album-genre">{album.genre.name}</span>
         )}
       </div>
-    </Link>
+    </div>
   );
 };
 

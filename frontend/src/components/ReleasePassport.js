@@ -2,16 +2,32 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { REVIEW_CRITERIA } from '../utils/ratingMeta';
 import './ReleasePassport.css';
 
-// Цвет по шкале 0–90: красный → жёлтый → зелёный.
+// Цвет по шкале 0–90 через токены проекта, чтобы графики не выбивались из темы.
 const scoreColor = (score) => {
-  const t = Math.max(0, Math.min(1, (Number(score) || 0) / 90));
-  const hue = Math.round(t * 125); // 0 = красный, 125 = зелёный
-  return `hsl(${hue}, 68%, 48%)`;
+  const value = Number(score) || 0;
+  if (value >= 81) return 'var(--success-color)';
+  if (value >= 66) return 'var(--accent-color, var(--primary-color))';
+  if (value >= 51) return 'var(--warning-color)';
+  return 'var(--error-color)';
 };
 
 const avg = (items, getter) => {
   if (!items?.length) return 0;
   return items.reduce((sum, item) => sum + (Number(getter(item)) || 0), 0) / items.length;
+};
+
+const pluralizeReview = (count) => {
+  const n = Math.abs(Number(count) || 0);
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${count} рецензии`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${count} рецензиям`;
+  return `${count} рецензиям`;
+};
+
+const joinTitles = (items) => {
+  if (items.length <= 2) return items.join(' и ');
+  return `${items.slice(0, -1).join(', ')} и ${items[items.length - 1]}`;
 };
 
 // Те же правила, что и в AverageScoreBadge: сперва агрегаты с бэка, иначе из рецензий.
@@ -154,20 +170,24 @@ const ReleasePassport = ({ source, reviews = [], title, type = 'album' }) => {
     return { buckets, maxCount, total: scores.length, spread };
   }, [approved]);
 
-  // Авто-вердикт: сильная и слабая стороны по критериям.
+  // Авто-вердикт: сильные и слабые стороны по округлённым критериям, чтобы честно обработать равные оценки.
   const verdict = useMemo(() => {
     if (!values) return null;
     const list = RADAR_ORDER.map((key) => ({
       key,
       title: CRITERIA_BY_KEY[key].title,
-      value: Number(values[key]) || 0,
+      value: Math.round(Number(values[key]) || 0),
     }));
-    const max = list.reduce((a, b) => (b.value > a.value ? b : a));
-    const min = list.reduce((a, b) => (b.value < a.value ? b : a));
-    if (Math.abs(max.value - min.value) < 0.4) {
+    const maxValue = Math.max(...list.map((item) => item.value));
+    const minValue = Math.min(...list.map((item) => item.value));
+    if (maxValue === minValue) {
       return { even: true };
     }
-    return { even: false, strong: max.title, weak: min.title };
+    return {
+      even: false,
+      strong: list.filter((item) => item.value === maxValue).map((item) => item.title),
+      weak: list.filter((item) => item.value === minValue).map((item) => item.title),
+    };
   }, [values]);
 
   const animatedScore = useCountUp(values?.final || 0, open);
@@ -188,9 +208,21 @@ const ReleasePassport = ({ source, reviews = [], title, type = 'album' }) => {
 
   return (
     <>
-      <button type="button" className="passport-trigger" onClick={() => setOpen(true)}>
-        <span className="passport-trigger-icon" aria-hidden>🎴</span>
-        Паспорт {noun}
+      <button
+        type="button"
+        className="passport-trigger"
+        onClick={() => setOpen(true)}
+        aria-label={`Открыть паспорт ${noun}`}
+        title={`Паспорт ${noun}`}
+      >
+        <svg className="passport-trigger-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M4 19V5" />
+          <path d="M4 19h16" />
+          <path d="M8 16v-4" />
+          <path d="M12 16V8" />
+          <path d="M16 16v-7" />
+          <path d="M20 16v-2" />
+        </svg>
       </button>
 
       {open && (
@@ -209,7 +241,7 @@ const ReleasePassport = ({ source, reviews = [], title, type = 'album' }) => {
                 <span className="passport-score-max">/ 90</span>
               </div>
               <div className="passport-hero-meta">
-                <div className="passport-hero-line">Средний балл по {values.count || distribution.total} рец.</div>
+                <div className="passport-hero-line">Средний балл по {pluralizeReview(values.count || distribution.total)}</div>
                 {distribution.spread && (
                   <span className={`passport-spread passport-spread--${distribution.spread.level}`}>
                     {distribution.spread.label}
@@ -222,15 +254,6 @@ const ReleasePassport = ({ source, reviews = [], title, type = 'album' }) => {
               <section className="passport-section">
                 <h4 className="passport-section-title">ДНК звучания</h4>
                 <Radar values={values} />
-                <ul className="passport-legend">
-                  {RADAR_ORDER.map((key) => (
-                    <li key={key}>
-                      <span className="passport-legend-tag">{CRITERIA_BY_KEY[key].short}</span>
-                      <span className="passport-legend-name">{CRITERIA_BY_KEY[key].title}</span>
-                      <strong>{Math.round(Number(values[key]) || 0)}</strong>
-                    </li>
-                  ))}
-                </ul>
               </section>
 
               <section className="passport-section">
@@ -258,20 +281,42 @@ const ReleasePassport = ({ source, reviews = [], title, type = 'album' }) => {
                 ) : (
                   <p className="passport-empty">Пока мало оценок для распределения.</p>
                 )}
+              </section>
 
-                {verdict && (
+              <section className="passport-section passport-section--scores">
+                <h4 className="passport-section-title">Оценки</h4>
+                <ul className="passport-legend">
+                  {RADAR_ORDER.map((key) => (
+                    <li key={key}>
+                      <span className="passport-legend-tag">{CRITERIA_BY_KEY[key].short}</span>
+                      <span className="passport-legend-name">{CRITERIA_BY_KEY[key].title}</span>
+                      <strong>{Math.round(Number(values[key]) || 0)}</strong>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              {verdict && (
+                <section className="passport-section passport-section--verdict">
+                  <h4 className="passport-section-title">Итог по критериям</h4>
                   <div className="passport-verdict">
                     {verdict.even ? (
                       <p>Ровный по всем параметрам — без явных провалов и пиков.</p>
                     ) : (
-                      <p>
-                        Сильнее всего — <strong className="passport-verdict-strong">{verdict.strong}</strong>.
-                        Слабее всего — <strong className="passport-verdict-weak">{verdict.weak}</strong>.
-                      </p>
+                      <>
+                        <p>
+                          <span>Лидируют</span>
+                          <strong className="passport-verdict-strong">{joinTitles(verdict.strong)}</strong>
+                        </p>
+                        <p>
+                          <span>Ниже остальных</span>
+                          <strong className="passport-verdict-weak">{joinTitles(verdict.weak)}</strong>
+                        </p>
+                      </>
                     )}
                   </div>
-                )}
-              </section>
+                </section>
+              )}
             </div>
           </div>
         </div>

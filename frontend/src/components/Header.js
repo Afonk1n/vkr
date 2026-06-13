@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -15,6 +15,7 @@ const Header = () => {
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navTrackRef = useRef(null);
   const themeTrackRef = useRef(null);
   const authTrackRef = useRef(null);
@@ -29,19 +30,45 @@ const Header = () => {
 
   const handleLogout = () => {
     logout();
+    setMobileMenuOpen(false);
     navigate('/feed');
   };
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setMobileMenuOpen(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [mobileMenuOpen]);
 
   return (
     <header className="header">
       <div className="container">
-        <div className="header-content">
+        <div className={`header-content ${mobileMenuOpen ? 'header-content--menu-open' : ''}`.trim()}>
           <Link to="/feed" className="logo">
             <img src="/logo.png" alt="Мьюзик Рейтинг" className="logo-image" />
             <h1>Мьюзик Рейтинг</h1>
           </Link>
+          <button
+            type="button"
+            className="mobile-menu-toggle"
+            onClick={() => setMobileMenuOpen((open) => !open)}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="header-mobile-panel"
+            aria-label={mobileMenuOpen ? 'Закрыть меню' : 'Открыть меню'}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
           <SearchBar />
-          <div className="header-actions">
+          <div className="header-actions" id="header-mobile-panel">
             <div className="header-sliders">
               <div
                 ref={navTrackRef}

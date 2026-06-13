@@ -208,13 +208,16 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
+  width: 100%;
+  min-width: 0;
 }
 
 .feed-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: minmax(0, 1fr) 240px;
   align-items: start;
   gap: 1.25rem;
+  min-width: 0;
 }
 
 .feed-sidebar {
@@ -222,11 +225,11 @@
   top: 5.75rem;
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.7rem;
 }
 
 .feed-side-card {
-  padding: 1rem;
+  padding: 0.8rem;
   border-radius: var(--radius-lg);
   border: 1px solid color-mix(in srgb, var(--border-color) 88%, transparent);
   background: color-mix(in srgb, var(--surface-elevated, var(--card-background)) 88%, var(--background-color));
@@ -236,16 +239,16 @@
 }
 
 .feed-side-card h3 {
-  margin: 0 0 0.85rem;
-  font-size: 0.95rem;
+  margin: 0 0 0.65rem;
+  font-size: 0.88rem;
   color: var(--text-color);
 }
 
 .feed-side-kicker {
   display: block;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.65rem;
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -254,7 +257,7 @@
 .feed-side-stats {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.65rem;
+  gap: 0.5rem;
 }
 
 .feed-side-stats div,
@@ -266,12 +269,18 @@
 }
 
 .feed-side-stats div {
-  padding: 0.75rem;
+  min-height: 4.3rem;
+  padding: 0.62rem 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
 }
 
 .feed-side-stats strong {
   display: block;
-  font-size: 1.35rem;
+  font-size: 1.28rem;
   line-height: 1;
   color: var(--text-color);
 }
@@ -286,7 +295,7 @@
 .feed-side-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .feed-side-row,
@@ -294,9 +303,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.45rem;
   min-width: 0;
-  padding: 0.62rem 0.72rem;
+  padding: 0.52rem 0.58rem;
   color: inherit;
   text-decoration: none;
   transition: background-color var(--transition-base), border-color var(--transition-base), transform var(--transition-base);
@@ -322,12 +331,15 @@
 .feed-side-release strong {
   color: var(--text-color);
   font-size: 0.9rem;
+  flex: 0 0 auto;
+  min-width: 1.35rem;
+  text-align: right;
 }
 
 .feed-quick-links {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .feed-quick-links a,
@@ -340,7 +352,7 @@
   border-radius: var(--radius-md);
   background: var(--card-background);
   color: var(--text-color);
-  padding: 0 0.72rem;
+  padding: 0 0.58rem;
   font: inherit;
   font-size: 0.84rem;
   font-weight: 800;
@@ -363,6 +375,7 @@
 }
 
 .reviews-feed-list .review-card-small {
+  min-width: 0;
   max-width: 100%;
 }
 
@@ -548,6 +561,20 @@
 }
 
 @media (max-width: 768px) {
+  .home-section {
+    padding: 1.25rem;
+  }
+
+  .home-section--feed {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .feed-layout {
+    width: 100%;
+    max-width: 100%;
+  }
+
   .feed-toolbar {
     align-items: flex-start;
     flex-direction: column;
@@ -581,5 +608,17 @@
 
   .reviews-grid-popular {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-section {
+    padding: 1rem;
+    border-radius: var(--radius-lg);
+  }
+
+  .home-section--feed {
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
   }
 }

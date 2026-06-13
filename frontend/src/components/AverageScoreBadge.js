@@ -9,6 +9,14 @@ const avg = (items, getter) => {
 
 const fmtWhole = (value) => String(Math.round(Number(value) || 0));
 
+const pluralizeReview = (count) => {
+  const n = Math.abs(Number(count) || 0);
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${count} рецензии`;
+  return `${count} рецензиям`;
+};
+
 const valuesFromReviews = (reviews = []) => {
   const approved = reviews.filter((r) => !r.status || r.status === 'approved');
   if (!approved.length) return null;
@@ -62,7 +70,7 @@ const AverageScoreBadge = ({ source, reviews, size = 'default', className = '' }
       <span className="average-score-main">{values.final}</span>
       <div className="average-score-panel">
         <div className="average-score-panel-title">
-          Средняя оценка{values.count ? ` по ${values.count} рец.` : ''}
+          Средняя оценка{values.count ? ` по ${pluralizeReview(values.count)}` : ''}
         </div>
         <div className="average-score-formula" aria-hidden>
           <span>(</span>
