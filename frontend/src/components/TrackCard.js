@@ -109,6 +109,7 @@ const TrackCard = ({ track, onUpdate }) => {
           <button
             className={`track-card-like-button ${isLiked ? 'liked' : ''}`}
             onClick={handleLikeClick}
+            onMouseDown={(e) => e.preventDefault()}
             title="Поставить лайк"
           >
             {isLiked ? '❤' : '♡'}

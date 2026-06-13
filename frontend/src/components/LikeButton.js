@@ -51,8 +51,9 @@ const LikeButton = ({ item, itemType, onLike, onUnlike }) => {
 
   return (
     <button
-      className={`like-button ${liked ? 'liked' : ''} ${loading ? 'loading' : ''}`}
+      className={`like-button ${liked ? 'liked' : ''} ${loading ? 'like-button--loading' : ''}`}
       onClick={handleLike}
+      onMouseDown={(e) => e.preventDefault()}
       disabled={!isAuthenticated}
       aria-pressed={liked}
       aria-busy={loading}

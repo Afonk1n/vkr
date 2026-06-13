@@ -116,6 +116,7 @@ const AlbumCard = ({ album, onUpdate }) => {
           <button
             className={`album-like-button ${isLiked ? 'liked' : ''}`}
             onClick={handleLikeClick}
+            onMouseDown={(e) => e.preventDefault()}
             title="Поставить лайк"
           >
             {isLiked ? '❤' : '♡'}

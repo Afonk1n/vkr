@@ -71,23 +71,37 @@
 }
 
 .track-card-like-button {
+  box-sizing: border-box;
   background: var(--overlay-medium);
   border: none;
   border-radius: 50%;
   width: 2rem;
   height: 2rem;
+  min-width: 2rem;
+  min-height: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all var(--transition-base);
+  outline: none;
+  transition: background-color var(--transition-base), color var(--transition-base), box-shadow var(--transition-base);
   font-size: 1rem;
+  line-height: 1;
   padding: 0;
+  color: #fff;
 }
 
-.track-card-like-button:hover {
+.track-card-like-button:hover,
+.track-card-like-button.liked {
   background: var(--error-color);
-  transform: scale(1.1);
+}
+
+.track-card-like-button:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--error-color) 32%, transparent);
+}
+
+.track-card-like-button:active {
+  background: color-mix(in srgb, var(--error-color) 88%, #000);
 }
 
 .track-card-image {

@@ -202,27 +202,42 @@
 }
 
 .review-card-small-like-button {
+  box-sizing: border-box;
   background: var(--overlay-medium);
   border: none;
   border-radius: 50%;
   width: 1.5rem;
   height: 1.5rem;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all var(--transition-base);
+  outline: none;
+  transition: background-color var(--transition-base), color var(--transition-base), box-shadow var(--transition-base), opacity var(--transition-base);
   font-size: 0.875rem;
+  line-height: 1;
   padding: 0;
+  color: #fff;
 }
 
-.review-card-small-like-button:hover {
-  background: var(--error-color);
-  transform: scale(1.1);
-}
-
+.review-card-small-like-button:hover:not(:disabled),
 .review-card-small-like-button.liked {
   background: var(--error-color);
+}
+
+.review-card-small-like-button:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--error-color) 32%, transparent);
+}
+
+.review-card-small-like-button:active:not(:disabled) {
+  background: color-mix(in srgb, var(--error-color) 88%, #000);
+}
+
+.review-card-small-like-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
 }
 
 @media (max-width: 520px) {

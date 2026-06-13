@@ -104,6 +104,7 @@ const ReviewCardSmall = ({ review }) => {
               <button
                 className={`review-card-small-like-button ${isLiked ? 'liked' : ''}`}
                 onClick={toggleLike}
+                onMouseDown={(e) => e.preventDefault()}
                 disabled={!isAuthenticated || likeBusy}
                 aria-pressed={isLiked}
                 title={
