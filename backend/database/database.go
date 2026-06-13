@@ -464,6 +464,28 @@ func seedData() error {
 		{Username: "basta_official", Email: "basta.artist@example.com", Password: testPassword, Bio: "Официальный аккаунт артиста в демо-стенде.", SocialLinks: emptySocialLinks, IsAdmin: false, IsVerifiedArtist: true},
 		{Username: "skriptonit_official", Email: "skrip.artist@example.com", Password: testPassword, Bio: "Артистский аккаунт для демонстрации авторских лайков.", SocialLinks: emptySocialLinks, IsAdmin: false, IsVerifiedArtist: true},
 		{Username: "annaasti_official", Email: "asti.artist@example.com", Password: testPassword, Bio: "Верифицированный аккаунт артиста.", SocialLinks: emptySocialLinks, IsAdmin: false, IsVerifiedArtist: true},
+		{Username: "miyagi_official", Email: "miyagi.artist@example.com", Password: testPassword, Bio: "Верифицированный аккаунт артиста.", SocialLinks: emptySocialLinks, IsAdmin: false, IsVerifiedArtist: true},
+		{Username: "lsp_official", Email: "lsp.artist@example.com", Password: testPassword, Bio: "Артистский аккаунт для демонстрации авторских отметок.", SocialLinks: emptySocialLinks, IsAdmin: false, IsVerifiedArtist: true},
+		{Username: "zivert_official", Email: "zivert.artist@example.com", Password: testPassword, Bio: "Верифицированный аккаунт артиста.", SocialLinks: emptySocialLinks, IsAdmin: false, IsVerifiedArtist: true},
+		// Расширенный пул слушателей — чтобы рецензии и лайки выглядели живыми, от разных людей.
+		{Username: "nightcore_kate", Email: "kate.night@example.com", Password: testPassword, Bio: "Слушаю на повторе то, что цепляет с первой минуты.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "basswalker", Email: "basswalker@example.com", Password: testPassword, Bio: "Сначала проверяю низы и грув, потом всё остальное.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "lyrics_anna", Email: "lyrics.anna@example.com", Password: testPassword, Bio: "Читаю тексты как стихи, ценю образы и подачу.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "mixtape_dan", Email: "mixtape.dan@example.com", Password: testPassword, Bio: "Вырос на микстейпах, сужу строго но честно.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "vinyl_sergey", Email: "vinyl.sergey@example.com", Password: testPassword, Bio: "Альбом должен звучать как цельная пластинка.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "synthwavez", Email: "synthwavez@example.com", Password: testPassword, Bio: "Электроника, синты и атмосфера — моя стихия.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "mc_review", Email: "mc.review@example.com", Password: testPassword, Bio: "Разбираю куплеты по строчкам.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "deepcuts", Email: "deepcuts@example.com", Password: testPassword, Bio: "Люблю неочевидные треки в глубине треклиста.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "melomanka", Email: "melomanka@example.com", Password: testPassword, Bio: "Слушаю всё подряд, главное — эмоция.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "soundcheck_pro", Email: "soundcheck.pro@example.com", Password: testPassword, Bio: "Сведение и продакшн для меня важнее хайпа.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "riffrunner", Email: "riffrunner@example.com", Password: testPassword, Bio: "Гитары, драйв и живой звук.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "popcorehead", Email: "popcorehead@example.com", Password: testPassword, Bio: "Хороший поп — это сложно, и я это ценю.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "trapcollector", Email: "trapcollector@example.com", Password: testPassword, Bio: "Коллекционирую биты и удачные хуки.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "indiekid", Email: "indiekid@example.com", Password: testPassword, Bio: "Ищу характер и искренность в звучании.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "dj_critique", Email: "dj.critique@example.com", Password: testPassword, Bio: "Оцениваю, как трек живёт в сете.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "albumdiver", Email: "albumdiver@example.com", Password: testPassword, Bio: "Ныряю в альбомы целиком, от интро до аутро.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "scene_girl", Email: "scene.girl@example.com", Password: testPassword, Bio: "Слежу за сценой и новыми именами.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		{Username: "bpm_hunter", Email: "bpm.hunter@example.com", Password: testPassword, Bio: "Темп, ритмика и динамика — вот что слушаю.", SocialLinks: emptySocialLinks, IsAdmin: false},
 	}
 
 	var allTestUsers []models.User
@@ -1256,13 +1278,13 @@ func seedTrackLikes() error {
 		// Calculate how many likes should be in last 24 hours (30%)
 		likesInLast24Hours := int(float64(numLikes) * 0.3)
 
-		// Create likes from different users
-		// Distribute users cyclically to ensure variety
-		startIndex := trackIndex % len(allTestUsers)
+		// Распределяем лайки РАВНОМЕРНО по всем пользователям через сквозной
+		// курсор hoursAgo (он инкрементится на каждый лайк по всем трекам),
+		// чтобы не было «один человек налайкал везде».
 		likesCreated := 0
 
 		for j := 0; j < numLikes && likesCreated < numLikes; j++ {
-			userIndex := (startIndex + j) % len(allTestUsers)
+			userIndex := hoursAgo % len(allTestUsers)
 			// Check if like already exists
 			var existingLike models.TrackLike
 			if err := DB.Where("user_id = ? AND track_id = ?", allTestUsers[userIndex].ID, track.ID).First(&existingLike).Error; err != nil {
@@ -1368,13 +1390,11 @@ func seedAlbumLikes() error {
 		// Calculate how many likes should be in last 24 hours (30%)
 		likesInLast24Hours := int(float64(numLikes) * 0.3)
 
-		// Create likes from different users
-		// Distribute users cyclically to ensure variety
-		startIndex := albumIndex % len(allTestUsers)
+		// Равномерное распределение по всем пользователям (сквозной курсор hoursAgo).
 		likesCreated := 0
 
 		for j := 0; j < numLikes && likesCreated < numLikes; j++ {
-			userIndex := (startIndex + j) % len(allTestUsers)
+			userIndex := hoursAgo % len(allTestUsers)
 			// Check if like already exists
 			var existingLike models.AlbumLike
 			if err := DB.Where("user_id = ? AND album_id = ?", allTestUsers[userIndex].ID, album.ID).First(&existingLike).Error; err != nil {
@@ -1943,6 +1963,119 @@ func seedReviews() error {
 		ensureDemoReview(review.user, review.album, review.track, review.status, review.text, review.ratings)
 	}
 
+	// --- Программная генерация демо-рецензий ---
+	// Цель: оживить паспорта релизов и треков — чтобы у альбомов и первых треков
+	// каждого альбома было по нескольку оценок ОТ РАЗНЫХ людей, с разбросом баллов
+	// (тогда радар и гистограмма «разброса мнений» выглядят наполненными).
+	// Работает по ID (а не по названию — у треков бывают одинаковые названия),
+	// детерминировано (seed от ID) и идемпотентно (один автор — одна рецензия на релиз).
+	{
+		var reviewerPool []models.User
+		if err := DB.Where("is_verified_artist = ?", false).Find(&reviewerPool).Error; err == nil && len(reviewerPool) >= 4 {
+			demoTexts := []string{
+				"Сильный материал: цепляет с первого прослушивания и не отпускает.",
+				"Звучит свежо, но местами не хватает динамики.",
+				"Отличная атмосфера, ради неё возвращаюсь к релизу снова.",
+				"Тексты вытягивают весь трек, продакшн аккуратный.",
+				"Неровно: есть пара явных хитов и проходные моменты.",
+				"Чистое сведение и плотный бит, слушается на одном дыхании.",
+				"Эмоционально и честно, без лишнего пафоса.",
+				"Хорошо, но ожидал большего после прошлых работ.",
+				"Запоминающиеся мелодии и узнаваемая подача.",
+				"Экспериментально — зайдёт не всем, но я оценил.",
+				"Крепкая работа, держит планку от начала до конца.",
+				"Вайб ловится сразу, возвращаюсь к этому постоянно.",
+				"Структура продумана, ничего лишнего.",
+				"Голос и харизма решают, остальное подтянуто.",
+				"Добротно, но без вау-эффекта.",
+				"Один из тех релизов, что растут с каждым прослушиванием.",
+			}
+			clampRating := func(v int) int {
+				if v < 1 {
+					return 1
+				}
+				if v > 10 {
+					return 10
+				}
+				return v
+			}
+			pseudo := func(seed int) int {
+				return (seed*1103515245 + 12345) & 0x7fffffff
+			}
+			genCount := 0
+			makeDemoReview := func(albumID, trackID *uint, author models.User, base, seed, idx int) {
+				dup := DB.Model(&models.Review{}).Where("user_id = ?", author.ID)
+				if albumID != nil {
+					dup = dup.Where("album_id = ?", *albumID)
+				} else {
+					dup = dup.Where("track_id = ?", *trackID)
+				}
+				var n int64
+				dup.Count(&n)
+				if n > 0 {
+					return
+				}
+				rating := func(k int) int { return clampRating(base + (pseudo(seed*7+k) % 5) - 2) }
+				text := ""
+				if pseudo(seed+99)%5 != 0 { // ~80% с текстом, ~20% только оценка
+					text = demoTexts[pseudo(seed)%len(demoTexts)]
+				}
+				status := models.ReviewStatusApproved
+				if text != "" && pseudo(seed+7)%8 == 0 { // ~12% уходит на модерацию
+					status = models.ReviewStatusPending
+				}
+				review := models.Review{
+					UserID:               author.ID,
+					AlbumID:              albumID,
+					TrackID:              trackID,
+					Text:                 text,
+					RatingRhymes:         rating(1),
+					RatingStructure:      rating(2),
+					RatingImplementation: rating(3),
+					RatingIndividuality:  rating(4),
+					AtmosphereMultiplier: convertAtmosphereToMultiplier(rating(5)),
+					Status:               status,
+				}
+				if status == models.ReviewStatusApproved {
+					review.ModeratedBy = &admin.ID
+					moderatedAt := time.Now().Add(-time.Duration(2+(idx%40)) * time.Hour)
+					review.ModeratedAt = &moderatedAt
+				}
+				review.CalculateFinalScore()
+				if err := DB.Create(&review).Error; err == nil {
+					genCount++
+					createdReviews++
+				}
+			}
+
+			var catalog []models.Album
+			if err := DB.Preload("Tracks").Find(&catalog).Error; err == nil {
+				for _, alb := range catalog {
+					albID := alb.ID
+					albumBase := 5 + int(alb.ID)%5 // «качество» альбома 5..9
+					target := 5 + int(alb.ID)%4    // 5..8 рецензий на альбом
+					for j := 0; j < target; j++ {
+						author := reviewerPool[(int(alb.ID)+j)%len(reviewerPool)]
+						makeDemoReview(&albID, nil, author, albumBase, int(alb.ID)*31+j*7, j)
+					}
+					// Первые треки альбома тоже получают по нескольку оценок.
+					for ti, tr := range alb.Tracks {
+						if ti >= 4 {
+							break
+						}
+						trID := tr.ID
+						tt := 2 + int(tr.ID)%3 // 2..4 рецензии на трек
+						for j := 0; j < tt; j++ {
+							author := reviewerPool[(int(tr.ID)+j*3+ti)%len(reviewerPool)]
+							makeDemoReview(nil, &trID, author, albumBase, int(tr.ID)*17+j*5, j)
+						}
+					}
+				}
+			}
+			log.Printf("Generated demo reviews: %d", genCount)
+		}
+	}
+
 	// Reload all reviews from DB to get correct IDs (including newly created ones)
 	// This is done regardless of whether reviews existed before
 	if err := DB.Where("status = ?", models.ReviewStatusApproved).Find(&allReviews).Error; err != nil {
@@ -2001,9 +2134,12 @@ func seedReviews() error {
 		}
 	}
 
-	// Get all test users for likes
+	// Get users for review likes — БЕЗ верифицированных артистов.
+	// Лайк артиста на рецензии трактуется как «Отмечено артистом», поэтому в
+	// массовой раздаче лайков артистов не используем (иначе плашка будет у всех).
+	// Намеренные артист-отметки добавляются отдельным блоком ниже.
 	var allTestUsers []models.User
-	if err := DB.Find(&allTestUsers).Error; err != nil {
+	if err := DB.Where("is_verified_artist = ?", false).Find(&allTestUsers).Error; err != nil {
 		log.Printf("Warning: failed to fetch users for review likes: %v", err)
 		allTestUsers = []models.User{admin, testUser} // Fallback to basic users
 	}
@@ -2016,26 +2152,27 @@ func seedReviews() error {
 	var reviewLikes []models.ReviewLike
 	for i, review := range allReviews {
 		if review.Status == models.ReviewStatusApproved && review.ID > 0 {
-			// Generate random number of likes between 5 and 30
-			// Use combination of review index and review.ID to create variation
-			numLikes := 5 + ((i*13 + int(review.ID)) % 26) // Will give 5-30 likes with variation
-			if numLikes > 30 {
-				numLikes = 30
+			// Лайки на рецензию: 3–18 (диапазон подрезан, т.к. рецензий стало
+			// заметно больше — иначе сид раздувается на десятки тысяч строк).
+			numLikes := 3 + ((i*13 + int(review.ID)) % 16) // 3-18 с вариацией
+			if numLikes > 18 {
+				numLikes = 18
 			}
-			if numLikes < 5 {
-				numLikes = 5
+			if numLikes < 3 {
+				numLikes = 3
 			}
 
 			// Calculate how many likes should be in last 24 hours (30%)
 			likesInLast24Hours := int(float64(numLikes) * 0.3)
 
-			// Create likes from different users, используем циклическое распределение для разнообразия
-			startIndex := i % len(allTestUsers) // Начинаем с разных пользователей для каждой рецензии
+			// Равномерное распределение по всем пользователям через сквозной курсор
+			// likeHoursAgo — чтобы лайки не сваливались на одного-двух человек.
 			likesCreated := 0
 			for j := 0; j < numLikes && likesCreated < numLikes; j++ {
-				userIndex := (startIndex + j) % len(allTestUsers)
-				// Проверяем что пользователь не автор рецензии
+				userIndex := likeHoursAgo % len(allTestUsers)
+				// Пропускаем автора рецензии, но курсор двигаем дальше.
 				if allTestUsers[userIndex].ID == review.UserID {
+					likeHoursAgo++
 					continue
 				}
 				// Check if like already exists
@@ -2087,9 +2224,27 @@ func seedReviews() error {
 		}
 	}
 
+	// Сначала убираем ВСЕ лайки рецензий от верифицированных артистов — они могли
+	// накопиться от прошлых прогонов (когда артисты были в общем пуле лайков) и
+	// помечали бы «Отмечено артистом» почти каждую рецензию. Ниже проставим только
+	// намеренные отметки, чтобы плашка и раздел «Выбор артистов» оставались осмысленными.
+	var verifiedArtistIDs []uint
+	DB.Model(&models.User{}).Where("is_verified_artist = ?", true).Pluck("id", &verifiedArtistIDs)
+	if len(verifiedArtistIDs) > 0 {
+		if err := DB.Unscoped().Where("user_id IN ?", verifiedArtistIDs).Delete(&models.ReviewLike{}).Error; err != nil {
+			log.Printf("Warning: failed to reset artist review likes: %v", err)
+		}
+	}
+
 	// Keep several visible artist marks in the demo dataset so the interface
 	// consistently shows reviews noticed by verified artist accounts.
-	artistUsernames := []string{"basta_official", "skriptonit_official", "annaasti_official"}
+	// Каждый артист отмечает по нескольку РАЗНЫХ рецензий — чтобы раздел
+	// «Выбор артистов» и плашки «Отмечено артистом» были наполнены.
+	artistUsernames := []string{
+		"basta_official", "skriptonit_official", "annaasti_official",
+		"miyagi_official", "lsp_official", "zivert_official",
+	}
+	const marksPerArtist = 4
 	createdArtistMarks := 0
 	updatedArtistMarks := 0
 	for i, username := range artistUsernames {
@@ -2103,29 +2258,32 @@ func seedReviews() error {
 			continue
 		}
 
-		review := allReviews[i%len(allReviews)]
-		if review.UserID == artistUser.ID && len(allReviews) > 1 {
-			review = allReviews[(i+1)%len(allReviews)]
-		}
+		for m := 0; m < marksPerArtist; m++ {
+			// Разбрасываем отметки по списку (37 — простое, даёт хороший разброс).
+			review := allReviews[(i*7+m*37+5)%len(allReviews)]
+			if review.UserID == artistUser.ID && len(allReviews) > 1 {
+				review = allReviews[(i*7+m*37+6)%len(allReviews)]
+			}
 
-		var existingLike models.ReviewLike
-		if err := DB.Where("user_id = ? AND review_id = ?", artistUser.ID, review.ID).First(&existingLike).Error; err != nil {
-			artistLike := models.ReviewLike{
-				UserID:    artistUser.ID,
-				ReviewID:  review.ID,
-				CreatedAt: nowForLikes.Add(-time.Duration(i+1) * time.Hour),
-			}
-			if err := DB.Create(&artistLike).Error; err != nil {
-				log.Printf("Warning: failed to create artist mark by %s for review %d: %v", username, review.ID, err)
+			var existingLike models.ReviewLike
+			if err := DB.Where("user_id = ? AND review_id = ?", artistUser.ID, review.ID).First(&existingLike).Error; err != nil {
+				artistLike := models.ReviewLike{
+					UserID:    artistUser.ID,
+					ReviewID:  review.ID,
+					CreatedAt: nowForLikes.Add(-time.Duration(i*marksPerArtist+m+1) * time.Hour),
+				}
+				if err := DB.Create(&artistLike).Error; err != nil {
+					log.Printf("Warning: failed to create artist mark by %s for review %d: %v", username, review.ID, err)
+				} else {
+					createdArtistMarks++
+				}
 			} else {
-				createdArtistMarks++
-			}
-		} else {
-			existingLike.CreatedAt = nowForLikes.Add(-time.Duration(i+1) * time.Hour)
-			if err := DB.Save(&existingLike).Error; err != nil {
-				log.Printf("Warning: failed to update artist mark by %s for review %d: %v", username, review.ID, err)
-			} else {
-				updatedArtistMarks++
+				existingLike.CreatedAt = nowForLikes.Add(-time.Duration(i*marksPerArtist+m+1) * time.Hour)
+				if err := DB.Save(&existingLike).Error; err != nil {
+					log.Printf("Warning: failed to update artist mark by %s for review %d: %v", username, review.ID, err)
+				} else {
+					updatedArtistMarks++
+				}
 			}
 		}
 	}
