@@ -32,7 +32,7 @@ const TopsPage = () => {
         albumsAPI.getAll({ sort_by: 'average_rating', sort_order: 'desc', page_size: RATED_POOL, page: 1 }),
         tracksAPI.getPopular({ limit: POPULAR_TRACKS }),
         reviewsAPI.getPopular({ limit: POPULAR_REVIEWS }),
-        reviewsAPI.getAll({ page_size: 60, sort_by: 'created_at', sort_order: 'desc' }),
+        reviewsAPI.getAll({ artist_mark: true, page_size: ARTIST_PICKS, sort_by: 'created_at', sort_order: 'desc' }),
       ]);
 
       const latest = Array.isArray(latestRes.data?.albums) ? latestRes.data.albums : [];
@@ -59,7 +59,7 @@ const TopsPage = () => {
       setPopularReviews(Array.isArray(popularRevRes.data) ? popularRevRes.data : []);
 
       const reviews = Array.isArray(artistRes.data?.reviews) ? artistRes.data.reviews : [];
-      setArtistPicks(reviews.filter((r) => r.has_artist_mark).slice(0, ARTIST_PICKS));
+      setArtistPicks(reviews.slice(0, ARTIST_PICKS));
     } catch (e) {
       console.error(e);
       setError('Не удалось загрузить топы.');
@@ -114,9 +114,6 @@ const TopsPage = () => {
           {hiddenGems.length > 0 && (
             <section className="home-section">
               <h2 className="section-title">Скрытые жемчужины</h2>
-              <p className="feed-page-lead" style={{ marginTop: '-0.5rem' }}>
-                Высокие оценки, но мало лайков — стоит послушать.
-              </p>
               <div className="albums-grid">
                 {hiddenGems.map((album) => (
                   <AlbumCard key={album.id} album={album} />
@@ -167,9 +164,6 @@ const TopsPage = () => {
           {artistPicks.length > 0 && (
             <section className="home-section">
               <h2 className="section-title">Выбор артистов</h2>
-              <p className="feed-page-lead" style={{ marginTop: '-0.5rem' }}>
-                Рецензии, отмеченные верифицированными артистами.
-              </p>
               <div className="reviews-grid-popular">
                 {artistPicks.map((review) => (
                   <ReviewCardSmall key={review.id} review={review} />

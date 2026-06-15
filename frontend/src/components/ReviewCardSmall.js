@@ -14,6 +14,23 @@ const ReviewCardSmall = ({ review }) => {
   const [likeBusy, setLikeBusy] = useState(false);
   const hasArtistMark = review.has_artist_mark || (review.artist_mark_usernames || []).length > 0 ||
     (review.likes || []).some((like) => like.user?.is_verified_artist);
+  const target = review.album
+    ? {
+      title: review.album.title,
+      subtitle: review.album.artist,
+      cover: review.album.cover_image_path,
+      alt: review.album.title,
+    }
+    : review.track
+      ? {
+        title: review.track.title,
+        subtitle: review.track.album?.artist
+          ? `${review.track.album.title || 'Альбом'} · ${review.track.album.artist}`
+          : review.track.album?.title || 'Трек',
+        cover: review.track.cover_image_path || review.track.album?.cover_image_path,
+        alt: review.track.title,
+      }
+      : null;
 
   useEffect(() => {
     setLikeCount(review.likes?.length || 0);
@@ -82,13 +99,13 @@ const ReviewCardSmall = ({ review }) => {
           <ReviewScoresStrip review={review} size="small" />
         </div>
       </div>
-      {review.album && (
+      {target && (
         <div className="review-card-small-album">
           <div className="review-card-small-cover">
-            {getImageUrl(review.album.cover_image_path) ? (
+            {getImageUrl(target.cover) ? (
               <img
-                src={getImageUrl(review.album.cover_image_path)}
-                alt={review.album.title}
+                src={getImageUrl(target.cover)}
+                alt={target.alt}
                 className="review-card-small-image"
               />
             ) : (
@@ -120,8 +137,8 @@ const ReviewCardSmall = ({ review }) => {
             </div>
           </div>
           <div className="review-card-small-album-info">
-            <div className="review-card-small-album-title">{review.album.title}</div>
-            <div className="review-card-small-album-artist">{review.album.artist}</div>
+            <div className="review-card-small-album-title">{target.title}</div>
+            <div className="review-card-small-album-artist">{target.subtitle}</div>
             {hasArtistMark && (
               <div className="review-card-small-artist-mark">
                 <span>★</span>

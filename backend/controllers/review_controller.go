@@ -116,6 +116,13 @@ func (rc *ReviewController) GetReviews(c *gin.Context) {
 		query = query.Where("status = ?", models.ReviewStatusApproved)
 	}
 
+	if artistMark := c.Query("artist_mark"); artistMark == "true" || artistMark == "1" {
+		markedReviewIDs := rc.DB.Model(&models.ReviewLike{}).
+			Select("review_likes.review_id").
+			Joins("JOIN users ON users.id = review_likes.user_id").
+			Where("users.is_verified_artist = ?", true)
+		query = query.Where("reviews.id IN (?)", markedReviewIDs)
+	}
 	// Sort (только из белого списка — защита от SQL-инъекции через ORDER BY)
 	query = query.Order(utils.SafeOrderClause(c.Query("sort_by"), c.Query("sort_order"), reviewSortColumns, "created_at"))
 
