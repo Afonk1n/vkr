@@ -690,7 +690,7 @@ func (rc *ReviewController) UnlikeReview(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Review unliked", "liked": false})
 }
 
-// GetPopularReviews retrieves most liked reviews from last 24 hours
+// GetPopularReviews retrieves most liked reviews from last 24 hours, with a recent fallback for demo stability.
 func (rc *ReviewController) GetPopularReviews(c *gin.Context) {
 	limit := 10
 	if limitParam := c.Query("limit"); limitParam != "" {
@@ -699,24 +699,26 @@ func (rc *ReviewController) GetPopularReviews(c *gin.Context) {
 		}
 	}
 
-	// Get reviews from last 24 hours
 	last24Hours := time.Now().Add(-24 * time.Hour)
+	recentApprovedAlbumReviews := func(db *gorm.DB) *gorm.DB {
+		return db.Model(&models.Review{}).
+			Preload("User").
+			Preload("Album").
+			Preload("Album.Genre").
+			Preload("Track").
+			Preload("Track.Album").
+			Preload("Track.Genres").
+			Preload("Likes").
+			Preload("Likes.User").
+			Where("status = ?", models.ReviewStatusApproved).
+			Where("album_id IS NOT NULL")
+	}
 
 	var reviews []models.Review
-	// Get all approved reviews from last 24 hours with likes count, prioritizing reviews with albums
-	query := rc.DB.Model(&models.Review{}).
-		Preload("User").
-		Preload("Album").
-		Preload("Album.Genre").
-		Preload("Track").
-		Preload("Track.Album").
-		Preload("Track.Genres").
-		Preload("Likes").
-		Preload("Likes.User").
-		Where("status = ? AND created_at >= ?", models.ReviewStatusApproved, last24Hours).
-		Where("album_id IS NOT NULL"). // Только рецензии с альбомами
+	query := recentApprovedAlbumReviews(rc.DB).
+		Where("created_at >= ?", last24Hours).
 		Order("created_at DESC").
-		Limit(limit * 2) // Get more to sort by likes
+		Limit(limit * 2)
 
 	if err := query.Find(&reviews).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
@@ -726,14 +728,36 @@ func (rc *ReviewController) GetPopularReviews(c *gin.Context) {
 		})
 		return
 	}
+
+	if len(reviews) < limit {
+		seen := make([]uint, 0, len(reviews))
+		for _, review := range reviews {
+			seen = append(seen, review.ID)
+		}
+		var fallback []models.Review
+		fallbackQuery := recentApprovedAlbumReviews(rc.DB).
+			Order("created_at DESC").
+			Limit((limit - len(reviews)) * 2)
+		if len(seen) > 0 {
+			fallbackQuery = fallbackQuery.Where("id NOT IN ?", seen)
+		}
+		if err := fallbackQuery.Find(&fallback).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
+				Error:   "Internal Server Error",
+				Message: "Failed to fetch popular reviews",
+				Code:    http.StatusInternalServerError,
+			})
+			return
+		}
+		reviews = append(reviews, fallback...)
+	}
+
 	annotateArtistMarks(rc.DB, reviews)
 
-	// Sort by likes count (по убыванию).
 	sort.SliceStable(reviews, func(i, j int) bool {
 		return len(reviews[i].Likes) > len(reviews[j].Likes)
 	})
 
-	// Limit results
 	if len(reviews) > limit {
 		reviews = reviews[:limit]
 	}

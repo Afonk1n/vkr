@@ -488,6 +488,17 @@ func seedData() error {
 		{Username: "bpm_hunter", Email: "bpm.hunter@example.com", Password: testPassword, Bio: "Темп, ритмика и динамика — вот что слушаю.", SocialLinks: emptySocialLinks, IsAdmin: false},
 	}
 
+	testUsers = append(testUsers,
+		models.User{Username: "dasha_sluhaet", Email: "dasha.sluhaet@example.com", Password: testPassword, Bio: "Веду заметки после каждого сильного альбома: сначала эмоция, потом уже баллы и детали.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		models.User{Username: "nikita_repeat", Email: "nikita.repeat@example.com", Password: testPassword, Bio: "Слушаю релизы по кругу и люблю, когда второй заход открывает новые смыслы.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		models.User{Username: "lera_vinyl", Email: "lera.vinyl@example.com", Password: testPassword, Bio: "Ценю цельные альбомы, живые аранжировки и обложки, которые хочется оставить на полке.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		models.User{Username: "igor_beats", Email: "igor.beats@example.com", Password: testPassword, Bio: "Разбираю грув, низы и то, как трек работает не только в наушниках, но и в машине.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		models.User{Username: "masha_texts", Email: "masha.texts@example.com", Password: testPassword, Bio: "Больше всего цепляют тексты: образы, интонация и честность без лишнего пафоса.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		models.User{Username: "artem_mixtape", Email: "artem.mixtape@example.com", Password: testPassword, Bio: "Люблю спорные релизы: там чаще всего слышно, куда артист хочет двигаться дальше.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		models.User{Username: "katya_popfilter", Email: "katya.popfilter@example.com", Password: testPassword, Bio: "Не считаю поп простым жанром: хороший припев и вкусный продакшн сделать сложнее, чем кажется.", SocialLinks: emptySocialLinks, IsAdmin: false},
+		models.User{Username: "roman_deepcuts", Email: "roman.deepcuts@example.com", Password: testPassword, Bio: "Ищу не только синглы, но и тихие треки в середине альбома, где часто прячется главное.", SocialLinks: emptySocialLinks, IsAdmin: false},
+	)
+
 	var allTestUsers []models.User
 	allTestUsers = append(allTestUsers, admin, testUser)
 	createdTestUsers := 0
@@ -1971,7 +1982,7 @@ func seedReviews() error {
 	// детерминировано (seed от ID) и идемпотентно (один автор — одна рецензия на релиз).
 	{
 		var reviewerPool []models.User
-		if err := DB.Where("is_verified_artist = ?", false).Find(&reviewerPool).Error; err == nil && len(reviewerPool) >= 4 {
+		if err := DB.Where("is_verified_artist = ?", false).Order("id DESC").Find(&reviewerPool).Error; err == nil && len(reviewerPool) >= 4 {
 			demoTexts := []string{
 				"Сильный материал: цепляет с первого прослушивания и не отпускает.",
 				"Звучит свежо, но местами не хватает динамики.",
@@ -1990,6 +2001,21 @@ func seedReviews() error {
 				"Добротно, но без вау-эффекта.",
 				"Один из тех релизов, что растут с каждым прослушиванием.",
 			}
+			demoTexts = []string{
+				"Сильная работа, которую хочется слушать не фоном, а целиком. В первом проходе цепляет настроение, а на повторе уже слышны маленькие детали: как разложены бэки, где вступает бас, почему припев не разваливает общую драматургию. Не все моменты одинаково яркие, но релиз звучит живым и собранным.",
+				"Здесь хорошо чувствуется характер артиста: не просто набор удачных песен, а попытка собрать свой мир с повторяющимися интонациями и темами. Мне особенно понравилось, что продакшн не спорит с голосом, а подчеркивает его. Местами хотелось бы больше риска, но в целом работа держит внимание.",
+				"Альбом раскрывается постепенно. Сначала кажется, что все довольно понятно, но потом начинаешь замечать переходы между треками, аккуратные паузы и то, как меняется настроение от середины к финалу. Для меня это хороший пример релиза, который выигрывает от повторного прослушивания.",
+				"Главное достоинство здесь - атмосфера. Даже там, где текст не самый плотный, звучание вытягивает сцену и создает ощущение места. Есть пара проходных моментов, но они не ломают общее впечатление, потому что у релиза есть цельность и понятный эмоциональный маршрут.",
+				"Работа неровная, зато не стерильная. В ней есть спорные решения, неожиданные повороты и несколько треков, которые хочется обсуждать отдельно. Я бы немного уплотнил структуру, но за индивидуальность и смелость релиз точно заслуживает внимания.",
+				"Сильнее всего понравилась ритмика: треки не стоят на месте, а двигаются и меняют акценты. При этом материал не превращается в демонстрацию техники ради техники. Хороший баланс между доступностью и вниманием к деталям, особенно в аранжировках.",
+				"Это не тот релиз, который пытается взять слушателя громкостью. Он работает спокойнее: через интонацию, настроение и несколько очень точных образов. Если слушать внимательно, становится понятно, почему оценка растет ближе к финалу.",
+				"Мне не хватило пары более цепких хуков, но в остальном материал звучит уверенно. Видно, что артист понимает свой стиль и не пытается прыгать во все стороны сразу. Такие альбомы хорошо работают не как набор хитов, а как цельный вечерний плейлист.",
+				"Отличный пример того, как знакомая жанровая форма может звучать свежо за счет деталей. Мелодии простые, но не плоские, а в текстах есть несколько строк, которые остаются после прослушивания. Финальная треть особенно удачная.",
+				"Релиз держится на харизме и грамотной подаче. Даже когда инструментал уходит в привычные решения, голос и настроение возвращают внимание. Это не революция жанра, но честная и крепкая работа с понятной идентичностью.",
+				"Понравилось, что материал не пытается быть идеальным для всех. Где-то шероховато, где-то слишком прямо, но в этих местах как раз появляется живое ощущение автора. Для сервиса рецензий такие релизы интересны: по ним есть о чем спорить.",
+				"Слушается плотно и кинематографично. У альбома есть цвет, воздух и ощущение движения, а не просто набор треков с похожим темпом. Самые сильные моменты - там, где текст, ритм и продакшн работают в одну сторону.",
+			}
+
 			clampRating := func(v int) int {
 				if v < 1 {
 					return 1
@@ -2016,10 +2042,7 @@ func seedReviews() error {
 					return
 				}
 				rating := func(k int) int { return clampRating(base + (pseudo(seed*7+k) % 5) - 2) }
-				text := ""
-				if pseudo(seed+99)%5 != 0 { // ~80% с текстом, ~20% только оценка
-					text = demoTexts[pseudo(seed)%len(demoTexts)]
-				}
+				text := demoTexts[pseudo(seed)%len(demoTexts)]
 				status := models.ReviewStatusApproved
 				if text != "" && pseudo(seed+7)%8 == 0 { // ~12% уходит на модерацию
 					status = models.ReviewStatusPending
@@ -2087,14 +2110,12 @@ func seedReviews() error {
 		}
 	}
 
-	// Update created_at for approved reviews to be within last 24 hours (for popular reviews to show)
-	now := time.Now()
+	// Keep demo review dates around the defense date so the tops look fresh during the presentation.
+	demoReviewAnchor := time.Date(2026, time.June, 19, 12, 0, 0, 0, time.Local)
 	for i := range allReviews {
 		if allReviews[i].Status == models.ReviewStatusApproved && allReviews[i].ID > 0 {
-			// Set created_at to be within last 24 hours, distributed over time
-			hoursAgo := i % 24 // Distribute over 24 hours
-			newCreatedAt := now.Add(-time.Duration(hoursAgo) * time.Hour)
-			// Use Update with Where to ensure the update happens
+			hoursOffset := (i % 49) - 24
+			newCreatedAt := demoReviewAnchor.Add(time.Duration(hoursOffset) * time.Hour)
 			if err := DB.Model(&models.Review{}).Where("id = ?", allReviews[i].ID).Update("created_at", newCreatedAt).Error; err != nil {
 				log.Printf("Warning: failed to update review created_at for review %d: %v", allReviews[i].ID, err)
 			}

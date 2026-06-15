@@ -106,8 +106,9 @@
 }
 
 .admin-status-segment strong {
-  min-width: 1.85rem;
+  min-width: 2.25rem;
   height: 1.85rem;
+  padding: 0 0.45rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -116,6 +117,7 @@
   background: color-mix(in srgb, var(--surface-elevated, var(--card-background)) 78%, transparent);
   color: var(--text-color);
   font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .admin-release-panel {

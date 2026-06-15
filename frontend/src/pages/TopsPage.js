@@ -7,11 +7,11 @@ import './HomePage.css';
 
 const LATEST_ALBUMS = 5;
 const BEST_ALBUMS = 5;
-const RATED_POOL = 24;
+const RATED_POOL = 40;
 const HIDDEN_GEMS = 5;
 const POPULAR_TRACKS = 8;
 const POPULAR_REVIEWS = 6;
-const ARTIST_PICKS = 6;
+const ARTIST_PICKS = 3;
 
 const TopsPage = () => {
   const [loading, setLoading] = useState(true);
@@ -32,7 +32,7 @@ const TopsPage = () => {
         albumsAPI.getAll({ sort_by: 'average_rating', sort_order: 'desc', page_size: RATED_POOL, page: 1 }),
         tracksAPI.getPopular({ limit: POPULAR_TRACKS }),
         reviewsAPI.getPopular({ limit: POPULAR_REVIEWS }),
-        reviewsAPI.getAll({ page_size: 30, sort_by: 'created_at', sort_order: 'desc' }),
+        reviewsAPI.getAll({ page_size: 60, sort_by: 'created_at', sort_order: 'desc' }),
       ]);
 
       const latest = Array.isArray(latestRes.data?.albums) ? latestRes.data.albums : [];
@@ -44,12 +44,16 @@ const TopsPage = () => {
       // Скрытые жемчужины: хороший балл, но меньше всего лайков (недооценённое).
       // Относительно, а не по жёсткому порогу — иначе при «налайканных» данных пусто.
       const bestIds = new Set(rated.slice(0, BEST_ALBUMS).map((a) => a.id));
-      setHiddenGems(
-        rated
-          .filter((a) => Number(a.average_rating) >= 65 && !bestIds.has(a.id))
-          .sort((a, b) => (a.likes?.length || 0) - (b.likes?.length || 0))
-          .slice(0, HIDDEN_GEMS)
-      );
+      const gemsPool = rated
+        .filter((a) => !bestIds.has(a.id))
+        .sort((a, b) => (a.likes?.length || 0) - (b.likes?.length || 0));
+      const strongGems = gemsPool.filter((a) => Number(a.average_rating) >= 65);
+      const gemIds = new Set(strongGems.map((a) => a.id));
+      const filledGems = [
+        ...strongGems,
+        ...gemsPool.filter((a) => !gemIds.has(a.id)),
+      ];
+      setHiddenGems(filledGems.slice(0, HIDDEN_GEMS));
 
       setPopularTracks(Array.isArray(tracksRes.data) ? tracksRes.data : []);
       setPopularReviews(Array.isArray(popularRevRes.data) ? popularRevRes.data : []);
