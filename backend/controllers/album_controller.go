@@ -158,10 +158,58 @@ func (ac *AlbumController) GetAlbumsByArtist(c *gin.Context) {
 		return
 	}
 
+	albumIDs := make([]uint, 0, len(albums))
+	var ratingSum float64
+	var ratedAlbums int
+	for i := range albums {
+		albumIDs = append(albumIDs, albums[i].ID)
+		if err := ac.AttachAverageScoreBreakdown(&albums[i]); err != nil {
+			log.Printf("Warning: failed to attach artist album score for %d: %v", albums[i].ID, err)
+		}
+		if albums[i].AverageRating > 0 {
+			ratingSum += albums[i].AverageRating
+			ratedAlbums++
+		}
+	}
+
+	var totalTracks, approvedReviews int64
+	if len(albumIDs) > 0 {
+		ac.DB.Model(&models.Track{}).Where("album_id IN ?", albumIDs).Count(&totalTracks)
+		ac.DB.Model(&models.Review{}).
+			Where("album_id IN ? AND status = ?", albumIDs, models.ReviewStatusApproved).
+			Count(&approvedReviews)
+	}
+
+	var verifiedAccount interface{}
+	var artistUser models.User
+	if err := ac.DB.Where("is_verified_artist = ? AND LOWER(artist_name) = LOWER(?)", true, decodedName).First(&artistUser).Error; err == nil {
+		var followersCount int64
+		ac.DB.Model(&models.UserFollow{}).Where("following_id = ?", artistUser.ID).Count(&followersCount)
+		verifiedAccount = gin.H{
+			"id":                 artistUser.ID,
+			"username":           artistUser.Username,
+			"avatar_path":        artistUser.AvatarPath,
+			"bio":                artistUser.Bio,
+			"social_links":       artistUser.SocialLinks,
+			"is_verified_artist": true,
+			"artist_name":        artistUser.ArtistName,
+			"followers_count":    followersCount,
+		}
+	}
+
+	averageRating := 0.0
+	if ratedAlbums > 0 {
+		averageRating = ratingSum / float64(ratedAlbums)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"albums": albums,
-		"artist": decodedName,
-		"total":  len(albums),
+		"albums":                 albums,
+		"artist":                 decodedName,
+		"total":                  len(albums),
+		"total_tracks":           totalTracks,
+		"approved_reviews_count": approvedReviews,
+		"average_rating":         averageRating,
+		"verified_account":       verifiedAccount,
 	})
 }
 

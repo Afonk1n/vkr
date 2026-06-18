@@ -6,6 +6,7 @@ import (
 	"music-review-site/backend/models"
 	"music-review-site/backend/utils"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -350,25 +351,56 @@ func (tc *TrackController) GetPopularTracks(c *gin.Context) {
 	}
 	since := time.Now().Add(-24 * time.Hour)
 
-	var tracks []models.Track
-	// Get tracks with likes from last 24 hours, ordered by like count
-	query := tc.DB.Model(&models.Track{}).
-		Preload("Album").
-		Preload("Album.Genre").
-		Preload("Genres").
-		Preload("Likes").
-		Joins("LEFT JOIN track_likes ON tracks.id = track_likes.track_id AND track_likes.created_at >= ? AND track_likes.deleted_at IS NULL", since).
-		Group("tracks.id").
-		Order("COUNT(track_likes.id) DESC, tracks.created_at DESC").
-		Limit(limit)
-
-	if err := query.Find(&tracks).Error; err != nil {
+	// Для демо берём по одному лидеру от каждого артиста. Иначе при плотном
+	// каталоге один исполнитель легко занимает весь топ несколькими треками.
+	type popularTrackRow struct {
+		TrackID   uint
+		LikeCount int64
+	}
+	var rankedRows []popularTrackRow
+	rankingSQL := `
+		WITH counts AS (
+			SELECT t.id AS track_id, a.artist, COUNT(tl.id) AS like_count
+			FROM tracks t
+			JOIN albums a ON a.id = t.album_id AND a.deleted_at IS NULL
+			LEFT JOIN track_likes tl ON tl.track_id = t.id
+				AND tl.created_at >= ? AND tl.deleted_at IS NULL
+			WHERE t.deleted_at IS NULL
+			GROUP BY t.id, a.artist
+		), ranked AS (
+			SELECT track_id, like_count,
+				ROW_NUMBER() OVER (PARTITION BY artist ORDER BY like_count DESC, track_id DESC) AS artist_rank
+			FROM counts
+		)
+		SELECT track_id, like_count
+		FROM ranked
+		WHERE artist_rank = 1
+		ORDER BY like_count DESC, track_id DESC
+		LIMIT ?`
+	if err := tc.DB.Raw(rankingSQL, since, limit).Scan(&rankedRows).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, utils.ErrorResponse{
 			Error:   "Internal Server Error",
 			Message: "Failed to fetch popular tracks",
 			Code:    http.StatusInternalServerError,
 		})
 		return
+	}
+
+	trackIDs := make([]uint, 0, len(rankedRows))
+	trackOrder := make(map[uint]int, len(rankedRows))
+	for index, row := range rankedRows {
+		trackIDs = append(trackIDs, row.TrackID)
+		trackOrder[row.TrackID] = index
+	}
+
+	var tracks []models.Track
+	if len(trackIDs) > 0 {
+		if err := tc.DB.Preload("Album").Preload("Album.Genre").Preload("Genres").Preload("Likes").
+			Where("id IN ?", trackIDs).Find(&tracks).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, utils.ErrorResponse{Error: "Internal Server Error", Message: "Failed to fetch popular tracks", Code: http.StatusInternalServerError})
+			return
+		}
+		sort.SliceStable(tracks, func(i, j int) bool { return trackOrder[tracks[i].ID] < trackOrder[tracks[j].ID] })
 	}
 
 	// Среднее — агрегатом на чтении; дедуп жанров на уже загруженном треке.

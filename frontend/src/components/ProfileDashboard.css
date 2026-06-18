@@ -164,6 +164,28 @@
   font-weight: 800;
 }
 
+.profile-artist-page-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: fit-content;
+  margin: -0.45rem auto 0.2rem;
+  padding: 0.42rem 0.72rem;
+  border: 1px solid color-mix(in srgb, var(--accent-color) 38%, var(--border-color));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-color) 10%, var(--surface-control));
+  color: var(--text-color);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.profile-artist-page-link:hover {
+  background: color-mix(in srgb, var(--accent-color) 18%, var(--surface-control));
+  text-decoration: none;
+}
+
 .profile-level-card h2,
 .profile-stat-panel h2,
 .profile-preference-section h2,

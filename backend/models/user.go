@@ -21,6 +21,7 @@ type User struct {
 	FavoriteTrackIDs  string         `json:"favorite_track_ids" gorm:"type:text;default:'[]'"`
 	PreferencesManual bool           `json:"preferences_manual" gorm:"default:false"`
 	IsVerifiedArtist  bool           `json:"is_verified_artist" gorm:"default:false"`
+	ArtistName        string         `json:"artist_name,omitempty" gorm:"type:text;index"`
 	CreatedAt         time.Time      `json:"created_at"`
 	UpdatedAt         time.Time      `json:"updated_at"`
 	DeletedAt         gorm.DeletedAt `json:"-" gorm:"index"`

@@ -476,6 +476,15 @@ const ProfileDashboard = ({
               <span className="verified-badge" title="Верифицированный артист">✓</span>
             )}
           </h1>
+          {profileUser?.is_verified_artist && profileUser?.artist_name && (
+            <a
+              className="profile-artist-page-link"
+              href={`/artists/${encodeURIComponent(profileUser.artist_name)}`}
+            >
+              Страница артиста
+              <span aria-hidden>↗</span>
+            </a>
+          )}
           {(socialLinks.vk || socialLinks.telegram || socialLinks.max) && (
             <div className="profile-social-links" aria-label="Социальные сети">
               {socialLinks.vk && (

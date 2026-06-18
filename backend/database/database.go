@@ -175,9 +175,21 @@ func InitDB() (*gorm.DB, error) {
 			log.Println("✓ Data seeding completed successfully")
 		}
 
+		if err := seedAdminFollows(); err != nil {
+			log.Printf("ERROR: failed to seed admin follows: %v", err)
+		} else {
+			log.Println("✓ Admin follows seeding completed successfully")
+		}
+
 		// Update cover images for existing albums (even if seed was skipped)
 		if err := updateAlbumCoverImages(); err != nil {
 			log.Printf("Warning: failed to update album cover images: %v", err)
+		}
+
+		if err := seedCatalogExpansion(); err != nil {
+			log.Printf("ERROR: failed to seed catalog expansion: %v", err)
+		} else {
+			log.Println("✓ Catalog expansion seeding completed successfully")
 		}
 
 		// Seed tracks (separate check, can be added even if albums exist)
@@ -461,12 +473,12 @@ func seedData() error {
 		{Username: "albumhunter", Email: "hunter@example.com", Password: testPassword, Bio: "Оцениваю альбом как маршрут, а не набор синглов.", SocialLinks: emptySocialLinks, IsAdmin: false},
 		{Username: "textura", Email: "textura@example.com", Password: testPassword, Bio: "Образы, рифмы и драматургия текста.", SocialLinks: emptySocialLinks, IsAdmin: false},
 		{Username: "soundpilot", Email: "pilot@example.com", Password: testPassword, Bio: "Слышу аранжировки раньше слов.", SocialLinks: emptySocialLinks, IsAdmin: false},
-		{Username: "basta_official", Email: "basta.artist@example.com", Password: testPassword, Bio: "Официальный аккаунт артиста в демо-стенде.", SocialLinks: emptySocialLinks, IsAdmin: false, IsVerifiedArtist: true},
-		{Username: "skriptonit_official", Email: "skrip.artist@example.com", Password: testPassword, Bio: "Артистский аккаунт для демонстрации авторских лайков.", SocialLinks: emptySocialLinks, IsAdmin: false, IsVerifiedArtist: true},
-		{Username: "annaasti_official", Email: "asti.artist@example.com", Password: testPassword, Bio: "Верифицированный аккаунт артиста.", SocialLinks: emptySocialLinks, IsAdmin: false, IsVerifiedArtist: true},
-		{Username: "miyagi_official", Email: "miyagi.artist@example.com", Password: testPassword, Bio: "Верифицированный аккаунт артиста.", SocialLinks: emptySocialLinks, IsAdmin: false, IsVerifiedArtist: true},
-		{Username: "lsp_official", Email: "lsp.artist@example.com", Password: testPassword, Bio: "Артистский аккаунт для демонстрации авторских отметок.", SocialLinks: emptySocialLinks, IsAdmin: false, IsVerifiedArtist: true},
-		{Username: "zivert_official", Email: "zivert.artist@example.com", Password: testPassword, Bio: "Верифицированный аккаунт артиста.", SocialLinks: emptySocialLinks, IsAdmin: false, IsVerifiedArtist: true},
+		{Username: "basta_official", Email: "basta.artist@example.com", Password: testPassword, Bio: "Официальный аккаунт Басты в сообществе «Мьюзик-рейтинг».", SocialLinks: `{"vk":"https://vk.com/basta"}`, IsAdmin: false, IsVerifiedArtist: true, ArtistName: "Баста"},
+		{Username: "skriptonit_official", Email: "skrip.artist@example.com", Password: testPassword, Bio: "Подтверждённый профиль Скриптонита: релизы, реакции и отметки рецензий.", SocialLinks: emptySocialLinks, IsAdmin: false, IsVerifiedArtist: true, ArtistName: "Скриптонит"},
+		{Username: "annaasti_official", Email: "asti.artist@example.com", Password: testPassword, Bio: "Официальный аккаунт ANNA ASTI в «Мьюзик-рейтинг».", SocialLinks: emptySocialLinks, IsAdmin: false, IsVerifiedArtist: true, ArtistName: "ANNA ASTI"},
+		{Username: "miyagi_official", Email: "miyagi.artist@example.com", Password: testPassword, Bio: "Подтверждённый профиль артиста в музыкальном сообществе.", SocialLinks: emptySocialLinks, IsAdmin: false, IsVerifiedArtist: true, ArtistName: "Miyagi & Эндшпиль"},
+		{Username: "lsp_official", Email: "lsp.artist@example.com", Password: testPassword, Bio: "Официальный аккаунт ЛСП: авторские отметки и обратная связь слушателям.", SocialLinks: emptySocialLinks, IsAdmin: false, IsVerifiedArtist: true, ArtistName: "ЛСП"},
+		{Username: "zivert_official", Email: "zivert.artist@example.com", Password: testPassword, Bio: "Официальный аккаунт Zivert в «Мьюзик-рейтинг».", SocialLinks: emptySocialLinks, IsAdmin: false, IsVerifiedArtist: true, ArtistName: "Zivert"},
 		// Расширенный пул слушателей — чтобы рецензии и лайки выглядели живыми, от разных людей.
 		{Username: "nightcore_kate", Email: "kate.night@example.com", Password: testPassword, Bio: "Слушаю на повторе то, что цепляет с первой минуты.", SocialLinks: emptySocialLinks, IsAdmin: false},
 		{Username: "basswalker", Email: "basswalker@example.com", Password: testPassword, Bio: "Сначала проверяю низы и грув, потом всё остальное.", SocialLinks: emptySocialLinks, IsAdmin: false},
@@ -516,7 +528,10 @@ func seedData() error {
 		} else {
 			existingTestUsers++
 			needsUpdate := false
-			if existingUser.Bio == "" && user.Bio != "" {
+			if user.IsVerifiedArtist && existingUser.Bio != user.Bio {
+				existingUser.Bio = user.Bio
+				needsUpdate = true
+			} else if existingUser.Bio == "" && user.Bio != "" {
 				existingUser.Bio = user.Bio
 				needsUpdate = true
 			}
@@ -524,7 +539,14 @@ func seedData() error {
 				existingUser.IsVerifiedArtist = true
 				needsUpdate = true
 			}
-			if existingUser.SocialLinks == "" {
+			if user.ArtistName != "" && existingUser.ArtistName != user.ArtistName {
+				existingUser.ArtistName = user.ArtistName
+				needsUpdate = true
+			}
+			if user.IsVerifiedArtist && user.SocialLinks != "" && existingUser.SocialLinks != user.SocialLinks {
+				existingUser.SocialLinks = user.SocialLinks
+				needsUpdate = true
+			} else if existingUser.SocialLinks == "" {
 				existingUser.SocialLinks = emptySocialLinks
 				needsUpdate = true
 			}
@@ -1234,6 +1256,99 @@ func seedTracks() error {
 
 	log.Printf("Tracks seeding complete: %d created, %d already existed, %d skipped", createdTracks, existingTracks, skippedTracks)
 	log.Printf("Track genre assignments: %d successful, %d errors", trackGenreAssignments, trackGenreErrors)
+	return nil
+}
+
+// seedAdminFollows prepares a meaningful "Подписки" feed for the defense demo.
+// FirstOrCreate keeps the operation idempotent across repeated seed runs.
+func seedAdminFollows() error {
+	var admin models.User
+	if err := DB.Where("email = ?", "admin@example.com").First(&admin).Error; err != nil {
+		return fmt.Errorf("admin user not found: %w", err)
+	}
+
+	targetUsernames := []string{
+		"indiekid", "albumdiver", "scene_girl", "deepcuts", "lyrics_anna",
+		"soundcheck_pro", "nightcore_kate", "musiclover1", "beatnik", "textura",
+	}
+	var targets []models.User
+	if err := DB.Where("username IN ?", targetUsernames).Find(&targets).Error; err != nil {
+		return fmt.Errorf("failed to load follow targets: %w", err)
+	}
+
+	for _, target := range targets {
+		if target.ID == admin.ID {
+			continue
+		}
+		follow := models.UserFollow{FollowerID: admin.ID, FollowingID: target.ID}
+		if err := DB.Where("follower_id = ? AND following_id = ?", admin.ID, target.ID).
+			FirstOrCreate(&follow).Error; err != nil {
+			return fmt.Errorf("failed to follow %s: %w", target.Username, err)
+		}
+	}
+
+	log.Printf("Admin follows prepared: %d target users", len(targets))
+	return nil
+}
+
+// seedCatalogExpansion adds a compact cross-genre set independently from the
+// legacy seed thresholds, so it also appears in already populated demo databases.
+func seedCatalogExpansion() error {
+	type releaseSeed struct {
+		Title       string
+		Artist      string
+		Genre       string
+		Cover       string
+		Description string
+		Year        int
+		Tracks      []string
+	}
+	releases := []releaseSeed{
+		{"Горгород", "Oxxxymiron", "Хип-хоп", "/preview/7.jpg", "Концептуальный рэп-альбом с цельным сюжетом.", 2015, []string{"Не с начала", "Кем вы стали", "Переплетено", "Где нас нет"}},
+		{"До свидания", "IC3PEAK", "Электронная", "/preview/8.jpg", "Мрачная электронная музыка на стыке экспериментального попа и рейва.", 2020, []string{"Плак-плак", "Смерти больше нет", "Грустная сука", "Марш"}},
+		{"Раскраски для взрослых", "Монеточка", "Инди-поп", "/preview/9.jpg", "Ироничный и наблюдательный инди-поп о взрослении.", 2018, []string{"Нимфоманка", "Каждый раз", "90", "Запорожец"}},
+		{"Холостяк", "Егор Крид", "Поп", "/preview/5.jpg", "Поп-релиз с мелодичным R&B-звучанием.", 2015, []string{"Самая самая", "Невеста", "Надо ли", "Папина дочка"}},
+		{"Old Blood", "Boulevard Depo", "Трэп", "/preview/6.jpg", "Альтернативный трэп с характерной визуальной и звуковой эстетикой.", 2020, []string{"DRUГ", "Angry Toy$", "Кащенко", "Old Blood"}},
+	}
+
+	for _, release := range releases {
+		var genre models.Genre
+		if err := DB.Where("name = ?", release.Genre).First(&genre).Error; err != nil {
+			return fmt.Errorf("genre %s not found: %w", release.Genre, err)
+		}
+		releaseDate := time.Date(release.Year, time.January, 1, 0, 0, 0, 0, time.UTC)
+		album := models.Album{
+			Title: release.Title, Artist: release.Artist, GenreID: genre.ID,
+			CoverImagePath: release.Cover, Description: release.Description, ReleaseDate: &releaseDate,
+		}
+		if err := DB.Where("title = ? AND artist = ?", release.Title, release.Artist).FirstOrCreate(&album).Error; err != nil {
+			return fmt.Errorf("failed to seed album %s: %w", release.Title, err)
+		}
+		if album.CoverImagePath == "" || album.Description == "" {
+			album.CoverImagePath = release.Cover
+			album.Description = release.Description
+			album.ReleaseDate = &releaseDate
+			if err := DB.Save(&album).Error; err != nil {
+				return fmt.Errorf("failed to update album %s: %w", release.Title, err)
+			}
+		}
+
+		for index, title := range release.Tracks {
+			duration := 185 + index*17
+			trackNumber := index + 1
+			track := models.Track{
+				AlbumID: album.ID, Title: title, Duration: &duration,
+				TrackNumber: &trackNumber, CoverImagePath: release.Cover,
+			}
+			if err := DB.Where("album_id = ? AND title = ?", album.ID, title).FirstOrCreate(&track).Error; err != nil {
+				return fmt.Errorf("failed to seed track %s: %w", title, err)
+			}
+			if err := DB.Model(&track).Association("Genres").Replace([]models.Genre{genre}); err != nil {
+				return fmt.Errorf("failed to assign genre to %s: %w", title, err)
+			}
+		}
+	}
+
 	return nil
 }
 

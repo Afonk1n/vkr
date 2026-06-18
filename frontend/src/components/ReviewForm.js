@@ -30,6 +30,18 @@ const InfoHint = ({ text }) => (
   </span>
 );
 
+// Визуальная шкала остаётся 1–10, но значение 5 размещается ровно по центру.
+// Это намеренно нелинейная разметка только для UI; в API по-прежнему уходят целые 1–10.
+const sliderPositions = [0, 2, 4, 6, 9, 11, 13, 15, 17, 18];
+
+const ratingFromSliderPosition = (position) => {
+  let bestIndex = 0;
+  sliderPositions.forEach((candidate, index) => {
+    if (Math.abs(candidate - position) < Math.abs(sliderPositions[bestIndex] - position)) bestIndex = index;
+  });
+  return bestIndex + 1;
+};
+
 const ScoreSlider = ({ id, label, value, onChange, hint }) => (
   <div className="review-score-control">
     <div className="review-score-control-top">
@@ -42,11 +54,16 @@ const ScoreSlider = ({ id, label, value, onChange, hint }) => (
     <input
       type="range"
       id={id}
-      min="1"
-      max="10"
-      value={value}
-      onChange={(e) => onChange(parseInt(e.target.value, 10))}
-      style={{ '--value': `${((value - 1) / 9) * 100}%` }}
+      min="0"
+      max="18"
+      step="1"
+      value={sliderPositions[value - 1]}
+      aria-valuemin="1"
+      aria-valuemax="10"
+      aria-valuenow={value}
+      aria-valuetext={`${value} из 10`}
+      onChange={(e) => onChange(ratingFromSliderPosition(parseInt(e.target.value, 10)))}
+      style={{ '--value': `${(sliderPositions[value - 1] / 18) * 100}%` }}
     />
     <div className="review-score-scale" aria-hidden="true">
       <span>1</span>
@@ -240,11 +257,13 @@ const ReviewForm = ({ albumId, trackId, onSubmit, initialData, onCancel }) => {
         <div className="text-section review-form-card">
           <label className="checkbox-label">
             <input
+              className="review-text-toggle"
               type="checkbox"
               checked={hasText}
               onChange={(e) => setHasText(e.target.checked)}
             />
-            <span>
+            <span className="review-checkbox-control" aria-hidden="true"><span>✓</span></span>
+            <span className="review-checkbox-copy">
               Добавить текстовую рецензию
               <small>Текстовая рецензия отправляется на модерацию.</small>
             </span>
@@ -263,12 +282,13 @@ const ReviewForm = ({ albumId, trackId, onSubmit, initialData, onCancel }) => {
 
         <div className="form-actions">
           {onCancel && (
-            <button type="button" onClick={onCancel} className="btn-cancel">
+            <button type="button" onClick={onCancel} className="review-cancel-button">
               Отмена
             </button>
           )}
-          <button type="submit" className="btn-submit" disabled={loading}>
-            {loading ? 'Сохранение...' : initialData ? 'Сохранить' : 'Отправить'}
+          <button type="submit" className="review-submit-button" disabled={loading}>
+            <span>{loading ? 'Сохранение...' : initialData ? 'Сохранить' : 'Отправить рецензию'}</span>
+            {!loading && <span className="review-submit-arrow" aria-hidden>→</span>}
           </button>
         </div>
       </form>

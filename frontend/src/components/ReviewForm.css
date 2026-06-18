@@ -301,6 +301,7 @@
 }
 
 .checkbox-label {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -309,12 +310,62 @@
   cursor: pointer;
 }
 
-.checkbox-label input[type="checkbox"] {
+.review-text-toggle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.review-checkbox-control {
   flex: 0 0 auto;
-  width: 1.2rem;
-  height: 1.2rem;
-  accent-color: var(--accent-color, var(--primary-color));
-  cursor: pointer;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.7rem;
+  background: var(--surface-control, var(--card-background));
+  box-shadow: inset 0 1px 0 var(--border-light);
+  color: transparent;
+  transition: background var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base), transform var(--transition-base);
+}
+
+.review-checkbox-control > span {
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 0.42rem;
+  font-size: 0.82rem;
+  font-weight: 950;
+  transform: scale(0.7);
+  opacity: 0;
+  transition: transform var(--transition-base), opacity var(--transition-base);
+}
+
+.review-text-toggle:checked + .review-checkbox-control {
+  border-color: color-mix(in srgb, var(--accent-color) 70%, var(--border-color));
+  background: color-mix(in srgb, var(--accent-color) 14%, var(--surface-control));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color) 10%, transparent);
+  color: var(--background-color);
+}
+
+.review-text-toggle:checked + .review-checkbox-control > span {
+  background: var(--accent-color);
+  opacity: 1;
+  transform: scale(1);
+}
+
+.review-text-toggle:focus-visible + .review-checkbox-control {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 3px;
+}
+
+.checkbox-label:hover .review-checkbox-control {
+  border-color: color-mix(in srgb, var(--accent-color) 48%, var(--border-color));
+  transform: translateY(-1px);
 }
 
 .checkbox-label small {
@@ -357,8 +408,8 @@
   padding-top: 0.2rem;
 }
 
-.btn-cancel,
-.btn-submit {
+.review-cancel-button,
+.review-submit-button {
   min-height: 44px;
   padding: 0.75rem 1.25rem;
   border-radius: var(--radius-md, 8px);
@@ -367,31 +418,48 @@
   transition: transform var(--transition-base), border-color var(--transition-base), background var(--transition-base), color var(--transition-base);
 }
 
-.btn-cancel {
+.review-cancel-button {
   background: var(--surface-control, transparent);
   color: var(--text-color);
   border: 1px solid var(--border-color);
 }
 
-.btn-cancel:hover {
+.review-cancel-button:hover {
   background: var(--hover-color);
   transform: translateY(-1px);
 }
 
-.btn-submit {
-  background: var(--text-color);
+.review-submit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  min-width: 190px;
+  background: linear-gradient(135deg, var(--accent-color), color-mix(in srgb, var(--accent-color) 74%, var(--text-color)));
   color: var(--background-color);
-  border: 1px solid var(--text-color);
+  border: 1px solid color-mix(in srgb, var(--accent-color) 72%, var(--border-color));
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--accent-color) 20%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
-.btn-submit:hover:not(:disabled) {
-  background: var(--accent-color, var(--primary-color));
-  border-color: var(--accent-color, var(--primary-color));
-  color: #fff;
-  transform: translateY(-1px);
+.review-submit-arrow {
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--background-color) 18%, transparent);
+  font-size: 1rem;
+  transition: transform var(--transition-base);
 }
 
-.btn-submit:disabled {
+.review-submit-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--accent-color) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.review-submit-button:hover:not(:disabled) .review-submit-arrow { transform: translateX(3px); }
+
+.review-submit-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -446,8 +514,8 @@
     flex-direction: column-reverse;
   }
 
-  .btn-cancel,
-  .btn-submit {
+  .review-cancel-button,
+  .review-submit-button {
     width: 100%;
   }
 }
