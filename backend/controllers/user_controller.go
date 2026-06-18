@@ -372,6 +372,16 @@ func (uc *UserController) calculateAllUserPoints() map[uint]int {
 		Select("user_id, COUNT(*) AS n").
 		Group("user_id").Scan(&given)
 	addAll(given, 12, points)
+	var albumLikesGiven []aggRow
+	uc.DB.Model(&models.AlbumLike{}).
+		Select("user_id, COUNT(*) AS n").
+		Group("user_id").Scan(&albumLikesGiven)
+	addAll(albumLikesGiven, 12, points)
+	var trackLikesGiven []aggRow
+	uc.DB.Model(&models.TrackLike{}).
+		Select("user_id, COUNT(*) AS n").
+		Group("user_id").Scan(&trackLikesGiven)
+	addAll(trackLikesGiven, 12, points)
 
 	// Лайки, полученные на одобренные рецензии автора.
 	var received []aggRow
@@ -425,7 +435,11 @@ func (uc *UserController) CalculateUserStats(userID uint) UserStats {
 	uc.DB.Model(&models.Review{}).
 		Where("user_id = ? AND status = ? AND btrim(coalesce(text, '')) = ''", userID, models.ReviewStatusApproved).
 		Count(&stats.RatingsWithoutReview)
-	uc.DB.Model(&models.ReviewLike{}).Where("user_id = ?", userID).Count(&stats.TotalLikesGiven)
+	var reviewLikesGiven, albumLikesGiven, trackLikesGiven int64
+	uc.DB.Model(&models.ReviewLike{}).Where("user_id = ?", userID).Count(&reviewLikesGiven)
+	uc.DB.Model(&models.AlbumLike{}).Where("user_id = ?", userID).Count(&albumLikesGiven)
+	uc.DB.Model(&models.TrackLike{}).Where("user_id = ?", userID).Count(&trackLikesGiven)
+	stats.TotalLikesGiven = reviewLikesGiven + albumLikesGiven + trackLikesGiven
 
 	genreStats := uc.CalculateGenreStats(userID)
 	if len(genreStats) > 0 {

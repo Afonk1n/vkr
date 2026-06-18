@@ -219,6 +219,12 @@ func InitDB() (*gorm.DB, error) {
 		} else {
 			log.Println("✓ Album likes seeding completed successfully")
 		}
+
+		if err := seedArtistProfiles(); err != nil {
+			log.Printf("ERROR: failed to enrich artist profiles: %v", err)
+		} else {
+			log.Println("✓ Artist profiles enriched successfully")
+		}
 		log.Println("=== Data seeding finished ===")
 
 		// Check database state after seeding
@@ -1288,6 +1294,98 @@ func seedAdminFollows() error {
 	}
 
 	log.Printf("Admin follows prepared: %d target users", len(targets))
+	return nil
+}
+
+// seedArtistProfiles makes verified accounts useful as real community profiles:
+// each one gets explicit musical preferences, a small liked collection and
+// mutual subscriptions with active demo listeners. Repeated runs stay idempotent.
+func seedArtistProfiles() error {
+	type artistProfileSeed struct {
+		Username        string
+		FavoriteArtists []string
+		AlbumTitles     []string
+		TrackTitles     []string
+	}
+
+	profiles := []artistProfileSeed{
+		{"basta_official", []string{"Скриптонит", "Miyagi & Andy Panda", "The Hatters"}, []string{"2004", "Million Dollars: Happiness", "Четвёртый"}, []string{"Космос", "Там ревели горы", "Я делаю шаг"}},
+		{"skriptonit_official", []string{"Oxxxymiron", "ЛСП", "IC3PEAK"}, []string{"Горгород", "Magic City", "До свидания"}, []string{"Переплетено", "Монетка", "Смерти больше нет"}},
+		{"annaasti_official", []string{"Zivert", "IOWA", "Монеточка"}, []string{"Vinyl #1", "Import", "Раскраски для взрослых"}, []string{"Life", "Улыбайся", "Каждый раз"}},
+		{"miyagi_official", []string{"Баста", "Скриптонит", "Boulevard Depo"}, []string{"Баста 3", "2004", "Old Blood"}, []string{"Сансара", "Космос", "Old Blood"}},
+		{"lsp_official", []string{"Скриптонит", "Oxxxymiron", "IC3PEAK"}, []string{"Праздник на улице 36", "Горгород", "До свидания"}, []string{"Праздник на улице 36", "Где нас нет", "Плак-плак"}},
+		{"zivert_official", []string{"ANNA ASTI", "IOWA", "Клава Кока"}, []string{"Феникс", "Import", "Неприлично о личном"}, []string{"По барам", "Маршрутка", "Покинула чат"}},
+	}
+	listenerNames := []string{"albumdiver", "scene_girl", "musiclover1", "nightcore_kate", "textura", "soundcheck_pro"}
+
+	var listeners []models.User
+	if err := DB.Where("username IN ?", listenerNames).Find(&listeners).Error; err != nil {
+		return fmt.Errorf("load artist profile listeners: %w", err)
+	}
+
+	for profileIndex, profile := range profiles {
+		var user models.User
+		if err := DB.Where("username = ?", profile.Username).First(&user).Error; err != nil {
+			return fmt.Errorf("load artist account %s: %w", profile.Username, err)
+		}
+
+		var albums []models.Album
+		if err := DB.Where("title IN ?", profile.AlbumTitles).Find(&albums).Error; err != nil {
+			return fmt.Errorf("load favorite albums for %s: %w", profile.Username, err)
+		}
+		albumIDs := make([]string, 0, len(albums))
+		for _, album := range albums {
+			albumIDs = append(albumIDs, fmt.Sprintf("%d", album.ID))
+			like := models.AlbumLike{UserID: user.ID, AlbumID: album.ID, CreatedAt: time.Now().Add(-time.Duration(profileIndex+1) * 12 * time.Hour)}
+			if err := DB.Where("user_id = ? AND album_id = ?", user.ID, album.ID).FirstOrCreate(&like).Error; err != nil && err != gorm.ErrDuplicatedKey {
+				return fmt.Errorf("seed album like for %s: %w", profile.Username, err)
+			}
+		}
+
+		var tracks []models.Track
+		if err := DB.Where("title IN ?", profile.TrackTitles).Find(&tracks).Error; err != nil {
+			return fmt.Errorf("load favorite tracks for %s: %w", profile.Username, err)
+		}
+		trackIDs := make([]string, 0, len(tracks))
+		for _, track := range tracks {
+			trackIDs = append(trackIDs, fmt.Sprintf("%d", track.ID))
+			like := models.TrackLike{UserID: user.ID, TrackID: track.ID, CreatedAt: time.Now().Add(-time.Duration(profileIndex+1) * 9 * time.Hour)}
+			if err := DB.Where("user_id = ? AND track_id = ?", user.ID, track.ID).FirstOrCreate(&like).Error; err != nil && err != gorm.ErrDuplicatedKey {
+				return fmt.Errorf("seed track like for %s: %w", profile.Username, err)
+			}
+		}
+
+		quotedArtists := make([]string, 0, len(profile.FavoriteArtists))
+		for _, artist := range profile.FavoriteArtists {
+			quotedArtists = append(quotedArtists, fmt.Sprintf("%q", artist))
+		}
+		updates := map[string]interface{}{
+			"favorite_artists":   "[" + strings.Join(quotedArtists, ",") + "]",
+			"favorite_album_ids": "[" + strings.Join(albumIDs, ",") + "]",
+			"favorite_track_ids": "[" + strings.Join(trackIDs, ",") + "]",
+			"preferences_manual": true,
+		}
+		if len(albums) > 0 && user.AvatarPath == "" {
+			updates["avatar_path"] = albums[0].CoverImagePath
+		}
+		if err := DB.Model(&user).Updates(updates).Error; err != nil {
+			return fmt.Errorf("update preferences for %s: %w", profile.Username, err)
+		}
+
+		for offset := 0; offset < 3 && len(listeners) > 0; offset++ {
+			listener := listeners[(profileIndex+offset)%len(listeners)]
+			outgoing := models.UserFollow{FollowerID: user.ID, FollowingID: listener.ID}
+			if err := DB.Where("follower_id = ? AND following_id = ?", user.ID, listener.ID).FirstOrCreate(&outgoing).Error; err != nil {
+				return fmt.Errorf("seed following for %s: %w", profile.Username, err)
+			}
+			incoming := models.UserFollow{FollowerID: listener.ID, FollowingID: user.ID}
+			if err := DB.Where("follower_id = ? AND following_id = ?", listener.ID, user.ID).FirstOrCreate(&incoming).Error; err != nil {
+				return fmt.Errorf("seed follower for %s: %w", profile.Username, err)
+			}
+		}
+	}
+
+	log.Printf("Artist community profiles prepared: %d", len(profiles))
 	return nil
 }
 

@@ -1,19 +1,22 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { albumsAPI } from '../services/api';
 import AlbumCard from '../components/AlbumCard';
 import { getImageUrl } from '../utils/imageUtils';
 import './ArtistPage.css';
 
-const parseSocialLinks = (value) => {
-  if (!value) return {};
-  if (typeof value === 'object') return value;
-  try {
-    return JSON.parse(value);
-  } catch (_) {
-    return {};
-  }
-};
+const VerifiedMark = () => (
+  <span
+    className="artist-verified"
+    title="Артист зарегистрирован в «Мьюзик-рейтинг»"
+    aria-label="Подтверждённый артист"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path className="artist-verified-shape" d="M12 1.8 14.4 4l3.2-.2.8 3.1 2.7 1.7-1.3 2.9 1.3 2.9-2.7 1.7-.8 3.1-3.2-.2L12 22.2 9.6 20l-3.2.2-.8-3.1-2.7-1.7 1.3-2.9-1.3-2.9 2.7-1.7.8-3.1 3.2.2L12 1.8Z" />
+      <path className="artist-verified-check" d="m8.2 12.1 2.4 2.4 5.2-5.3" />
+    </svg>
+  </span>
+);
 
 const ArtistPage = () => {
   const { name } = useParams();
@@ -43,11 +46,6 @@ const ArtistPage = () => {
   const albums = artistData?.albums || [];
   const artistName = artistData?.artist || decodeURIComponent(name);
   const verifiedAccount = artistData?.verified_account;
-  const socialLinks = useMemo(
-    () => parseSocialLinks(verifiedAccount?.social_links),
-    [verifiedAccount?.social_links]
-  );
-
   if (loading) {
     return <div className="container"><div className="loading">Загрузка...</div></div>;
   }
@@ -77,57 +75,63 @@ const ArtistPage = () => {
             ) : (
               <div className="artist-avatar-placeholder">{(artistName || 'А')[0].toUpperCase()}</div>
             )}
+            <div className="artist-release-count">
+              <strong>{albums.length}</strong>
+              <span>{albums.length === 1 ? 'релиз' : albums.length < 5 ? 'релиза' : 'релизов'}</span>
+            </div>
           </div>
 
           <div className="artist-info-section">
-            <div className="artist-title-row">
-              <div>
-                <span className="artist-kicker">Страница артиста</span>
-                <h1 className="artist-name">
-                  {artistName}
-                  {verifiedAccount && <span className="artist-verified" title="Артист зарегистрирован в «Мьюзик-рейтинг»">✓</span>}
-                </h1>
-              </div>
-              {verifiedAccount && (
-                <Link className="artist-profile-link" to={`/users/${verifiedAccount.id}`}>
-                  <span className="artist-profile-link-icon">@</span>
-                  <span>
-                    <small>Подтверждённый аккаунт</small>
-                    <strong>{verifiedAccount.username}</strong>
-                  </span>
-                  <b aria-hidden>→</b>
-                </Link>
-              )}
-            </div>
+            <span className="artist-kicker">Артист в каталоге</span>
+            <h1 className="artist-name">
+              {artistName}
+              {verifiedAccount && <VerifiedMark />}
+            </h1>
 
             <p className="artist-description">
               {verifiedAccount?.bio || 'Каталог релизов, пользовательские оценки и обсуждения артиста в «Мьюзик-рейтинг».'}
             </p>
 
-            <div className="artist-stats">
-              <div className="artist-stat-item"><span>Релизов</span><strong>{albums.length}</strong></div>
+            <div className="artist-stats" aria-label="Статистика артиста">
               <div className="artist-stat-item"><span>Композиций</span><strong>{artistData?.total_tracks || 0}</strong></div>
               <div className="artist-stat-item"><span>Рецензий</span><strong>{artistData?.approved_reviews_count || 0}</strong></div>
               <div className="artist-stat-item"><span>Средний балл</span><strong>{Math.round(Number(artistData?.average_rating || 0)) || '—'}</strong></div>
               <div className="artist-stat-item"><span>Лайков релизов</span><strong>{totalLikes}</strong></div>
             </div>
 
-            {(socialLinks.vk || socialLinks.telegram) && (
-              <div className="artist-socials">
-                {socialLinks.vk && <a href={socialLinks.vk} target="_blank" rel="noreferrer">VK</a>}
-                {socialLinks.telegram && <a href={socialLinks.telegram} target="_blank" rel="noreferrer">Telegram</a>}
-              </div>
-            )}
           </div>
+
+          {verifiedAccount && (
+            <aside className="artist-account-card">
+              <span className="artist-account-label"><VerifiedMark /> Официальный аккаунт</span>
+              <div className="artist-account-identity">
+                <span className="artist-profile-link-icon">@</span>
+                <div>
+                  <small>Профиль в сообществе</small>
+                  <strong>{verifiedAccount.username}</strong>
+                </div>
+              </div>
+              <p>Автор может участвовать в обсуждении и отмечать рецензии слушателей.</p>
+              <Link className="artist-profile-link" to={`/users/${verifiedAccount.id}`}>
+                Открыть профиль <b aria-hidden>→</b>
+              </Link>
+            </aside>
+          )}
         </section>
 
         {bestAlbum && (
           <section className="artist-highlight">
-            <span>Самый высоко оценённый релиз</span>
-            <Link to={`/albums/${bestAlbum.id}`}>
+            <img src={getImageUrl(bestAlbum.cover_image_path)} alt="" />
+            <div className="artist-highlight-copy">
+              <span>Выбор сообщества</span>
               <strong>{bestAlbum.title}</strong>
-              <b>{Math.round(Number(bestAlbum.average_rating))} баллов</b>
-            </Link>
+              <small>Самый высоко оценённый релиз артиста</small>
+            </div>
+            <div className="artist-highlight-score">
+              <strong>{Math.round(Number(bestAlbum.average_rating))}</strong>
+              <span>средний балл</span>
+            </div>
+            <Link to={`/albums/${bestAlbum.id}`}>Открыть релиз <b aria-hidden>→</b></Link>
           </section>
         )}
 
