@@ -139,9 +139,11 @@ const ArtistPage = () => {
           <div className="artist-section-head">
             <div>
               <span className="artist-kicker">Дискография</span>
-              <h2 className="section-title">Релизы</h2>
+              <h2 className="section-title">
+                Релизы
+                <span className="artist-release-badge">{albums.length}</span>
+              </h2>
             </div>
-            <span>{albums.length}</span>
           </div>
           <div className="albums-grid">
             {albums.map((album) => <AlbumCard key={album.id} album={album} />)}

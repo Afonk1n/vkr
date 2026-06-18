@@ -199,7 +199,8 @@
 
 .artist-albums-section { display: grid; gap: 1rem; }
 .artist-section-head { display: flex; align-items: end; justify-content: space-between; }
-.artist-section-head > span { display: grid; place-items: center; min-width: 2.2rem; height: 2.2rem; border-radius: 999px; background: var(--surface-control); color: var(--text-secondary); font-weight: 800; }
+.artist-section-head .section-title { display: inline-flex; align-items: center; gap: 0.6rem; }
+.artist-release-badge { display: grid; place-items: center; min-width: 1.9rem; height: 1.9rem; padding: 0 0.55rem; border-radius: 999px; background: var(--surface-control); color: var(--text-secondary); font-size: 0.95rem; font-weight: 800; }
 .loading { text-align: center; padding: 3rem; color: var(--text-secondary); }
 
 @media (max-width: 920px) {

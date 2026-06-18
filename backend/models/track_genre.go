@@ -7,8 +7,8 @@ import (
 // TrackGenre represents the many-to-many relationship between tracks and genres
 type TrackGenre struct {
 	ID      uint `json:"id" gorm:"primaryKey"`
-	TrackID uint `json:"track_id" gorm:"not null;index"`
-	GenreID uint `json:"genre_id" gorm:"not null;index"`
+	TrackID uint `json:"track_id" gorm:"not null;index;uniqueIndex:idx_track_genre_pair"`
+	GenreID uint `json:"genre_id" gorm:"not null;index;uniqueIndex:idx_track_genre_pair"`
 
 	// Relationships
 	Track Track `json:"track,omitempty" gorm:"foreignKey:TrackID"`

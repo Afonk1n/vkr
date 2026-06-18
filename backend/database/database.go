@@ -257,12 +257,29 @@ func dedupeLikes() {
 	}
 }
 
+// dedupeTrackGenres removes duplicate (track_id, genre_id) rows from the
+// track_genres join table, keeping the row with the smallest id. Старые сиды
+// добавляли жанр через ассоциацию без уникального индекса, из-за чего один и
+// тот же жанр мог попасть к треку несколько раз (в каталоге он отображался
+// повторяющимися бейджами). Чистим до AutoMigrate, иначе уникальный индекс
+// idx_track_genre_pair не создастся.
+func dedupeTrackGenres() {
+	stmt := `DELETE FROM track_genres a USING track_genres b
+		 WHERE a.id > b.id AND a.track_id = b.track_id AND a.genre_id = b.genre_id`
+	// Таблицы может ещё не быть на самой первой миграции — это нормально.
+	if err := DB.Exec(stmt).Error; err != nil {
+		log.Printf("dedupeTrackGenres: skipping (%v)", err)
+	}
+}
+
 // runMigrations runs database migrations
 func runMigrations() error {
 	log.Println("Running database migrations...")
 
 	// Чистим дубли лайков до AutoMigrate, иначе создание уникальных индексов упадёт.
 	dedupeLikes()
+	// Чистим дубли в track_genres до AutoMigrate по той же причине.
+	dedupeTrackGenres()
 
 	err := DB.AutoMigrate(
 		&models.User{},
